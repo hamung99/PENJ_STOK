@@ -292,8 +292,19 @@ body.dark #cekRingkasanTable tfoot td,body.dark #cekRupaTable tfoot td{backgroun
 #page-gudang .gudang-subtab:hover{background:#e2e8f0}
 #page-gudang .gudang-subtab.active{background:#1f4e78;border-color:#1f4e78;color:#fff}
 /* Analisa: sub-tab & kontrol Bulan/Download dibuat lebih tipis */
-#gudangAnalisaPanel > .gudang-subtabs{margin:0 0 8px;gap:5px}
-#gudangAnalisaPanel > .gudang-subtabs .gudang-subtab{padding:3px 11px;font-size:11px;line-height:1.3;border-radius:6px}
+/* Dropdown pada tab Analisa */
+#page-gudang .gudang-dd{position:relative;display:inline-block}
+#page-gudang .gudang-dd-caret{font-size:10px;opacity:.85}
+#page-gudang #analisaDDLabel{font-weight:600;opacity:.9}
+#page-gudang .gudang-dd-menu[hidden]{display:none}
+#page-gudang .gudang-dd-menu{position:absolute;top:calc(100% + 4px);left:0;min-width:160px;background:#fff;border:1px solid #cbd5e1;border-radius:9px;box-shadow:0 8px 22px rgba(15,23,42,.18);padding:4px;z-index:60}
+#page-gudang .gudang-dd-menu button{display:block;width:100%;text-align:left;background:transparent;color:#334155;padding:6px 10px;font-size:12px;font-weight:700;border-radius:6px;border:0}
+#page-gudang .gudang-dd-menu button:hover{background:#e2e8f0}
+#page-gudang .gudang-dd-menu button.active{background:#dbeafe;color:#1f4e78}
+body.dark #page-gudang .gudang-dd-menu{background:#1e293b;border-color:#475569}
+body.dark #page-gudang .gudang-dd-menu button{color:#cbd5e1}
+body.dark #page-gudang .gudang-dd-menu button:hover{background:#334155}
+body.dark #page-gudang .gudang-dd-menu button.active{background:#1d4ed8;color:#fff}
 #gudangAnalisaPanel .analisa-tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 #gudangAnalisaPanel .analisa-tools label{font-size:10px!important}
 #gudangAnalisaPanel .analisa-tools select{min-width:128px!important;padding:2px 8px!important;font-size:11px!important;border-radius:6px!important;height:24px;line-height:1.2}
@@ -630,7 +641,13 @@ body.dark .backup-action.warn{background:#422006;color:#fdba74;border-color:#924
   <div class="gudang-subtabs" role="tablist">
     <button type="button" class="gudang-subtab active" data-gudang="fitri" onclick="switchGudangSub('fitri',this)">🧴 Fitri</button>
     <button type="button" class="gudang-subtab" data-gudang="rupa" onclick="switchGudangSub('rupa',this)">📦 Rupa Rupa</button>
-    <button type="button" class="gudang-subtab" data-gudang="analisa" onclick="switchGudangSub('analisa',this)">📊 Analisa</button>
+    <div class="gudang-dd" id="analisaDD">
+      <button type="button" class="gudang-subtab" id="analisaTabBtn" data-gudang="analisa" aria-haspopup="true" aria-expanded="false" onclick="toggleAnalisaMenu(event)">📊 Analisa<span id="analisaDDLabel"></span> <span class="gudang-dd-caret">▾</span></button>
+      <div class="gudang-dd-menu" id="analisaMenu" role="menu" hidden>
+        <button type="button" role="menuitem" data-analisa="fitri" onclick="pickAnalisa('fitri')">🧴 Fitri</button>
+        <button type="button" role="menuitem" data-analisa="rupa" onclick="pickAnalisa('rupa')">📦 Rupa Rupa</button>
+      </div>
+    </div>
   </div>
 
   <div id="gudangRegularPanel">
@@ -724,11 +741,6 @@ body.dark .backup-action.warn{background:#422006;color:#fdba74;border-color:#924
 
   <!-- Panel Analisa -->
   <div id="gudangAnalisaPanel" style="display:none">
-    <div class="gudang-subtabs" role="tablist" style="margin-top:0">
-      <button type="button" class="gudang-subtab active" data-analisa="fitri" onclick="switchAnalisaSub('fitri',this)">🧴 Fitri</button>
-      <button type="button" class="gudang-subtab" data-analisa="rupa" onclick="switchAnalisaSub('rupa',this)">📦 Rupa Rupa</button>
-    </div>
-
     <!-- ============ Analisa Fitri ============ -->
     <div id="analisaFitriPanel">
       <div class="card">
@@ -3111,10 +3123,11 @@ self.onmessage = function(e){
   let _gudangSub = 'fitri';
   function switchGudangSub(which, btn){
     _gudangSub = (which === 'analisa') ? 'analisa' : (which === 'rupa' ? 'rupa' : 'fitri');
-    document.querySelectorAll('#page-gudang > .gudang-subtabs > .gudang-subtab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#page-gudang > .gudang-subtabs .gudang-subtab').forEach(b => b.classList.remove('active'));
+    updateAnalisaDDLabel();
     if (btn) btn.classList.add('active');
     else {
-      const match = document.querySelector('#page-gudang > .gudang-subtabs > .gudang-subtab[data-gudang="' + _gudangSub + '"]');
+      const match = document.querySelector('#page-gudang > .gudang-subtabs .gudang-subtab[data-gudang="' + _gudangSub + '"]');
       if (match) match.classList.add('active');
     }
     const regular = document.getElementById('gudangRegularPanel');
@@ -3324,18 +3337,39 @@ self.onmessage = function(e){
   let _analisaLastData = null;
   let _analisaMonthInit = false;
   let _analisaSub = 'fitri';
-  function switchAnalisaSub(which, btn){
+  function updateAnalisaDDLabel(){
+    const lb = document.getElementById('analisaDDLabel');
+    if (lb) lb.textContent = (_gudangSub === 'analisa') ? ' · ' + (_analisaSub === 'rupa' ? 'Rupa Rupa' : 'Fitri') : '';
+    document.querySelectorAll('#analisaMenu button').forEach(b => b.classList.toggle('active', _gudangSub === 'analisa' && b.dataset.analisa === _analisaSub));
+  }
+  function closeAnalisaMenu(){
+    const m = document.getElementById('analisaMenu'); if (m) m.hidden = true;
+    const b = document.getElementById('analisaTabBtn'); if (b) b.setAttribute('aria-expanded', 'false');
+  }
+  function toggleAnalisaMenu(ev){
+    if (ev) ev.stopPropagation();
+    const m = document.getElementById('analisaMenu'); if (!m) return;
+    const willOpen = m.hidden;
+    m.hidden = !willOpen;
+    const b = document.getElementById('analisaTabBtn'); if (b) b.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    if (willOpen) updateAnalisaDDLabel();
+  }
+  document.addEventListener('click', (e) => { const dd = document.getElementById('analisaDD'); if (dd && !dd.contains(e.target)) closeAnalisaMenu(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAnalisaMenu(); });
+  function pickAnalisa(which){
+    closeAnalisaMenu();
+    switchAnalisaSub(which);
+    if (_gudangSub !== 'analisa') switchGudangSub('analisa', document.getElementById('analisaTabBtn'));
+    else updateAnalisaDDLabel();
+  }
+  function switchAnalisaSub(which){
     _analisaSub = (which === 'rupa') ? 'rupa' : 'fitri';
-    document.querySelectorAll('#gudangAnalisaPanel > .gudang-subtabs > .gudang-subtab').forEach(b => b.classList.remove('active'));
-    if (btn) btn.classList.add('active');
-    else {
-      const m = document.querySelector('#gudangAnalisaPanel > .gudang-subtabs > .gudang-subtab[data-analisa="' + _analisaSub + '"]');
-      if (m) m.classList.add('active');
-    }
     const fp = document.getElementById('analisaFitriPanel');
     const rp = document.getElementById('analisaRupaPanel');
     if (fp) fp.style.display = (_analisaSub === 'fitri') ? 'block' : 'none';
     if (rp) rp.style.display = (_analisaSub === 'rupa') ? 'block' : 'none';
+    updateAnalisaDDLabel();
+    if (_gudangSub !== 'analisa') return;
     if (_analisaSub === 'fitri') renderGudangAnalisa();
     else renderGudangAnalisaRupa();
   }
