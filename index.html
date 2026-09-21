@@ -293,6 +293,7 @@ body.dark #cekRingkasanTable tfoot td,body.dark #cekRupaTable tfoot td{backgroun
 #cekPanelCust .cs-kpi b{display:block;font-size:17px;margin-top:2px;color:#0f172a;font-weight:800;line-height:1.25}
 #cekPanelCust .cs-kpi select{width:100%;min-width:0;border:0;background:transparent;font-size:17px;font-weight:800;color:#0f172a;padding:0;margin-top:2px;cursor:pointer;outline:none;font-family:inherit}
 #cekPanelCust .cs-kpi.cs-total{border-left-color:#d08a2e;background:linear-gradient(145deg,#fff 0%,#fff6e8 100%)}
+#cekCustMin{width:78px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12px;background:#fff;color:#172033;box-sizing:border-box}
 #cekCustTable{min-width:900px}
 #cekCustTable thead th{height:34px;box-sizing:border-box;padding:0 8px;text-align:center;font-size:11px;letter-spacing:.03em;z-index:4}
 #cekCustTable thead tr:first-child th[rowspan]{z-index:5}
@@ -971,6 +972,8 @@ body.dark .backup-action.warn{background:#422006;color:#fdba74;border-color:#924
           <select id="cekCustSales" onchange="renderCekCustView()">
             <option value="">Semua Sales</option>
           </select>
+          <label for="cekCustMin" title="Tampilkan toko dengan total qty Fitri sama dengan atau lebih dari angka ini">Ambang ≥</label>
+          <input type="number" id="cekCustMin" min="0" step="10" placeholder="0" oninput="renderCekCustView()" title="Kosong / 0 = tampilkan semua">
           <input type="search" id="cekCustSearch" class="cek-search" placeholder="Cari toko / alamat..." oninput="renderCekCustView()">
           <button type="button" class="cek-refresh-btn" onclick="renderCekCust()" title="Segarkan">↻</button>
           <button type="button" onclick="downloadCekCust()">⬇ Download</button>
@@ -2947,6 +2950,8 @@ self.onmessage = function(e){
     const month = document.getElementById('cekCustMonth')?.value || '';
     const salesSel = document.getElementById('cekCustSales')?.value || '';
     const q = U(document.getElementById('cekCustSearch')?.value || '');
+    const minRaw = document.getElementById('cekCustMin')?.value;
+    const minQty = (minRaw === '' || minRaw == null) ? 0 : (parseFloat(minRaw) || 0);
     const sizeMap = new Map();
     _cekCustSrc.forEach(x => { const sz = fitriSizeInfo(x.produk ?? x.Produk); if (!sizeMap.has(sz.key)) sizeMap.set(sz.key, sz); });
     const sizes = [...sizeMap.values()].sort((a, b) => (a.ml === b.ml ? a.label.localeCompare(b.label, 'id') : (a.ml < b.ml ? -1 : 1)));
@@ -2978,12 +2983,13 @@ self.onmessage = function(e){
       return g;
     });
     if (q) list = list.filter(g => U(g.customer).includes(q) || U(g.alamat).includes(q) || g.salesLabel.includes(q));
+    if (minQty > 0) list = list.filter(g => g.total >= minQty);
     list.sort((a, b) => a.salesLabel.localeCompare(b.salesLabel, 'id') || a.customer.localeCompare(b.customer, 'id'));
     const sizeTot = {}; let grand = 0;
     list.forEach(g => { sizes.forEach(z => { sizeTot[z.key] = (sizeTot[z.key] || 0) + (g.qty[z.key] || 0); }); grand += g.total; });
     const now = new Date(); const curMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
     const tglHead = !month ? 'TGL ORDER' : (month === curMonth ? 'TGL ORDER BULAN INI' : 'TGL ORDER ' + monthLabel(month).toUpperCase());
-    return { list, sizes, sizeTot, grand, tglHead, month, salesSel };
+    return { list, sizes, sizeTot, grand, tglHead, month, salesSel, minQty };
   }
   function renderCekCustView(){
     const d = cekCustBuild();
@@ -3010,7 +3016,7 @@ self.onmessage = function(e){
     }
     const ncol = 6 + sizes.length;
     if (!list.length) {
-      tbody.innerHTML = '<tr><td colspan="' + ncol + '" style="text-align:center;padding:28px;color:#64748b">' + (_cekCustSrc.length ? 'Tidak ada customer yang cocok dengan filter.' : 'Belum ada data penjualan FITRI.') + '</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="' + ncol + '" style="text-align:center;padding:28px;color:#64748b">' + (_cekCustSrc.length ? 'Tidak ada customer yang cocok dengan filter (cek Sales / Ambang / pencarian).' : 'Belum ada data penjualan FITRI.') + '</td></tr>';
       tfoot.innerHTML = '';
       return;
     }
@@ -3025,7 +3031,7 @@ self.onmessage = function(e){
   }
   function downloadCekCust(){
     if (!_cekCustLast || !_cekCustLast.list.length) return alert('Belum ada data untuk diunduh.');
-    const { list, sizes, sizeTot, grand, tglHead, month, salesSel } = _cekCustLast;
+    const { list, sizes, sizeTot, grand, tglHead, month, salesSel, minQty } = _cekCustLast;
     const head = ['NO', 'SALES', 'TOKO/CUSTOMER', 'ALAMAT', ...sizes.map(z => z.label), 'TOTAL', tglHead];
     const rows = list.map((g, i) => [i + 1, g.salesLabel, g.customer, g.alamat, ...sizes.map(z => g.qty[z.key] || 0), g.total, g.tglText]);
     const foot = ['', '', 'TOTAL', '', ...sizes.map(z => sizeTot[z.key] || 0), grand, ''];
@@ -3033,7 +3039,7 @@ self.onmessage = function(e){
     ws['!cols'] = [{ wch: 5 }, { wch: 16 }, { wch: 28 }, { wch: 22 }, ...sizes.map(() => ({ wch: 13 })), { wch: 8 }, { wch: 34 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Fitri Sales-Customer');
-    XLSX.writeFile(wb, 'Fitri_Sales_Customer' + (month ? '_' + month : '') + (salesSel ? '_' + salesSel : '') + '.xlsx');
+    XLSX.writeFile(wb, 'Fitri_Sales_Customer' + (month ? '_' + month : '') + (salesSel ? '_' + salesSel : '') + (minQty > 0 ? '_min' + minQty : '') + '.xlsx');
   }
   let _cekRupaMonthInit = false;
   async function populateCekRupaMonths(){
