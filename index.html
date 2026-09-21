@@ -967,15 +967,17 @@ body.dark .backup-action.warn{background:#422006;color:#fdba74;border-color:#924
           <select id="cekCustMonth" onchange="renderCekCust()">
             <option value="">Semua bulan</option>
           </select>
+          <label for="cekCustSales">Sales</label>
+          <select id="cekCustSales" onchange="renderCekCustView()">
+            <option value="">Semua Sales</option>
+          </select>
           <input type="search" id="cekCustSearch" class="cek-search" placeholder="Cari toko / alamat..." oninput="renderCekCustView()">
           <button type="button" class="cek-refresh-btn" onclick="renderCekCust()" title="Segarkan">↻</button>
           <button type="button" onclick="downloadCekCust()">⬇ Download</button>
         </div>
       </div>
       <div class="cs-kpis" id="cekCustKpis">
-        <div class="cs-kpi"><small>nama sales</small>
-          <select id="cekCustSales" onchange="renderCekCustView()"><option value="">Semua Sales</option></select>
-        </div>
+        <div class="cs-kpi"><small>nama sales</small><b id="cekCustKpiSales">Semua Sales</b></div>
         <div id="cekCustKpiDyn" style="display:contents"></div>
       </div>
       <div class="tablebox" id="cekCustBox">
@@ -2988,6 +2990,8 @@ self.onmessage = function(e){
     _cekCustLast = d;
     const { list, sizes, sizeTot, grand, tglHead } = d;
     const nfx = v => v ? nfQty(v) : '-';
+    const ks = document.getElementById('cekCustKpiSales');
+    if (ks) ks.textContent = d.salesSel || 'Semua Sales';
     // KPI
     const kd = document.getElementById('cekCustKpiDyn');
     if (kd) {
