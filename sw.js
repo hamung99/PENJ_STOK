@@ -1,6 +1,6 @@
 /* Service worker — Rekap Penjualan (PWA)
    Naikkan CACHE_VERSION setiap kali file aplikasi diubah agar cache lama dibuang. */
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const APP_CACHE = 'rekap-app-' + CACHE_VERSION;
 const CDN_CACHE = 'rekap-cdn-' + CACHE_VERSION;
 
