@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "Rekap Penjualan & Uang Masuk",
-  "short_name": "Rekap Penjualan",
-  "description": "Rekap penjualan dan uang masuk gabungan, bisa dipakai offline.",
+  "name": "Penjualan & Stok",
+  "short_name": "Penjualan & Stok",
+  "description": "Rekap penjualan dan stok, bisa dipakai offline.",
   "lang": "id",
   "start_url": "./",
   "scope": "./",
