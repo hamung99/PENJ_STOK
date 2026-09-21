@@ -31,7 +31,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .toolbar-left{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .month-quick{display:flex;align-items:center;gap:6px;margin-left:0}
 .quick-search-wrap{display:flex;align-items:center}
-.quick-search-wrap input{width:240px;max-width:56vw;padding:6px 10px;border:1px solid #cbd5e1;border-radius:7px;font-size:12px;background:#fff;color:#172033}
+.quick-search-wrap input{width:300px;max-width:56vw;padding:6px 10px;border:1px solid #cbd5e1;border-radius:7px;font-size:12px;background:#fff;color:#172033}
 .quick-search-wrap input:focus{outline:none;border-color:#1f4e78;box-shadow:0 0 0 2px rgba(31,78,120,.15)}
 .s7-date-quick{display:flex;align-items:center;gap:6px}
 .faktur-mode-toggle{display:none;align-items:center;gap:4px;margin-left:4px}
@@ -78,7 +78,7 @@ body.dark tr.low-margin:hover td{background:#991b1b}
 #page-penjualan .month-quick{gap:5px}
 #page-penjualan .month-quick label{font-size:10px}
 #page-penjualan .month-quick select{min-width:138px;padding:5px 10px;border-radius:6px;font-size:11px}
-#page-penjualan .quick-search-wrap input{padding:5px 10px;border-radius:6px;font-size:11px;width:200px}
+#page-penjualan .quick-search-wrap input{padding:5px 10px;border-radius:6px;font-size:11px;width:260px}
 #page-penjualan .month-quick .filter-btn{width:28px;height:28px;font-size:14px;border-radius:6px}
 #page-penjualan .col-picker-btn{padding:5px 10px;font-size:11px;border-radius:6px}
 #page-penjualan #toolbarSaveExcel{padding:5px 10px!important;border-radius:6px!important;font-size:11px!important}
@@ -570,7 +570,7 @@ body.dark .backup-action.warn{background:#422006;color:#fdba74;border-color:#924
     <div class="toolbar-row">
       <div class="toolbar-left">
       <div class="quick-search-wrap">
-        <input type="search" id="quickSearch" placeholder="🔍 Cari produk..." oninput="onQuickSearchInput()">
+        <input type="search" id="quickSearch" placeholder="🔍 Cari produk / customer / no faktur..." title="Cari berdasarkan nama produk, customer, kode customer, atau nomor faktur" oninput="onQuickSearchInput()">
       </div>
       <div class="month-quick">
         <label for="filterMonth">Bulan</label>
@@ -1039,8 +1039,16 @@ body.dark .backup-action.warn{background:#422006;color:#fdba74;border-color:#924
   }
   function matchQuickSearch(r, qLower){
     if (!qLower) return true;
-    const produk = String(r.produk ?? r.Produk ?? '').toLowerCase();
-    return produk.includes(qLower);
+    const hay = [
+      r.produk ?? r.Produk,
+      r.customer ?? r.Customer,
+      r.kdCustomer ?? r['Kd Customer'],
+      r.faktur ?? r['No. Faktur']
+    ].map(v => String(v ?? '').toLowerCase()).join(' | ');
+    // beberapa kata dipisah spasi: semua kata harus ada (di produk / customer / faktur)
+    const tokens = qLower.split(/\s+/).filter(Boolean);
+    for (let i = 0; i < tokens.length; i++) if (!hay.includes(tokens[i])) return false;
+    return true;
   }
   let viewCache = {};
   let buildCache = new Map();
