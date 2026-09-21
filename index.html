@@ -287,6 +287,32 @@ body.dark #cekRingkasanTable tfoot td,body.dark #cekRupaTable tfoot td{backgroun
 #page-cek .cek-subtab.active{background:#1f4e78;border-color:#1f4e78;color:#fff}
 #page-cek .cek-panel{display:none}
 #page-cek .cek-panel.active{display:block}
+#cekPanelCust .cs-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:2px 0 12px}
+#cekPanelCust .cs-kpi{background:#fff;border:1px solid #d6dde6;border-left:3px solid #1f4e78;border-radius:10px;padding:8px 12px;min-width:0;box-shadow:0 1px 4px rgba(31,78,120,.06)}
+#cekPanelCust .cs-kpi small{display:block;font-size:10px;color:#64748b;font-weight:600;letter-spacing:.03em}
+#cekPanelCust .cs-kpi b{display:block;font-size:17px;margin-top:2px;color:#0f172a;font-weight:800;line-height:1.25}
+#cekPanelCust .cs-kpi select{width:100%;min-width:0;border:0;background:transparent;font-size:17px;font-weight:800;color:#0f172a;padding:0;margin-top:2px;cursor:pointer;outline:none;font-family:inherit}
+#cekPanelCust .cs-kpi.cs-total{border-left-color:#d08a2e;background:linear-gradient(145deg,#fff 0%,#fff6e8 100%)}
+#cekCustTable{min-width:900px}
+#cekCustTable thead th{height:34px;box-sizing:border-box;padding:0 8px;text-align:center;font-size:11px;letter-spacing:.03em;z-index:4}
+#cekCustTable thead tr:first-child th[rowspan]{z-index:5}
+#cekCustTable thead tr:nth-child(2) th{top:34px;background:#3d6fa0;z-index:3}
+#cekCustTable tbody tr:nth-child(even){background:#eef2f7}
+#cekCustTable tbody tr:hover{background:#dde8f5}
+#cekCustTable td.c{text-align:center}
+#cekCustTable td.tot{text-align:center;font-weight:800;color:#1f4e78}
+#cekCustTable td.tgl{text-align:center;white-space:normal;min-width:170px}
+#cekCustTable tfoot td{background:#eef2fb;font-weight:800;text-align:center}
+#cekCustTable tfoot td.lbl{text-align:right}
+body.dark #cekPanelCust .cs-kpi{background:#1e293b;border-color:#334155;border-left-color:#5b9bd5}
+body.dark #cekPanelCust .cs-kpi small{color:#94a3b8}
+body.dark #cekPanelCust .cs-kpi b,body.dark #cekPanelCust .cs-kpi select{color:#f1f5f9}
+body.dark #cekPanelCust .cs-kpi.cs-total{border-left-color:#d08a2e;background:linear-gradient(145deg,#1e293b 0%,#2a2418 100%)}
+body.dark #cekCustTable thead tr:nth-child(2) th{background:#2d4a6f;color:#e2e8f0}
+body.dark #cekCustTable tbody tr:nth-child(even){background:#1a2536}
+body.dark #cekCustTable tbody tr:hover{background:#243447}
+body.dark #cekCustTable td.tot{color:#93c5fd}
+body.dark #cekCustTable tfoot td{background:#1e3a5f;color:#f1f5f9}
 #page-gudang .gudang-subtabs{display:flex;gap:6px;margin:0 0 12px;flex-wrap:wrap;align-items:center;padding:0;background:transparent;border:0;box-shadow:none;border-radius:0}
 #page-gudang .gudang-subtab{padding:6px 14px;border:1px solid #cbd5e1;background:#e2e8f0;border-radius:7px;font-size:12px;cursor:pointer;color:#334155;font-weight:700;transition:background .15s,color .15s,border-color .15s}
 #page-gudang .gudang-subtab:hover{background:#e2e8f0}
@@ -846,6 +872,7 @@ body.dark .backup-action.warn{background:#422006;color:#fdba74;border-color:#924
   <div class="cek-subtabs" role="tablist">
     <button type="button" class="cek-subtab active" data-cek="fitri" onclick="switchCekSub('fitri',this)">🧴 Fitri</button>
     <button type="button" class="cek-subtab" data-cek="rupa" onclick="switchCekSub('rupa',this)">📦 Rupa Rupa</button>
+    <button type="button" class="cek-subtab" data-cek="cust" onclick="switchCekSub('cust',this)">🏪 Fitri Sales/Customer</button>
   </div>
 
   <div id="cekPanelFitri" class="cek-panel active">
@@ -926,6 +953,38 @@ body.dark .backup-action.warn{background:#422006;color:#fdba74;border-color:#924
             <tr><td style="text-align:center;padding:24px;color:#64748b">Belum ada data.</td></tr>
           </tbody>
           <tfoot id="cekRupaTfoot"></tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="cekPanelCust" class="cek-panel">
+    <div class="card">
+      <div class="cek-card-head">
+        <div class="cek-card-title">🏪 FITRI — SALES / CUSTOMER</div>
+        <div class="cek-card-actions">
+          <label for="cekCustMonth">Bulan</label>
+          <select id="cekCustMonth" onchange="renderCekCust()">
+            <option value="">Semua bulan</option>
+          </select>
+          <input type="search" id="cekCustSearch" class="cek-search" placeholder="Cari toko / alamat..." oninput="renderCekCustView()">
+          <button type="button" class="cek-refresh-btn" onclick="renderCekCust()" title="Segarkan">↻</button>
+          <button type="button" onclick="downloadCekCust()">⬇ Download</button>
+        </div>
+      </div>
+      <div class="cs-kpis" id="cekCustKpis">
+        <div class="cs-kpi"><small>nama sales</small>
+          <select id="cekCustSales" onchange="renderCekCustView()"><option value="">Semua Sales</option></select>
+        </div>
+        <div id="cekCustKpiDyn" style="display:contents"></div>
+      </div>
+      <div class="tablebox" id="cekCustBox">
+        <table id="cekCustTable">
+          <thead id="cekCustThead"></thead>
+          <tbody id="cekCustTbody">
+            <tr><td style="text-align:center;padding:24px;color:#64748b">Belum ada data.</td></tr>
+          </tbody>
+          <tfoot id="cekCustTfoot"></tfoot>
         </table>
       </div>
     </div>
@@ -1883,9 +1942,7 @@ self.onmessage = function(e){
     if (rn) rn.textContent = rp(R.rupaSales || 0);
     const cekPage = document.getElementById('page-cek');
     if (cekPage && cekPage.style.display !== 'none') {
-      const activeSub = document.querySelector('#page-cek .cek-subtab.active');
-      const which = (activeSub && activeSub.dataset && activeSub.dataset.cek) || 'fitri';
-      if (which === 'rupa') renderCekRupa(); else renderCekFitri();
+      renderCekActive();
     }
   }
   function tbl(head, data, total){
@@ -2831,10 +2888,148 @@ self.onmessage = function(e){
     if (btn) btn.classList.add('active');
     const pf = document.getElementById('cekPanelFitri');
     const pr = document.getElementById('cekPanelRupa');
+    const pc = document.getElementById('cekPanelCust');
     if (pf) pf.classList.toggle('active', which === 'fitri');
     if (pr) pr.classList.toggle('active', which === 'rupa');
-    if (which === 'fitri') renderCekFitri();
-    else renderCekRupa();
+    if (pc) pc.classList.toggle('active', which === 'cust');
+    renderCekActive(which);
+  }
+  function renderCekActive(which){
+    if (!which) { const a = document.querySelector('#page-cek .cek-subtab.active'); which = (a && a.dataset && a.dataset.cek) || 'fitri'; }
+    if (which === 'rupa') return renderCekRupa();
+    if (which === 'cust') return renderCekCust();
+    return renderCekFitri();
+  }
+
+  // ===== Cek > Fitri Sales/Customer =====
+  let _cekCustSrc = [];
+  let _cekCustLast = null;
+  let _cekCustMonthInit = false;
+  async function populateCekCustMonths(){
+    const sel = document.getElementById('cekCustMonth'); if (!sel) return;
+    const arr = await collectCekMonths('fitri');
+    const current = sel.value;
+    sel.innerHTML = '<option value="">Semua bulan</option>' + arr.map(m => '<option value="' + m + '">' + monthLabel(m) + '</option>').join('');
+    if (arr.includes(current)) sel.value = current;
+    else if (current === '' && _cekCustMonthInit) sel.value = '';
+    else if (arr.length) sel.value = pickLatestMonth(arr);
+    else sel.value = '';
+    _cekCustMonthInit = true;
+  }
+  function fitriSizeInfo(name){
+    const s = String(name ?? '').toUpperCase();
+    let m = s.match(/(\d+(?:[.,]\d+)?)\s*(ML|LT|L)\b/);
+    let ml = null;
+    if (m) { const n = parseFloat(m[1].replace(',', '.')); ml = m[2] === 'ML' ? n : n * 1000; }
+    else { const m2 = s.match(/(\d+)/); if (m2) ml = parseInt(m2[1], 10); }
+    if (ml == null || !isFinite(ml)) return { key: 'X|' + productMatchKey(name), label: String(name ?? '').trim() || '-', ml: Infinity };
+    ml = Math.round(ml);
+    return { key: 'ML' + ml, label: 'FITRI ' + ml + 'ML', ml };
+  }
+  async function renderCekCust(){
+    await populateCekCustMonths();
+    const month = document.getElementById('cekCustMonth')?.value || '';
+    _cekCustSrc = await getCekSourceRows(month, { mode: 'fitri' });
+    const sel = document.getElementById('cekCustSales');
+    if (sel) {
+      const set = new Set();
+      _cekCustSrc.forEach(x => { const sl = normSales(x.sales ?? x.Sales); if (sl) set.add(sl); });
+      const list = [...set].sort((a, b) => { const ia = SO.indexOf(a), ib = SO.indexOf(b); return ((ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib)) || a.localeCompare(b, 'id'); });
+      const cur = sel.value;
+      sel.innerHTML = '<option value="">Semua Sales</option>' + list.map(v => '<option value="' + escHtml(v) + '">' + escHtml(v) + '</option>').join('');
+      sel.value = list.includes(cur) ? cur : '';
+    }
+    renderCekCustView();
+  }
+  function cekCustBuild(){
+    const month = document.getElementById('cekCustMonth')?.value || '';
+    const salesSel = document.getElementById('cekCustSales')?.value || '';
+    const q = U(document.getElementById('cekCustSearch')?.value || '');
+    const sizeMap = new Map();
+    _cekCustSrc.forEach(x => { const sz = fitriSizeInfo(x.produk ?? x.Produk); if (!sizeMap.has(sz.key)) sizeMap.set(sz.key, sz); });
+    const sizes = [...sizeMap.values()].sort((a, b) => (a.ml === b.ml ? a.label.localeCompare(b.label, 'id') : (a.ml < b.ml ? -1 : 1)));
+    const groups = new Map();
+    for (let i = 0; i < _cekCustSrc.length; i++) {
+      const x = _cekCustSrc[i];
+      const sl = normSales(x.sales ?? x.Sales); if (!sl) continue;
+      if (salesSel && sl !== salesSel) continue;
+      const sz = fitriSizeInfo(x.produk ?? x.Produk);
+      const cust = String(x.customer ?? x.Customer ?? '').trim();
+      const kd = String(x.kdCustomer ?? x['Kd Customer'] ?? '').trim();
+      const alamat = String(x.alamat ?? x.Alamat ?? '').trim();
+      const gk = kd ? 'K|' + U(kd) : 'N|' + U(cust) + '|' + U(alamat);
+      let g = groups.get(gk);
+      if (!g) { g = { customer: cust, alamat: '', sales: new Set(), qty: {}, total: 0, dates: new Set() }; groups.set(gk, g); }
+      if (!g.customer && cust) g.customer = cust;
+      if (!g.alamat && alamat) g.alamat = alamat;
+      g.sales.add(sl);
+      const j = N(x.jumlah ?? x.Jumlah);
+      g.qty[sz.key] = (g.qty[sz.key] || 0) + j;
+      g.total += j;
+      const dk = cekDateKey(x.tanggal ?? x.Tanggal); if (dk) g.dates.add(dk);
+    }
+    const dl = (k) => { const p = k.split('-'); return p[2] + '/' + p[1] + (month ? '' : '/' + p[0].slice(2)); };
+    let list = [...groups.values()].map(g => {
+      g.customer = g.customer || '(Tanpa Customer)';
+      g.salesLabel = [...g.sales].sort((a, b) => a.localeCompare(b, 'id')).join(' & ');
+      g.tglText = [...g.dates].sort().map(dl).join(' & ');
+      return g;
+    });
+    if (q) list = list.filter(g => U(g.customer).includes(q) || U(g.alamat).includes(q) || g.salesLabel.includes(q));
+    list.sort((a, b) => a.salesLabel.localeCompare(b.salesLabel, 'id') || a.customer.localeCompare(b.customer, 'id'));
+    const sizeTot = {}; let grand = 0;
+    list.forEach(g => { sizes.forEach(z => { sizeTot[z.key] = (sizeTot[z.key] || 0) + (g.qty[z.key] || 0); }); grand += g.total; });
+    const now = new Date(); const curMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    const tglHead = !month ? 'TGL ORDER' : (month === curMonth ? 'TGL ORDER BULAN INI' : 'TGL ORDER ' + monthLabel(month).toUpperCase());
+    return { list, sizes, sizeTot, grand, tglHead, month, salesSel };
+  }
+  function renderCekCustView(){
+    const d = cekCustBuild();
+    _cekCustLast = d;
+    const { list, sizes, sizeTot, grand, tglHead } = d;
+    const nfx = v => v ? nfQty(v) : '-';
+    // KPI
+    const kd = document.getElementById('cekCustKpiDyn');
+    if (kd) {
+      kd.innerHTML = '<div class="cs-kpi"><small>jumlah Toko/Customer</small><b>' + list.length.toLocaleString('id-ID') + '</b></div>' +
+        sizes.map(z => '<div class="cs-kpi"><small>' + escHtml(z.label.replace(/^FITRI/, 'Fitri')) + '</small><b>' + nfQty(sizeTot[z.key] || 0) + '</b></div>').join('') +
+        '<div class="cs-kpi cs-total"><small>Total</small><b>' + nfQty(grand) + '</b></div>';
+    }
+    // Header
+    const thead = document.getElementById('cekCustThead');
+    const tbody = document.getElementById('cekCustTbody');
+    const tfoot = document.getElementById('cekCustTfoot');
+    if (sizes.length) {
+      thead.innerHTML = '<tr><th rowspan="2">NO</th><th rowspan="2">SALES</th><th rowspan="2">TOKO/CUSTOMER</th><th rowspan="2">ALAMAT</th><th colspan="' + sizes.length + '">TOTAL QTY/ ITEM</th><th rowspan="2">TOTAL</th><th rowspan="2">' + escHtml(tglHead) + '</th></tr><tr>' + sizes.map(z => '<th>' + escHtml(z.label) + '</th>').join('') + '</tr>';
+    } else {
+      thead.innerHTML = '<tr><th>NO</th><th>SALES</th><th>TOKO/CUSTOMER</th><th>ALAMAT</th><th>TOTAL</th><th>' + escHtml(tglHead) + '</th></tr>';
+    }
+    const ncol = 6 + sizes.length;
+    if (!list.length) {
+      tbody.innerHTML = '<tr><td colspan="' + ncol + '" style="text-align:center;padding:28px;color:#64748b">' + (_cekCustSrc.length ? 'Tidak ada customer yang cocok dengan filter.' : 'Belum ada data penjualan FITRI.') + '</td></tr>';
+      tfoot.innerHTML = '';
+      return;
+    }
+    let b = '';
+    list.forEach((g, i) => {
+      b += '<tr><td class="c">' + (i + 1) + '</td><td>' + escHtml(g.salesLabel) + '</td><td>' + escHtml(g.customer) + '</td><td>' + escHtml(g.alamat) + '</td>' +
+        sizes.map(z => '<td class="c">' + nfx(g.qty[z.key]) + '</td>').join('') +
+        '<td class="tot">' + nfQty(g.total) + '</td><td class="tgl">' + escHtml(g.tglText) + '</td></tr>';
+    });
+    tbody.innerHTML = b;
+    tfoot.innerHTML = '<tr><td colspan="4" class="lbl">TOTAL</td>' + sizes.map(z => '<td>' + nfx(sizeTot[z.key]) + '</td>').join('') + '<td>' + nfQty(grand) + '</td><td></td></tr>';
+  }
+  function downloadCekCust(){
+    if (!_cekCustLast || !_cekCustLast.list.length) return alert('Belum ada data untuk diunduh.');
+    const { list, sizes, sizeTot, grand, tglHead, month, salesSel } = _cekCustLast;
+    const head = ['NO', 'SALES', 'TOKO/CUSTOMER', 'ALAMAT', ...sizes.map(z => z.label), 'TOTAL', tglHead];
+    const rows = list.map((g, i) => [i + 1, g.salesLabel, g.customer, g.alamat, ...sizes.map(z => g.qty[z.key] || 0), g.total, g.tglText]);
+    const foot = ['', '', 'TOTAL', '', ...sizes.map(z => sizeTot[z.key] || 0), grand, ''];
+    const ws = XLSX.utils.aoa_to_sheet([head, ...rows, foot]);
+    ws['!cols'] = [{ wch: 5 }, { wch: 16 }, { wch: 28 }, { wch: 22 }, ...sizes.map(() => ({ wch: 13 })), { wch: 8 }, { wch: 34 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Fitri Sales-Customer');
+    XLSX.writeFile(wb, 'Fitri_Sales_Customer' + (month ? '_' + month : '') + (salesSel ? '_' + salesSel : '') + '.xlsx');
   }
   let _cekRupaMonthInit = false;
   async function populateCekRupaMonths(){
@@ -2975,9 +3170,7 @@ self.onmessage = function(e){
       if (gd) gd.style.display = (tab === 'gudang') ? 'block' : 'none';
       if (ck) ck.style.display = (tab === 'cek') ? 'block' : 'none';
       if (tab === 'cek') {
-        const active = document.querySelector('#page-cek .cek-subtab.active');
-        const which = active?.dataset?.cek || 'fitri';
-        if (which === 'rupa') renderCekRupa(); else renderCekFitri();
+        renderCekActive();
       }
     });
   }
