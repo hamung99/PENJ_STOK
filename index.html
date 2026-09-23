@@ -447,13 +447,22 @@ body.dark .backup-action.green{background:#14532d;color:#86efac;border-color:#16
 body.dark .backup-action.warn{background:#422006;color:#fdba74;border-color:#92400e}
 
 /* ===== Tab Sales/Customer (halaman baru) ===== */
-#page-salescust{padding-top:8px}
-#page-salescust .cs-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:2px 0 12px}
-#page-salescust .cs-kpi{background:#fff;border:1px solid #d6dde6;border-left:3px solid #1f4e78;border-radius:10px;padding:8px 12px;min-width:0;box-shadow:0 1px 4px rgba(31,78,120,.06)}
+#page-salescust{padding-top:4px}
+#page-salescust > .card{margin:6px 0;padding:10px 12px}
+#page-salescust .cs-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:0 0 8px}
+#page-salescust .cs-kpi{background:#fff;border:1px solid #d6dde6;border-left:3px solid #1f4e78;border-radius:10px;padding:6px 10px;min-width:0;box-shadow:0 1px 4px rgba(31,78,120,.06)}
 #page-salescust .cs-kpi small{display:block;font-size:10px;color:#64748b;font-weight:600;letter-spacing:.03em}
-#page-salescust .cs-kpi b{display:block;font-size:17px;margin-top:2px;color:#0f172a;font-weight:800;line-height:1.25}
+#page-salescust .cs-kpi b{display:block;font-size:16px;margin-top:2px;color:#0f172a;font-weight:800;line-height:1.2}
 #page-salescust .cs-kpi.cs-total{border-left-color:#d08a2e;background:linear-gradient(145deg,#fff 0%,#fff6e8 100%)}
+#page-salescust .cek-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+#page-salescust .cek-card-title{font-size:12px;font-weight:700;color:#1f4e78;white-space:nowrap;letter-spacing:.02em}
+#page-salescust .cek-card-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+#page-salescust .cek-card-actions label{font-size:11px;font-weight:700;color:#475569}
+#page-salescust .cek-card-actions select{width:auto;min-width:140px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:11px;background:#fff;color:#172033}
+#page-salescust .cek-card-actions > button{padding:4px 10px;font-size:11px;font-weight:700;border-radius:6px;line-height:1.3}
+#page-salescust .cek-refresh-btn{padding:4px 8px;font-size:12px;min-width:30px}
 #scsCustMin{width:78px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12px;background:#fff;color:#172033;box-sizing:border-box}
+#scsCustSearch{width:180px;max-width:40vw;padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:11px;background:#fff;color:#172033}
 #scsCustTable{min-width:900px}
 #scsCustTable thead th{height:34px;box-sizing:border-box;padding:0 8px;text-align:center;font-size:11px;letter-spacing:.03em;z-index:4}
 #scsCustTable thead tr:first-child th[rowspan]{z-index:5}
@@ -469,6 +478,8 @@ body.dark #page-salescust .cs-kpi{background:#1e293b;border-color:#334155;border
 body.dark #page-salescust .cs-kpi small{color:#94a3b8}
 body.dark #page-salescust .cs-kpi b,body.dark #page-salescust .cs-kpi select{color:#f1f5f9}
 body.dark #page-salescust .cs-kpi.cs-total{border-left-color:#d08a2e;background:linear-gradient(145deg,#1e293b 0%,#2a2418 100%)}
+body.dark #page-salescust .cek-card-title{color:#93c5fd}
+body.dark #page-salescust .cek-card-actions label{color:#94a3b8}
 body.dark #scsCustTable thead tr:nth-child(2) th{background:#2d4a6f;color:#e2e8f0}
 body.dark #scsCustTable tbody tr:nth-child(even){background:#1a2536}
 body.dark #scsCustTable tbody tr:hover{background:#243447}
@@ -695,6 +706,10 @@ body.dark #scsCustTable tfoot td{background:#1e3a5f;color:#f1f5f9}
 <!-- ===== PAGE SALES/CUSTOMER (TAB BARU) ===== -->
 <div id="page-salescust" style="display:none">
   <div class="card">
+    <div class="cs-kpis" id="scsCustKpis">
+      <div class="cs-kpi"><small>nama sales</small><b id="scsCustKpiSales">Semua Sales</b></div>
+      <div id="scsCustKpiDyn" style="display:contents"></div>
+    </div>
     <div class="cek-card-head">
       <div class="cek-card-title">🏪 FITRI — SALES / CUSTOMER</div>
       <div class="cek-card-actions">
@@ -712,10 +727,6 @@ body.dark #scsCustTable tfoot td{background:#1e3a5f;color:#f1f5f9}
         <button type="button" class="cek-refresh-btn" onclick="renderScsCust()" title="Segarkan">↻</button>
         <button type="button" onclick="downloadScsCust()">⬇ Download</button>
       </div>
-    </div>
-    <div class="cs-kpis" id="scsCustKpis">
-      <div class="cs-kpi"><small>nama sales</small><b id="scsCustKpiSales">Semua Sales</b></div>
-      <div id="scsCustKpiDyn" style="display:contents"></div>
     </div>
     <div class="tablebox" id="scsCustBox">
       <table id="scsCustTable">
