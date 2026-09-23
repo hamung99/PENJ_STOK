@@ -1,7 +1,7 @@
 {
   "id": "./",
-  "name": "Penjualan & Stok",
-  "short_name": "Penjualan & Stok",
+  "name": "ANALISA DATA",
+  "short_name": "ANALISA DATA",
   "description": "Rekap penjualan dan stok, bisa dipakai offline.",
   "lang": "id",
   "start_url": "./",
