@@ -318,8 +318,6 @@ body.dark #cekCustTable tfoot td{background:#1e3a5f;color:#f1f5f9}
 #page-gudang .gudang-subtab{padding:6px 14px;border:1px solid #cbd5e1;background:#e2e8f0;border-radius:7px;font-size:12px;cursor:pointer;color:#334155;font-weight:700;transition:background .15s,color .15s,border-color .15s}
 #page-gudang .gudang-subtab:hover{background:#e2e8f0}
 #page-gudang .gudang-subtab.active{background:#1f4e78;border-color:#1f4e78;color:#fff}
-/* Analisa: sub-tab & kontrol Bulan/Download dibuat lebih tipis */
-/* Dropdown pada tab Analisa */
 #page-gudang .gudang-dd{position:relative;display:inline-block}
 #page-gudang .gudang-dd-caret{font-size:10px;opacity:.85}
 #page-gudang #analisaDDLabel{font-weight:600;opacity:.9}
@@ -447,6 +445,35 @@ body.dark .backup-action:hover{background:#1e3a5f}
 body.dark .backup-action.primary{background:#3b82f6;color:#fff;border-color:#3b82f6}
 body.dark .backup-action.green{background:#14532d;color:#86efac;border-color:#166534}
 body.dark .backup-action.warn{background:#422006;color:#fdba74;border-color:#92400e}
+
+/* ===== Tab Sales/Customer (halaman baru) ===== */
+#page-salescust{padding-top:8px}
+#page-salescust .cs-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:2px 0 12px}
+#page-salescust .cs-kpi{background:#fff;border:1px solid #d6dde6;border-left:3px solid #1f4e78;border-radius:10px;padding:8px 12px;min-width:0;box-shadow:0 1px 4px rgba(31,78,120,.06)}
+#page-salescust .cs-kpi small{display:block;font-size:10px;color:#64748b;font-weight:600;letter-spacing:.03em}
+#page-salescust .cs-kpi b{display:block;font-size:17px;margin-top:2px;color:#0f172a;font-weight:800;line-height:1.25}
+#page-salescust .cs-kpi.cs-total{border-left-color:#d08a2e;background:linear-gradient(145deg,#fff 0%,#fff6e8 100%)}
+#scsCustMin{width:78px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12px;background:#fff;color:#172033;box-sizing:border-box}
+#scsCustTable{min-width:900px}
+#scsCustTable thead th{height:34px;box-sizing:border-box;padding:0 8px;text-align:center;font-size:11px;letter-spacing:.03em;z-index:4}
+#scsCustTable thead tr:first-child th[rowspan]{z-index:5}
+#scsCustTable thead tr:nth-child(2) th{top:34px;background:#3d6fa0;z-index:3}
+#scsCustTable tbody tr:nth-child(even){background:#eef2f7}
+#scsCustTable tbody tr:hover{background:#dde8f5}
+#scsCustTable td.c{text-align:center}
+#scsCustTable td.tot{text-align:center;font-weight:800;color:#1f4e78}
+#scsCustTable td.tgl{text-align:center;white-space:normal;min-width:170px}
+#scsCustTable tfoot td{background:#eef2fb;font-weight:800;text-align:center}
+#scsCustTable tfoot td.lbl{text-align:right}
+body.dark #page-salescust .cs-kpi{background:#1e293b;border-color:#334155;border-left-color:#5b9bd5}
+body.dark #page-salescust .cs-kpi small{color:#94a3b8}
+body.dark #page-salescust .cs-kpi b,body.dark #page-salescust .cs-kpi select{color:#f1f5f9}
+body.dark #page-salescust .cs-kpi.cs-total{border-left-color:#d08a2e;background:linear-gradient(145deg,#1e293b 0%,#2a2418 100%)}
+body.dark #scsCustTable thead tr:nth-child(2) th{background:#2d4a6f;color:#e2e8f0}
+body.dark #scsCustTable tbody tr:nth-child(even){background:#1a2536}
+body.dark #scsCustTable tbody tr:hover{background:#243447}
+body.dark #scsCustTable td.tot{color:#93c5fd}
+body.dark #scsCustTable tfoot td{background:#1e3a5f;color:#f1f5f9}
 </style>
 </head>
 <body>
@@ -457,6 +484,7 @@ body.dark .backup-action.warn{background:#422006;color:#fdba74;border-color:#924
     <div style="display:flex;align-items:center;gap:10px">
     <nav class="main-tabs" role="tablist" id="mainTabs">
       <button type="button" class="main-tab active" data-tab="penjualan">Penjualan</button>
+      <button type="button" class="main-tab" data-tab="salescust">Sales/Customer</button>
       <button type="button" class="main-tab" data-tab="gudang">Data Gudang</button>
       <button type="button" class="main-tab" data-tab="cek">Cek</button>
     </nav>
@@ -660,6 +688,43 @@ body.dark .backup-action.warn{background:#422006;color:#fdba74;border-color:#924
       <div id="panel_s5" class="view" style="display:none"></div>
       <div id="panel_s9" class="view" style="display:none"></div>
       <div id="panel_s10" class="view" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PAGE SALES/CUSTOMER (TAB BARU) ===== -->
+<div id="page-salescust" style="display:none">
+  <div class="card">
+    <div class="cek-card-head">
+      <div class="cek-card-title">🏪 FITRI — SALES / CUSTOMER</div>
+      <div class="cek-card-actions">
+        <label for="scsCustMonth">Bulan</label>
+        <select id="scsCustMonth" onchange="renderScsCust()">
+          <option value="">Semua bulan</option>
+        </select>
+        <label for="scsCustSales">Sales</label>
+        <select id="scsCustSales" onchange="renderScsCustView()">
+          <option value="">Semua Sales</option>
+        </select>
+        <label for="scsCustMin" title="Tampilkan toko dengan total qty Fitri sama dengan atau lebih dari angka ini">Ambang ≥</label>
+        <input type="number" id="scsCustMin" min="0" step="10" placeholder="0" oninput="renderScsCustView()" title="Kosong / 0 = tampilkan semua">
+        <input type="search" id="scsCustSearch" class="cek-search" placeholder="Cari toko / alamat..." oninput="renderScsCustView()">
+        <button type="button" class="cek-refresh-btn" onclick="renderScsCust()" title="Segarkan">↻</button>
+        <button type="button" onclick="downloadScsCust()">⬇ Download</button>
+      </div>
+    </div>
+    <div class="cs-kpis" id="scsCustKpis">
+      <div class="cs-kpi"><small>nama sales</small><b id="scsCustKpiSales">Semua Sales</b></div>
+      <div id="scsCustKpiDyn" style="display:contents"></div>
+    </div>
+    <div class="tablebox" id="scsCustBox">
+      <table id="scsCustTable">
+        <thead id="scsCustThead"></thead>
+        <tbody id="scsCustTbody">
+          <tr><td style="text-align:center;padding:24px;color:#64748b">Belum ada data.</td></tr>
+        </tbody>
+        <tfoot id="scsCustTfoot"></tfoot>
+      </table>
     </div>
   </div>
 </div>
@@ -1045,7 +1110,6 @@ body.dark .backup-action.warn{background:#422006;color:#fdba74;border-color:#924
       r.kdCustomer ?? r['Kd Customer'],
       r.faktur ?? r['No. Faktur']
     ].map(v => String(v ?? '').toLowerCase()).join(' | ');
-    // beberapa kata dipisah spasi: semua kata harus ada (di produk / customer / faktur)
     const tokens = qLower.split(/\s+/).filter(Boolean);
     for (let i = 0; i < tokens.length; i++) if (!hay.includes(tokens[i])) return false;
     return true;
@@ -2172,7 +2236,7 @@ self.onmessage = function(e){
     const x = getUiRow(i); if (!x) return;
     const qty = N(x.Jumlah), hjual = N(x['Harga Jual']), hbeli = N(x['Harga Beli']), disc = N(x.Discount), total = N(x.Total);
     const hpp = qty * hbeli, profit = total - hpp, margin = total !== 0 ? (profit / total) * 100 : 0;
-    const hjualNet = qty ? (total / qty) : 0;  // ⬅️ BARU: harga jual satuan setelah discount
+    const hjualNet = qty ? (total / qty) : 0;
     const totalMin = hpp / (1 - MARGIN_MIN / 100);
     const hjualMinSatuan = qty ? totalMin / qty : 0;
     const kurangProfit = totalMin - total;
@@ -2184,14 +2248,14 @@ self.onmessage = function(e){
       ['Harga Beli (satuan)', rp(hbeli)],
       ['Harga Jual (satuan)', rp(hjual)],
       ['Discount', rp(disc)],
-      ['Harga Jual (satuan) setelah Discount', rp(hjualNet), true],   // ⬅️ BARU (flag true = merah)
+      ['Harga Jual (satuan) setelah Discount', rp(hjualNet), true],
       ['Total Jual', rp(total)],
       ['HPP (Beli x Qty)', rp(hpp)],
       ['Profit Aktual', rp(profit)],
       ['Margin Aktual', margin.toFixed(2) + ' %']
     ];
     const rowsHtml = rows.map(r => {
-      const isRed = r[2] === true;                                        // ⬅️ BARU: cek flag merah
+      const isRed = r[2] === true;
       const labelColor = isRed ? '#b91c1c' : '#64748b';
       const valueColor = isRed ? '#b91c1c' : '#172033';
       const weight = isRed ? '800' : '700';
@@ -3027,14 +3091,12 @@ self.onmessage = function(e){
     const nfx = v => v ? nfQty(v) : '-';
     const ks = document.getElementById('cekCustKpiSales');
     if (ks) ks.textContent = d.salesSel || 'Semua Sales';
-    // KPI
     const kd = document.getElementById('cekCustKpiDyn');
     if (kd) {
       kd.innerHTML = '<div class="cs-kpi"><small>jumlah Toko/Customer</small><b>' + list.length.toLocaleString('id-ID') + '</b></div>' +
         sizes.map(z => '<div class="cs-kpi"><small>' + escHtml(z.label.replace(/^FITRI/, 'Fitri')) + '</small><b>' + nfQty(sizeTot[z.key] || 0) + '</b></div>').join('') +
         '<div class="cs-kpi cs-total"><small>Total</small><b>' + nfQty(grand) + '</b></div>';
     }
-    // Header
     const thead = document.getElementById('cekCustThead');
     const tbody = document.getElementById('cekCustTbody');
     const tfoot = document.getElementById('cekCustTfoot');
@@ -3070,6 +3132,136 @@ self.onmessage = function(e){
     XLSX.utils.book_append_sheet(wb, ws, 'Fitri Sales-Customer');
     XLSX.writeFile(wb, 'Fitri_Sales_Customer' + (month ? '_' + month : '') + (salesSel ? '_' + salesSel : '') + (minQty > 0 ? '_min' + minQty : '') + '.xlsx');
   }
+
+  // ===== Tab Sales/Customer (duplikat independen dari Cek > Fitri Sales/Customer) =====
+  let _scsCustSrc = [];
+  let _scsCustLast = null;
+  let _scsCustMonthInit = false;
+
+  async function populateScsCustMonths(){
+    const sel = document.getElementById('scsCustMonth'); if (!sel) return;
+    const arr = await collectCekMonths('fitri');
+    const current = sel.value;
+    sel.innerHTML = '<option value="">Semua bulan</option>' + arr.map(m => '<option value="' + m + '">' + monthLabel(m) + '</option>').join('');
+    if (arr.includes(current)) sel.value = current;
+    else if (current === '' && _scsCustMonthInit) sel.value = '';
+    else if (arr.length) sel.value = pickLatestMonth(arr);
+    else sel.value = '';
+    _scsCustMonthInit = true;
+  }
+
+  async function renderScsCust(){
+    await populateScsCustMonths();
+    const month = document.getElementById('scsCustMonth')?.value || '';
+    _scsCustSrc = await getCekSourceRows(month, { mode: 'fitri' });
+    const sel = document.getElementById('scsCustSales');
+    if (sel) {
+      const set = new Set();
+      _scsCustSrc.forEach(x => { const sl = normSales(x.sales ?? x.Sales); if (sl) set.add(sl); });
+      const list = [...set].sort((a, b) => { const ia = SO.indexOf(a), ib = SO.indexOf(b); return ((ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib)) || a.localeCompare(b, 'id'); });
+      const cur = sel.value;
+      sel.innerHTML = '<option value="">Semua Sales</option>' + list.map(v => '<option value="' + escHtml(v) + '">' + escHtml(v) + '</option>').join('');
+      sel.value = list.includes(cur) ? cur : '';
+    }
+    renderScsCustView();
+  }
+
+  function scsCustBuild(){
+    const month = document.getElementById('scsCustMonth')?.value || '';
+    const salesSel = document.getElementById('scsCustSales')?.value || '';
+    const q = U(document.getElementById('scsCustSearch')?.value || '');
+    const minRaw = document.getElementById('scsCustMin')?.value;
+    const minQty = (minRaw === '' || minRaw == null) ? 0 : (parseFloat(minRaw) || 0);
+    const sizeMap = new Map();
+    _scsCustSrc.forEach(x => { const sz = fitriSizeInfo(x.produk ?? x.Produk); if (!sizeMap.has(sz.key)) sizeMap.set(sz.key, sz); });
+    const sizes = [...sizeMap.values()].sort((a, b) => (a.ml === b.ml ? a.label.localeCompare(b.label, 'id') : (a.ml < b.ml ? -1 : 1)));
+    const groups = new Map();
+    for (let i = 0; i < _scsCustSrc.length; i++) {
+      const x = _scsCustSrc[i];
+      const sl = normSales(x.sales ?? x.Sales); if (!sl) continue;
+      if (salesSel && sl !== salesSel) continue;
+      const sz = fitriSizeInfo(x.produk ?? x.Produk);
+      const cust = String(x.customer ?? x.Customer ?? '').trim();
+      const kd = String(x.kdCustomer ?? x['Kd Customer'] ?? '').trim();
+      const alamat = String(x.alamat ?? x.Alamat ?? '').trim();
+      const gk = kd ? 'K|' + U(kd) : 'N|' + U(cust) + '|' + U(alamat);
+      let g = groups.get(gk);
+      if (!g) { g = { customer: cust, alamat: '', sales: new Set(), qty: {}, total: 0, dates: new Set() }; groups.set(gk, g); }
+      if (!g.customer && cust) g.customer = cust;
+      if (!g.alamat && alamat) g.alamat = alamat;
+      g.sales.add(sl);
+      const j = N(x.jumlah ?? x.Jumlah);
+      g.qty[sz.key] = (g.qty[sz.key] || 0) + j;
+      g.total += j;
+      const dk = cekDateKey(x.tanggal ?? x.Tanggal); if (dk) g.dates.add(dk);
+    }
+    const dl = (k) => { const p = k.split('-'); return p[2] + '/' + p[1] + (month ? '' : '/' + p[0].slice(2)); };
+    let list = [...groups.values()].map(g => {
+      g.customer = g.customer || '(Tanpa Customer)';
+      g.salesLabel = [...g.sales].sort((a, b) => a.localeCompare(b, 'id')).join(' & ');
+      g.tglText = [...g.dates].sort().map(dl).join(' & ');
+      return g;
+    });
+    if (q) list = list.filter(g => U(g.customer).includes(q) || U(g.alamat).includes(q) || g.salesLabel.includes(q));
+    if (minQty > 0) list = list.filter(g => g.total >= minQty);
+    list.sort((a, b) => a.salesLabel.localeCompare(b.salesLabel, 'id') || a.customer.localeCompare(b.customer, 'id'));
+    const sizeTot = {}; let grand = 0;
+    list.forEach(g => { sizes.forEach(z => { sizeTot[z.key] = (sizeTot[z.key] || 0) + (g.qty[z.key] || 0); }); grand += g.total; });
+    const now = new Date(); const curMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    const tglHead = !month ? 'TGL ORDER' : (month === curMonth ? 'TGL ORDER BULAN INI' : 'TGL ORDER ' + monthLabel(month).toUpperCase());
+    return { list, sizes, sizeTot, grand, tglHead, month, salesSel, minQty };
+  }
+
+  function renderScsCustView(){
+    const d = scsCustBuild();
+    _scsCustLast = d;
+    const { list, sizes, sizeTot, grand, tglHead } = d;
+    const nfx = v => v ? nfQty(v) : '-';
+    const ks = document.getElementById('scsCustKpiSales');
+    if (ks) ks.textContent = d.salesSel || 'Semua Sales';
+    const kd = document.getElementById('scsCustKpiDyn');
+    if (kd) {
+      kd.innerHTML = '<div class="cs-kpi"><small>jumlah Toko/Customer</small><b>' + list.length.toLocaleString('id-ID') + '</b></div>' +
+        sizes.map(z => '<div class="cs-kpi"><small>' + escHtml(z.label.replace(/^FITRI/, 'Fitri')) + '</small><b>' + nfQty(sizeTot[z.key] || 0) + '</b></div>').join('') +
+        '<div class="cs-kpi cs-total"><small>Total</small><b>' + nfQty(grand) + '</b></div>';
+    }
+    const thead = document.getElementById('scsCustThead');
+    const tbody = document.getElementById('scsCustTbody');
+    const tfoot = document.getElementById('scsCustTfoot');
+    if (sizes.length) {
+      thead.innerHTML = '<tr><th rowspan="2">NO</th><th rowspan="2">SALES</th><th rowspan="2">TOKO/CUSTOMER</th><th rowspan="2">ALAMAT</th><th colspan="' + sizes.length + '">TOTAL QTY/ ITEM</th><th rowspan="2">TOTAL</th><th rowspan="2">' + escHtml(tglHead) + '</th></tr><tr>' + sizes.map(z => '<th>' + escHtml(z.label) + '</th>').join('') + '</tr>';
+    } else {
+      thead.innerHTML = '<tr><th>NO</th><th>SALES</th><th>TOKO/CUSTOMER</th><th>ALAMAT</th><th>TOTAL</th><th>' + escHtml(tglHead) + '</th></tr>';
+    }
+    const ncol = 6 + sizes.length;
+    if (!list.length) {
+      tbody.innerHTML = '<tr><td colspan="' + ncol + '" style="text-align:center;padding:28px;color:#64748b">' + (_scsCustSrc.length ? 'Tidak ada customer yang cocok dengan filter (cek Sales / Ambang / pencarian).' : 'Belum ada data penjualan FITRI.') + '</td></tr>';
+      tfoot.innerHTML = '';
+      return;
+    }
+    let b = '';
+    list.forEach((g, i) => {
+      b += '<tr><td class="c">' + (i + 1) + '</td><td>' + escHtml(g.salesLabel) + '</td><td>' + escHtml(g.customer) + '</td><td>' + escHtml(g.alamat) + '</td>' +
+        sizes.map(z => '<td class="c">' + nfx(g.qty[z.key]) + '</td>').join('') +
+        '<td class="tot">' + nfQty(g.total) + '</td><td class="tgl">' + escHtml(g.tglText) + '</td></tr>';
+    });
+    tbody.innerHTML = b;
+    tfoot.innerHTML = '<tr><td colspan="4" class="lbl">TOTAL</td>' + sizes.map(z => '<td>' + nfx(sizeTot[z.key]) + '</td>').join('') + '<td>' + nfQty(grand) + '</td><td></td></tr>';
+  }
+
+  function downloadScsCust(){
+    if (!_scsCustLast || !_scsCustLast.list.length) return alert('Belum ada data untuk diunduh.');
+    const { list, sizes, sizeTot, grand, tglHead, month, salesSel, minQty } = _scsCustLast;
+    const head = ['NO', 'SALES', 'TOKO/CUSTOMER', 'ALAMAT', ...sizes.map(z => z.label), 'TOTAL', tglHead];
+    const rows = list.map((g, i) => [i + 1, g.salesLabel, g.customer, g.alamat, ...sizes.map(z => g.qty[z.key] || 0), g.total, g.tglText]);
+    const foot = ['', '', 'TOTAL', '', ...sizes.map(z => sizeTot[z.key] || 0), grand, ''];
+    const ws = XLSX.utils.aoa_to_sheet([head, ...rows, foot]);
+    ws['!cols'] = [{ wch: 5 }, { wch: 16 }, { wch: 28 }, { wch: 22 }, ...sizes.map(() => ({ wch: 13 })), { wch: 8 }, { wch: 34 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Fitri Sales-Customer');
+    XLSX.writeFile(wb, 'Fitri_Sales_Customer' + (month ? '_' + month : '') + (salesSel ? '_' + salesSel : '') + (minQty > 0 ? '_min' + minQty : '') + '.xlsx');
+  }
+
   let _cekRupaMonthInit = false;
   async function populateCekRupaMonths(){
     const sel = document.getElementById('cekRupaMonth'); if (!sel) return;
@@ -3203,13 +3395,17 @@ self.onmessage = function(e){
       btn.classList.add('active');
       const tab = btn.dataset.tab;
       const pj = document.getElementById('page-penjualan');
+      const sc = document.getElementById('page-salescust');
       const gd = document.getElementById('page-gudang');
       const ck = document.getElementById('page-cek');
       if (pj) pj.style.display = (tab === 'penjualan') ? 'block' : 'none';
+      if (sc) sc.style.display = (tab === 'salescust') ? 'block' : 'none';
       if (gd) gd.style.display = (tab === 'gudang') ? 'block' : 'none';
       if (ck) ck.style.display = (tab === 'cek') ? 'block' : 'none';
       if (tab === 'cek') {
         renderCekActive();
+      } else if (tab === 'salescust') {
+        renderScsCust();
       }
     });
   }
@@ -3432,9 +3628,6 @@ self.onmessage = function(e){
     populateGudangDeleteMonth();
   }
 
-  /* ===================================================================
-     Rupa Rupa — flat list  (SUDAH DIPERBAIKI: ada kolom MASUK)
-     =================================================================== */
   function toggleGudangRupaDd(){ document.getElementById('gudangRupaDd').classList.toggle('open') }
   function closeGudangRupaDd(){ document.getElementById('gudangRupaDd').classList.remove('open') }
   function setGudangRupaStatus(msg){ const el = document.getElementById('gudangRupaStatus'); if (el) el.textContent = msg; }
@@ -3563,9 +3756,6 @@ self.onmessage = function(e){
     }
   }
 
-  /* ===================================================================
-     Analisa Gudang — Fitri & Rupa Rupa
-     =================================================================== */
   let _analisaLastData = null;
   let _analisaMonthInit = false;
   let _analisaSub = 'fitri';
@@ -3831,7 +4021,6 @@ self.onmessage = function(e){
     XLSX.writeFile(wb, 'Analisa_Rupa_Rupa.xlsx');
   }
 
-  /* Modal Input Stok Gudang */
   let gInputState = null;
   function dateInputToUTC(dateStr){ if (!dateStr) return null; const [y,m,d] = dateStr.split('-').map(Number); if (!y || !m || !d) return null; return new Date(Date.UTC(y, m-1, d)); }
   function utcDateToInputStr(d){ if (!d || isNaN(d.getTime())) return ''; return d.getUTCFullYear() + '-' + String(d.getUTCMonth()+1).padStart(2,'0') + '-' + String(d.getUTCDate()).padStart(2,'0'); }
