@@ -519,6 +519,27 @@ body.dark #page-salescust .cek-search{background:#0f172a;color:#e2e8f0;border-co
 #scsCustTable td.tgl{text-align:center;white-space:normal;min-width:170px}
 #scsCustTable tfoot td{background:#eef2fb;font-weight:800;text-align:center}
 #scsCustTable tfoot td.lbl{text-align:right}
+#cekCustTable td.tgl .tgl-multi-link,
+#scsCustTable td.tgl .tgl-multi-link{color:#1f4e78;font-weight:800;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+#cekCustTable td.tgl .tgl-multi-link:hover,
+#scsCustTable td.tgl .tgl-multi-link:hover{color:#0c3a66}
+#custTglOverlay .gmodal-box{max-width:720px;width:100%;max-height:88vh;display:flex;flex-direction:column;padding:18px 20px 16px}
+#custTglOverlay .fk-modal-body{overflow:auto;flex:1;min-height:0;margin:8px 0 12px}
+#custTglOverlay .fk-meta-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:10px;font-size:12px}
+#custTglOverlay .fk-meta-grid b{color:#0f172a}
+#custTglOverlay table{width:100%;border-collapse:collapse;font-size:12px;min-width:0}
+#custTglOverlay th{background:#1f4e78;color:#fff;padding:6px 8px;text-align:left;position:sticky;top:0;z-index:1}
+#custTglOverlay td{padding:6px 8px;border-bottom:1px solid #e2e8f0}
+#custTglOverlay td.num{text-align:right}
+#custTglOverlay .cust-tgl-day{margin:12px 0 6px;font-size:12px;font-weight:800;color:#1f4e78;letter-spacing:.02em}
+#custTglOverlay .cust-tgl-day span{font-weight:600;color:#64748b;margin-left:6px}
+body.dark #cekCustTable td.tgl .tgl-multi-link,
+body.dark #scsCustTable td.tgl .tgl-multi-link{color:#93c5fd}
+body.dark #custTglOverlay th{background:#1e3a5f}
+body.dark #custTglOverlay td{border-color:#334155}
+body.dark #custTglOverlay .fk-meta-grid b{color:#f1f5f9}
+body.dark #custTglOverlay .cust-tgl-day{color:#93c5fd}
+body.dark #custTglOverlay .cust-tgl-day span{color:#94a3b8}
 body.dark #page-salescust .cs-kpi{background:#1e293b;border-color:#334155;border-left-color:#5b9bd5}
 body.dark #page-salescust .cs-kpi small{color:#94a3b8}
 body.dark #page-salescust .cs-kpi b,body.dark #page-salescust .cs-kpi select{color:#f1f5f9}
@@ -976,6 +997,17 @@ body.dark #scsCustTable tfoot td{background:#1e3a5f;color:#f1f5f9}
     <div class="gmodal-actions" id="fkBatalActions">
       <button type="button" class="gmodal-ghost" onclick="closeFkBatalModal()">Tutup</button>
       <button type="button" class="fk-batal-btn" id="fkBatalBtn" onclick="confirmFkBatal()">Transaksi Batal</button>
+    </div>
+  </div>
+</div>
+
+<div class="gmodal-overlay" id="custTglOverlay" onclick="if(event.target===this) closeCustTglModal()">
+  <div class="gmodal-box">
+    <h3>Detail Order — <span id="custTglTitle">-</span></h3>
+    <div class="gmodal-sub" id="custTglSub">Transaksi pada tanggal terpilih</div>
+    <div class="fk-modal-body" id="custTglBody"></div>
+    <div class="gmodal-actions">
+      <button type="button" class="gmodal-ghost" onclick="closeCustTglModal()">Tutup</button>
     </div>
   </div>
 </div>
@@ -3469,7 +3501,7 @@ self.onmessage = function(e){
       const alamat = String(x.alamat ?? x.Alamat ?? '').trim();
       const gk = kd ? 'K|' + U(kd) : 'N|' + U(cust) + '|' + U(alamat);
       let g = groups.get(gk);
-      if (!g) { g = { customer: cust, alamat: '', sales: new Set(), qty: {}, total: 0, dates: new Set() }; groups.set(gk, g); }
+      if (!g) { g = { gk: gk, customer: cust, alamat: '', sales: new Set(), qty: {}, total: 0, dates: new Set() }; groups.set(gk, g); }
       if (!g.customer && cust) g.customer = cust;
       if (!g.alamat && alamat) g.alamat = alamat;
       g.sales.add(sl);
@@ -3482,7 +3514,8 @@ self.onmessage = function(e){
     let list = [...groups.values()].map(g => {
       g.customer = g.customer || '(Tanpa Customer)';
       g.salesLabel = [...g.sales].sort((a, b) => a.localeCompare(b, 'id')).join(' & ');
-      g.tglText = [...g.dates].sort().map(dl).join(' & ');
+      g.dateKeys = [...g.dates].sort();
+      g.tglText = g.dateKeys.map(dl).join(' & ');
       return g;
     });
     if (q) list = list.filter(g => U(g.customer).includes(q) || U(g.alamat).includes(q) || g.salesLabel.includes(q));
@@ -3525,7 +3558,7 @@ self.onmessage = function(e){
     list.forEach((g, i) => {
       b += '<tr><td class="c">' + (i + 1) + '</td><td>' + escHtml(g.salesLabel) + '</td><td>' + escHtml(g.customer) + '</td><td>' + escHtml(g.alamat) + '</td>' +
         sizes.map(z => '<td class="c">' + nfx(g.qty[z.key]) + '</td>').join('') +
-        '<td class="tot">' + nfQty(g.total) + '</td><td class="tgl">' + escHtml(g.tglText) + '</td></tr>';
+        '<td class="tot">' + nfQty(g.total) + '</td><td class="tgl">' + fmtCustTglCell('cek', g) + '</td></tr>';
     });
     tbody.innerHTML = b;
     tfoot.innerHTML = '<tr><td colspan="4" class="lbl">TOTAL</td>' + sizes.map(z => '<td>' + nfx(sizeTot[z.key]) + '</td>').join('') + '<td>' + nfQty(grand) + '</td><td></td></tr>';
@@ -3542,6 +3575,104 @@ self.onmessage = function(e){
     XLSX.utils.book_append_sheet(wb, ws, 'Fitri Sales-Customer');
     XLSX.writeFile(wb, 'Fitri_Sales_Customer' + (month ? '_' + month : '') + (salesSel ? '_' + salesSel : '') + (minQty > 0 ? '_min' + minQty : '') + '.xlsx');
   }
+
+
+  function fmtCustTglCell(which, g){
+    const keys = g.dateKeys || [];
+    if (keys.length < 2) return escHtml(g.tglText || '');
+    const gk = String(g.gk || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return '<span class="tgl-multi-link" title="Klik untuk lihat detail order di ' + keys.length + ' tanggal" onclick="openCustTglModal(\'' + which + '\',\'' + gk + '\')">' + escHtml(g.tglText) + '</span>';
+  }
+  function closeCustTglModal(){
+    const ov = document.getElementById('custTglOverlay');
+    if (ov) ov.classList.remove('show');
+  }
+  function openCustTglModal(which, gk){
+    const last = which === 'scs' ? _scsCustLast : _cekCustLast;
+    const src = which === 'scs' ? _scsCustSrc : _cekCustSrc;
+    if (!last || !last.list) return alert('Data belum siap.');
+    const g = last.list.find(x => x.gk === gk);
+    if (!g) return alert('Customer tidak ditemukan.');
+    const dateKeys = g.dateKeys || [];
+    const salesSel = last.salesSel || '';
+    const month = last.month || '';
+    const dl = (k) => { const p = k.split('-'); return p[2] + '/' + p[1] + (month ? '' : '/' + p[0].slice(2)); };
+    const rows = [];
+    for (let i = 0; i < (src || []).length; i++) {
+      const x = src[i];
+      const sl = normSales(x.sales ?? x.Sales);
+      if (salesSel && sl !== salesSel) continue;
+      const cust = String(x.customer ?? x.Customer ?? '').trim();
+      const kd = String(x.kdCustomer ?? x['Kd Customer'] ?? '').trim();
+      const alamat = String(x.alamat ?? x.Alamat ?? '').trim();
+      const rowGk = kd ? 'K|' + U(kd) : 'N|' + U(cust) + '|' + U(alamat);
+      if (rowGk !== gk) continue;
+      const dk = cekDateKey(x.tanggal ?? x.Tanggal);
+      if (!dk || !dateKeys.includes(dk)) continue;
+      rows.push(x);
+    }
+    rows.sort((a, b) => {
+      const da = cekDateKey(a.tanggal ?? a.Tanggal) || '';
+      const db = cekDateKey(b.tanggal ?? b.Tanggal) || '';
+      if (da !== db) return da < db ? -1 : 1;
+      return String(a.produk ?? a.Produk ?? '').localeCompare(String(b.produk ?? b.Produk ?? ''), 'id');
+    });
+    document.getElementById('custTglTitle').textContent = g.customer || '-';
+    document.getElementById('custTglSub').textContent =
+      (g.salesLabel ? 'Sales: ' + g.salesLabel + ' · ' : '') +
+      (g.alamat ? g.alamat + ' · ' : '') +
+      dateKeys.length + ' tanggal order';
+
+    let nom = 0, qty = 0;
+    rows.forEach(x => { nom += N(x.total ?? x.Total); qty += N(x.jumlah ?? x.Jumlah); });
+
+    let html = '<div class="fk-meta-grid">';
+    html += '<div>Customer<br><b>' + escHtml(g.customer || '-') + '</b></div>';
+    html += '<div>Sales<br><b>' + escHtml(g.salesLabel || '-') + '</b></div>';
+    html += '<div>Alamat<br><b>' + escHtml(g.alamat || '-') + '</b></div>';
+    html += '<div>Tanggal<br><b>' + escHtml(dateKeys.map(dl).join(', ')) + '</b></div>';
+    html += '<div>Total Qty<br><b>' + nfQty(qty) + '</b></div>';
+    html += '<div>Nominal<br><b>' + rp(nom) + '</b></div>';
+    html += '</div>';
+
+    if (!rows.length) {
+      html += '<div style="text-align:center;padding:24px;color:#64748b">Tidak ada detail transaksi.</div>';
+    } else {
+      // group by date
+      const byDate = new Map();
+      rows.forEach(x => {
+        const dk = cekDateKey(x.tanggal ?? x.Tanggal) || '';
+        if (!byDate.has(dk)) byDate.set(dk, []);
+        byDate.get(dk).push(x);
+      });
+      for (const [dk, list] of byDate) {
+        let dayQty = 0, dayNom = 0;
+        list.forEach(x => { dayQty += N(x.jumlah ?? x.Jumlah); dayNom += N(x.total ?? x.Total); });
+        html += '<div class="cust-tgl-day">📅 ' + escHtml(dl(dk)) + '<span>(' + list.length + ' baris · Qty ' + nfQty(dayQty) + ' · ' + rp(dayNom) + ')</span></div>';
+        html += '<table><thead><tr><th>No. Faktur</th><th>Produk</th><th class="num">Qty</th><th>Sat</th><th class="num">Harga</th><th class="num">Total</th><th>Sales</th></tr></thead><tbody>';
+        list.forEach(x => {
+          html += '<tr>';
+          html += '<td>' + escHtml(String(x.faktur ?? x['No. Faktur'] ?? '')) + '</td>';
+          html += '<td>' + escHtml(String(x.produk ?? x.Produk ?? '')) + '</td>';
+          html += '<td class="num">' + nfQty(x.jumlah ?? x.Jumlah) + '</td>';
+          html += '<td>' + escHtml(String(x.satuan ?? x.Satuan ?? '')) + '</td>';
+          html += '<td class="num">' + rp(x.hargaJual ?? x['Harga Jual']) + '</td>';
+          html += '<td class="num">' + rp(x.total ?? x.Total) + '</td>';
+          html += '<td>' + escHtml(normSales(x.sales ?? x.Sales) || '') + '</td>';
+          html += '</tr>';
+        });
+        html += '</tbody></table>';
+      }
+    }
+    document.getElementById('custTglBody').innerHTML = html;
+    document.getElementById('custTglOverlay').classList.add('show');
+  }
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape'){
+      const ov = document.getElementById('custTglOverlay');
+      if (ov && ov.classList.contains('show')) closeCustTglModal();
+    }
+  });
 
   // ===== Tab Sales/Customer (duplikat independen dari Cek > Fitri Sales/Customer) =====
   let _scsCustSrc = [];
@@ -3596,7 +3727,7 @@ self.onmessage = function(e){
       const alamat = String(x.alamat ?? x.Alamat ?? '').trim();
       const gk = kd ? 'K|' + U(kd) : 'N|' + U(cust) + '|' + U(alamat);
       let g = groups.get(gk);
-      if (!g) { g = { customer: cust, alamat: '', sales: new Set(), qty: {}, total: 0, dates: new Set() }; groups.set(gk, g); }
+      if (!g) { g = { gk: gk, customer: cust, alamat: '', sales: new Set(), qty: {}, total: 0, dates: new Set() }; groups.set(gk, g); }
       if (!g.customer && cust) g.customer = cust;
       if (!g.alamat && alamat) g.alamat = alamat;
       g.sales.add(sl);
@@ -3609,7 +3740,8 @@ self.onmessage = function(e){
     let list = [...groups.values()].map(g => {
       g.customer = g.customer || '(Tanpa Customer)';
       g.salesLabel = [...g.sales].sort((a, b) => a.localeCompare(b, 'id')).join(' & ');
-      g.tglText = [...g.dates].sort().map(dl).join(' & ');
+      g.dateKeys = [...g.dates].sort();
+      g.tglText = g.dateKeys.map(dl).join(' & ');
       return g;
     });
     if (q) list = list.filter(g => U(g.customer).includes(q) || U(g.alamat).includes(q) || g.salesLabel.includes(q));
@@ -3653,7 +3785,7 @@ self.onmessage = function(e){
     list.forEach((g, i) => {
       b += '<tr><td class="c">' + (i + 1) + '</td><td>' + escHtml(g.salesLabel) + '</td><td>' + escHtml(g.customer) + '</td><td>' + escHtml(g.alamat) + '</td>' +
         sizes.map(z => '<td class="c">' + nfx(g.qty[z.key]) + '</td>').join('') +
-        '<td class="tot">' + nfQty(g.total) + '</td><td class="tgl">' + escHtml(g.tglText) + '</td></tr>';
+        '<td class="tot">' + nfQty(g.total) + '</td><td class="tgl">' + fmtCustTglCell('scs', g) + '</td></tr>';
     });
     tbody.innerHTML = b;
     tfoot.innerHTML = '<tr><td colspan="4" class="lbl">TOTAL</td>' + sizes.map(z => '<td>' + nfx(sizeTot[z.key]) + '</td>').join('') + '<td>' + nfQty(grand) + '</td><td></td></tr>';
