@@ -441,6 +441,20 @@ body.dark .gmodal-ghost{background:#334155;color:#e2e8f0}
 #fkBatalOverlay .fk-warn{font-size:12px;color:#9a3412;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:8px 10px;margin-bottom:10px;line-height:1.45}
 #fkBatalOverlay .fk-batal-btn{background:#b42318}
 #fkBatalOverlay .fk-restore-btn{background:#166534}
+#fkBatalOverlay .fk-line-btn{background:#c2410c}
+#fkBatalOverlay .fk-line-restore-btn{background:#0f766e}
+#fkBatalOverlay tr.row-line-batal td{background:#f1f5f9;color:#94a3b8;text-decoration:line-through}
+#fkBatalOverlay tr.row-line-batal td.fk-chk{text-decoration:none}
+#fkBatalOverlay td.fk-chk{width:28px;text-align:center;padding:4px}
+#fkBatalOverlay td.fk-chk input{width:15px;height:15px;cursor:pointer;accent-color:#b42318}
+#fkBatalOverlay .fk-line-actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0 4px}
+#fkBatalOverlay .fk-line-actions button{padding:5px 10px;font-size:11px;border-radius:6px}
+#fkBatalOverlay .fk-line-hint{font-size:11px;color:#64748b;margin:0 0 8px;line-height:1.4}
+#fkBatalOverlay .fk-badge-line{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:999px;font-size:9.5px;font-weight:800;background:#e2e8f0;color:#475569;vertical-align:middle}
+#fkBatalOverlay .gmodal-actions{flex-wrap:wrap;gap:8px}
+body.dark #fkBatalOverlay tr.row-line-batal td{background:#1e293b;color:#64748b}
+body.dark #fkBatalOverlay .fk-line-hint{color:#94a3b8}
+body.dark #fkBatalOverlay .fk-badge-line{background:#334155;color:#cbd5e1}
 body.dark .fk-link{color:#93c5fd}
 body.dark .fk-link.has-minus{color:#fca5a5}
 body.dark .fk-badge-batal{background:#7f1d1d;color:#fecaca}
@@ -1139,6 +1153,7 @@ body.dark #scsCustTable tfoot td{background:#1e3a5f;color:#f1f5f9}
   let R = {};
   let filters = {month:'',sales:'',product:'',payment:'',dateFrom:'',dateTo:'',kdCustomer:'',q:''};
   let batalFakturSet = new Set();
+  let batalLineSet = new Set();
   let _fkBatalCurrent = null;
   function isBatalFaktur(nf){
     const k = String(nf ?? '').trim();
@@ -1147,24 +1162,62 @@ body.dark #scsCustTable tfoot td{background:#1e3a5f;color:#f1f5f9}
   function fakturKeyOf(r){
     return String(r?.faktur ?? r?.['No. Faktur'] ?? '').trim();
   }
+  function lineKeyOf(r){
+    if (!r) return '';
+    const f = String(r.faktur ?? r['No. Faktur'] ?? '').trim();
+    const p = String(r.produk ?? r.Produk ?? '').trim();
+    const j = N(r.jumlah ?? r.Jumlah);
+    const t = N(r.total ?? r.Total);
+    const ts = r._ts || 0;
+    return f + '|' + p + '|' + j + '|' + t + '|' + ts;
+  }
+  function isBatalLine(r){
+    if (!r) return false;
+    if (isBatalFaktur(r.faktur ?? r['No. Faktur'])) return true;
+    if (!batalLineSet.size) return false;
+    const k = lineKeyOf(r);
+    return !!(k && batalLineSet.has(k));
+  }
+  function isExcludedRow(r, includeBatal){
+    if (includeBatal) return false;
+    return isBatalLine(r);
+  }
+  function hasAnyBatalLineOnFaktur(nf){
+    const key = String(nf || '').trim();
+    if (!key || !batalLineSet.size) return false;
+    for (const k of batalLineSet) if (k.startsWith(key + '|')) return true;
+    return false;
+  }
   async function loadBatalFaktur(){
     batalFakturSet = new Set();
+    batalLineSet = new Set();
     try {
       if (useIDB && db){
         const m = await db.meta.get('batalFaktur');
         const arr = (m && Array.isArray(m.value)) ? m.value : [];
         arr.forEach(x => { const s = String(x||'').trim(); if (s) batalFakturSet.add(s); });
+        const ml = await db.meta.get('batalLine');
+        const arrL = (ml && Array.isArray(ml.value)) ? ml.value : [];
+        arrL.forEach(x => { const s = String(x||'').trim(); if (s) batalLineSet.add(s); });
       } else {
         const raw = localStorage.getItem('rekap-batal-faktur');
         if (raw) JSON.parse(raw).forEach(x => { const s = String(x||'').trim(); if (s) batalFakturSet.add(s); });
+        const rawL = localStorage.getItem('rekap-batal-line');
+        if (rawL) JSON.parse(rawL).forEach(x => { const s = String(x||'').trim(); if (s) batalLineSet.add(s); });
       }
     } catch(e){ console.warn('loadBatalFaktur', e); }
   }
   async function saveBatalFaktur(){
     const arr = [...batalFakturSet];
+    const arrL = [...batalLineSet];
     try {
-      if (useIDB && db) await db.meta.put({ key: 'batalFaktur', value: arr });
-      else localStorage.setItem('rekap-batal-faktur', JSON.stringify(arr));
+      if (useIDB && db) {
+        await db.meta.put({ key: 'batalFaktur', value: arr });
+        await db.meta.put({ key: 'batalLine', value: arrL });
+      } else {
+        localStorage.setItem('rekap-batal-faktur', JSON.stringify(arr));
+        localStorage.setItem('rekap-batal-line', JSON.stringify(arrL));
+      }
     } catch(e){ console.warn('saveBatalFaktur', e); }
     try { schedulePush(); } catch(e){}
   }
@@ -1671,8 +1724,8 @@ self.onmessage = function(e){
     const kdQ = (filters.kdCustomer || '').trim();
     const qLower = (filters.q || '').trim().toLowerCase();
     const dropBatal = (list) => {
-      if (includeBatal || !batalFakturSet.size) return list;
-      return list.filter(x => !isBatalFaktur(x.faktur ?? x['No. Faktur']));
+      if (includeBatal || (!batalFakturSet.size && !batalLineSet.size)) return list;
+      return list.filter(x => !isExcludedRow(x, false));
     };
     if (!useIDB){
       let out = rows;
@@ -1703,7 +1756,7 @@ self.onmessage = function(e){
       if (!rowInDateRange(r, fromTs, toTs)) return false;
       if (kdQ && !matchKdCustomer(r.kdCustomer, kdQ)) return false;
       if (qLower && !matchQuickSearch(r, qLower)) return false;
-      if (!includeBatal && isBatalFaktur(r.faktur)) return false;
+      if (!includeBatal && isExcludedRow(r, false)) return false;
       return true;
     });
     return await coll.toArray();
@@ -2583,48 +2636,128 @@ self.onmessage = function(e){
     const items = collectRowsForFaktur(key);
     if (!items.length){ alert('Detail faktur tidak ditemukan.'); return; }
     const isBatal = isBatalFaktur(key);
-    const hasMinus = items.some(x => N(x.Jumlah) < 0);
-    _fkBatalCurrent = { faktur: key, items, isBatal, hasMinus };
+    const hasMinus = items.some(x => N(x.Jumlah ?? x.jumlah) < 0);
+    const lineKeys = items.map(x => lineKeyOf(x));
+    const anyLineBatal = lineKeys.some(k => batalLineSet.has(k));
+    _fkBatalCurrent = { faktur: key, items, isBatal, hasMinus, lineKeys };
     document.getElementById('fkBatalNo').textContent = key;
     document.getElementById('fkBatalSub').textContent = isBatal
-      ? 'Status: TRANSAKSI BATAL — data ini tidak dihitung di tab/sub-tab lain'
-      : (hasMinus ? 'Faktur berisi baris qty minus / koreksi' : 'Detail faktur');
+      ? 'Status: TRANSAKSI BATAL (seluruh faktur) — tidak dihitung di tab/sub-tab lain'
+      : (anyLineBatal ? 'Sebagian item faktur sudah dibatalkan'
+        : (hasMinus ? 'Faktur berisi baris qty minus / koreksi — pilih item yang ingin dibatalkan' : 'Detail faktur'));
     const first = items[0];
     let nom = 0, pr = 0;
-    items.forEach(x => { const t = N(x.Total); nom += t; pr += t - N(x.Jumlah) * N(x['Harga Beli']); });
+    items.forEach(x => {
+      if (isBatal || batalLineSet.has(lineKeyOf(x))) return;
+      const t = N(x.Total ?? x.total);
+      nom += t;
+      pr += t - N(x.Jumlah ?? x.jumlah) * N(x['Harga Beli'] ?? x.hargaBeli);
+    });
     let html = '';
-    if (hasMinus && !isBatal) {
-      html += '<div class="fk-warn">⚠ Faktur ini punya baris qty <b>minus</b>. Jika ini transaksi batal/koreksi, tekan <b>Transaksi Batal</b> agar seluruh baris faktur ini <b>tidak dihitung</b> di semua tab &amp; sub-tab (Penjualan, Cek, Sales/Customer, Analisa, dll).</div>';
-    }
     if (isBatal) {
-      html += '<div class="fk-warn" style="background:#f0fdf4;border-color:#86efac;color:#166534">✅ Faktur ini sudah ditandai <b>BATAL</b> dan dikecualikan dari perhitungan. Anda bisa mengaktifkan kembali jika salah.</div>';
+      html += '<div class="fk-warn" style="background:#f0fdf4;border-color:#86efac;color:#166534">✅ Faktur ini sudah ditandai <b>BATAL seluruhnya</b> dan dikecualikan dari perhitungan. Anda bisa mengaktifkan kembali jika salah.</div>';
+    } else if (hasMinus) {
+      html += '<div class="fk-warn">⚠ Ada baris qty <b>minus</b> (koreksi/batal item). Centang item yang ingin dikecualikan dari perhitungan, lalu tekan <b>Batalkan Item Terpilih</b>. Item lain tetap dihitung. Atau tekan <b>Transaksi Batal</b> jika ingin membatalkan <b>seluruh</b> faktur.</div>';
+    } else if (anyLineBatal) {
+      html += '<div class="fk-warn" style="background:#f0fdf4;border-color:#86efac;color:#166534">✅ Beberapa item pada faktur ini sudah dibatalkan (tidak dihitung). Centang untuk mengubah pilihan, atau aktifkan kembali item yang dipilih.</div>';
     }
     html += '<div class="fk-meta-grid">';
-    html += '<div>Tanggal<br><b>' + fmtTgl(first.Tanggal) + '</b></div>';
-    html += '<div>Sales<br><b>' + escHtml(first.Sales || '-') + '</b></div>';
-    html += '<div>Customer<br><b>' + escHtml(first.Customer || '-') + '</b></div>';
-    html += '<div>Pembayaran<br><b>' + escHtml(first.Pembayaran || '-') + '</b></div>';
+    html += '<div>Tanggal<br><b>' + fmtTgl(first.Tanggal ?? first.tanggal) + '</b></div>';
+    html += '<div>Sales<br><b>' + escHtml(first.Sales || first.sales || '-') + '</b></div>';
+    html += '<div>Customer<br><b>' + escHtml(first.Customer || first.customer || '-') + '</b></div>';
+    html += '<div>Pembayaran<br><b>' + escHtml(first.Pembayaran || first.pembayaran || '-') + '</b></div>';
     html += '<div>Nominal net<br><b>' + rp(nom) + '</b></div>';
     html += '<div>Profit net<br><b>' + rp(pr) + '</b></div>';
     html += '</div>';
-    html += '<table><thead><tr><th>Produk</th><th class="num">Qty</th><th>Sat</th><th class="num">Harga Jual</th><th class="num">Disc</th><th class="num">Total</th></tr></thead><tbody>';
-    items.forEach(x => {
-      const q = N(x.Jumlah);
-      html += '<tr' + (q < 0 ? ' class="row-minus"' : '') + '><td>' + escHtml(x.Produk || '') + '</td><td class="num">' + q + '</td><td>' + escHtml(x.Satuan || '') + '</td><td class="num">' + rp(x['Harga Jual']) + '</td><td class="num">' + rp(x.Discount) + '</td><td class="num">' + rp(x.Total) + '</td></tr>';
+    if (!isBatal) {
+      html += '<div class="fk-line-hint">Centang item yang dibatalkan (qty minus / koreksi). Untuk pasangan koreksi (+/− produk sama), centang keduanya agar net tidak residual.</div>';
+      html += '<div class="fk-line-actions">';
+      html += '<button type="button" class="gmodal-ghost" onclick="fkSelectAllLines(true)">Pilih semua</button>';
+      html += '<button type="button" class="gmodal-ghost" onclick="fkSelectAllLines(false)">Hapus centang</button>';
+      html += '<button type="button" class="gmodal-ghost" onclick="fkSelectCorrectionPairs()">Pilih pasangan koreksi (+/−)</button>';
+      html += '</div>';
+    }
+    html += '<table><thead><tr>';
+    if (!isBatal) html += '<th class="fk-chk"></th>';
+    html += '<th>Produk</th><th class="num">Qty</th><th>Sat</th><th class="num">Harga Jual</th><th class="num">Disc</th><th class="num">Total</th></tr></thead><tbody>';
+    items.forEach((x, idx) => {
+      const q = N(x.Jumlah ?? x.jumlah);
+      const lk = lineKeys[idx];
+      const lineBatal = batalLineSet.has(lk);
+      let cls = [];
+      if (q < 0) cls.push('row-minus');
+      if (lineBatal || isBatal) cls.push('row-line-batal');
+      const checked = (!isBatal && (lineBatal || q < 0)) ? ' checked' : '';
+      html += '<tr class="' + cls.join(' ') + '" data-line-idx="' + idx + '">';
+      if (!isBatal) {
+        html += '<td class="fk-chk"><input type="checkbox" class="fk-line-cb" data-key="' + String(lk).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;') + '"' + checked + '></td>';
+      }
+      const badge = (lineBatal && !isBatal) ? '<span class="fk-badge-line">ITEM BATAL</span>' : '';
+      html += '<td>' + escHtml(x.Produk || x.produk || '') + badge + '</td>';
+      html += '<td class="num">' + q + '</td>';
+      html += '<td>' + escHtml(x.Satuan || x.satuan || '') + '</td>';
+      html += '<td class="num">' + rp(x['Harga Jual'] ?? x.hargaJual) + '</td>';
+      html += '<td class="num">' + rp(x.Discount ?? x.discount) + '</td>';
+      html += '<td class="num">' + rp(x.Total ?? x.total) + '</td>';
+      html += '</tr>';
     });
     html += '</tbody></table>';
     document.getElementById('fkBatalBody').innerHTML = html;
-    const btn = document.getElementById('fkBatalBtn');
+    const actions = document.getElementById('fkBatalActions');
     if (isBatal) {
-      btn.textContent = 'Aktifkan Kembali';
-      btn.className = 'fk-restore-btn';
-      btn.onclick = confirmFkRestore;
+      actions.innerHTML =
+        '<button type="button" class="gmodal-ghost" onclick="closeFkBatalModal()">Tutup</button>' +
+        '<button type="button" class="fk-restore-btn" id="fkBatalBtn" onclick="confirmFkRestore()">Aktifkan Kembali (seluruh faktur)</button>';
     } else {
-      btn.textContent = 'Transaksi Batal';
-      btn.className = 'fk-batal-btn';
-      btn.onclick = confirmFkBatal;
+      actions.innerHTML =
+        '<button type="button" class="gmodal-ghost" onclick="closeFkBatalModal()">Tutup</button>' +
+        '<button type="button" class="fk-line-restore-btn" onclick="confirmFkRestoreLines()">Aktifkan Item Terpilih</button>' +
+        '<button type="button" class="fk-line-btn" onclick="confirmFkBatalLines()">Batalkan Item Terpilih</button>' +
+        '<button type="button" class="fk-batal-btn" id="fkBatalBtn" onclick="confirmFkBatal()">Transaksi Batal (seluruh faktur)</button>';
     }
     document.getElementById('fkBatalOverlay').classList.add('show');
+  }
+  function fkSelectAllLines(on){
+    document.querySelectorAll('#fkBatalBody .fk-line-cb').forEach(cb => { cb.checked = !!on; });
+  }
+  function fkSelectCorrectionPairs(){
+    if (!_fkBatalCurrent) return;
+    const items = _fkBatalCurrent.items || [];
+    const byProd = new Map();
+    items.forEach((x, i) => {
+      const p = String(x.Produk || x.produk || '').trim().toUpperCase();
+      const q = N(x.Jumlah ?? x.jumlah);
+      if (!byProd.has(p)) byProd.set(p, []);
+      byProd.get(p).push({ i, q });
+    });
+    const selectIdx = new Set();
+    for (const arr of byProd.values()) {
+      const pos = arr.filter(a => a.q > 0).slice();
+      const neg = arr.filter(a => a.q < 0).slice();
+      neg.forEach(n => {
+        const abs = Math.abs(n.q);
+        const match = pos.find(p => p.q === abs && !selectIdx.has(p.i));
+        if (match) {
+          selectIdx.add(n.i);
+          selectIdx.add(match.i);
+        } else {
+          selectIdx.add(n.i);
+        }
+      });
+    }
+    document.querySelectorAll('#fkBatalBody .fk-line-cb').forEach(cb => {
+      const tr = cb.closest('tr');
+      const idx = tr ? parseInt(tr.getAttribute('data-line-idx'), 10) : -1;
+      cb.checked = selectIdx.has(idx);
+    });
+  }
+  function getSelectedLineKeysFromModal(){
+    const keys = [];
+    document.querySelectorAll('#fkBatalBody .fk-line-cb:checked').forEach(cb => {
+      const k = cb.getAttribute('data-key');
+      if (k) keys.push(k);
+    });
+    return keys;
   }
   function closeFkBatalModal(){
     document.getElementById('fkBatalOverlay').classList.remove('show');
@@ -2633,20 +2766,53 @@ self.onmessage = function(e){
   async function confirmFkBatal(){
     if (!_fkBatalCurrent) return;
     const nf = _fkBatalCurrent.faktur;
-    if (!confirm('Tandai faktur "' + nf + '" sebagai TRANSAKSI BATAL?\n\nSeluruh baris faktur ini tidak akan dihitung di semua tab & sub-tab.\nData tetap tersimpan dan bisa diaktifkan kembali.')) return;
+    if (!confirm('Tandai faktur "' + nf + '" sebagai TRANSAKSI BATAL (seluruh faktur)?\n\nSemua baris faktur ini tidak akan dihitung di semua tab & sub-tab.\nData tetap tersimpan dan bisa diaktifkan kembali.\n\nJika hanya ingin membatalkan item tertentu, batalkan dialog ini lalu gunakan "Batalkan Item Terpilih".')) return;
     batalFakturSet.add(nf);
+    const prefix = nf + '|';
+    [...batalLineSet].forEach(k => { if (k.startsWith(prefix)) batalLineSet.delete(k); });
     await saveBatalFaktur();
     closeFkBatalModal();
     showBusy('Memperbarui…');
     await refreshAfterDataChange();
     hideBusy();
-    setStatus('Faktur ' + nf + ' ditandai BATAL — dikecualikan dari perhitungan.');
+    setStatus('Faktur ' + nf + ' ditandai BATAL (seluruh) — dikecualikan dari perhitungan.');
+  }
+  async function confirmFkBatalLines(){
+    if (!_fkBatalCurrent) return;
+    const keys = getSelectedLineKeysFromModal();
+    if (!keys.length) return alert('Centang minimal satu item yang ingin dibatalkan.');
+    const nf = _fkBatalCurrent.faktur;
+    if (!confirm('Batalkan ' + keys.length + ' item terpilih pada faktur "' + nf + '"?\n\nHanya item yang dicentang yang tidak dihitung. Item lain tetap dihitung.')) return;
+    keys.forEach(k => batalLineSet.add(k));
+    await saveBatalFaktur();
+    closeFkBatalModal();
+    showBusy('Memperbarui…');
+    await refreshAfterDataChange();
+    hideBusy();
+    setStatus(keys.length + ' item pada faktur ' + nf + ' ditandai BATAL — dikecualikan dari perhitungan.');
+  }
+  async function confirmFkRestoreLines(){
+    if (!_fkBatalCurrent) return;
+    const keys = getSelectedLineKeysFromModal();
+    if (!keys.length) return alert('Centang item yang ingin diaktifkan kembali.');
+    const nf = _fkBatalCurrent.faktur;
+    let n = 0;
+    keys.forEach(k => { if (batalLineSet.delete(k)) n++; });
+    if (!n) return alert('Tidak ada item terpilih yang statusnya BATAL.');
+    await saveBatalFaktur();
+    closeFkBatalModal();
+    showBusy('Memperbarui…');
+    await refreshAfterDataChange();
+    hideBusy();
+    setStatus(n + ' item pada faktur ' + nf + ' diaktifkan kembali.');
   }
   async function confirmFkRestore(){
     if (!_fkBatalCurrent) return;
     const nf = _fkBatalCurrent.faktur;
-    if (!confirm('Aktifkan kembali faktur "' + nf + '"?\n\nData faktur ini akan kembali dihitung di semua tab.')) return;
+    if (!confirm('Aktifkan kembali faktur "' + nf + '" (seluruh)?\n\nData faktur ini akan kembali dihitung di semua tab.')) return;
     batalFakturSet.delete(nf);
+    const prefix = nf + '|';
+    [...batalLineSet].forEach(k => { if (k.startsWith(prefix)) batalLineSet.delete(k); });
     await saveBatalFaktur();
     closeFkBatalModal();
     showBusy('Memperbarui…');
@@ -2669,8 +2835,11 @@ self.onmessage = function(e){
       const total = N(x.Total);
       const pr = total - N(x.Jumlah) * N(x['Harga Beli']);
       let g = groups.get(nf);
-      if (!g){ g = { faktur: nf, items: [], nominal: 0, profit: 0, tgl: x.Tanggal, ts: x._ts || 0, sales: x.Sales || '', bayar: x.Pembayaran || '', customer: x.Customer || '', isBatal: isBatalFaktur(nf), hasMinus: false }; groups.set(nf, g); }
-      g.items.push(x); g.nominal += total; g.profit += pr;
+      if (!g){ g = { faktur: nf, items: [], nominal: 0, profit: 0, tgl: x.Tanggal, ts: x._ts || 0, sales: x.Sales || '', bayar: x.Pembayaran || '', customer: x.Customer || '', isBatal: isBatalFaktur(nf), hasMinus: false, hasLineBatal: false }; groups.set(nf, g); }
+      g.items.push(x);
+      const lineBatal = !g.isBatal && batalLineSet.has(lineKeyOf(x));
+      if (lineBatal) g.hasLineBatal = true;
+      if (!g.isBatal && !lineBatal) { g.nominal += total; g.profit += pr; }
       if (N(x.Jumlah) < 0) g.hasMinus = true;
       if (x._ts && (!g.ts || x._ts < g.ts)){ g.ts = x._ts; g.tgl = x.Tanggal; }
       if (!g.sales && x.Sales) g.sales = x.Sales;
@@ -2679,7 +2848,7 @@ self.onmessage = function(e){
     }
     const list = [...groups.values()].sort((a,b) => { if (a.ts !== b.ts) return (b.ts||0) - (a.ts||0); return String(a.faktur).localeCompare(String(b.faktur)); });
     const rows = [];
-    list.forEach(g => { g.items.forEach((x, idx) => { rows.push({ x, isFirst: idx === 0, span: g.items.length, nominal: g.nominal, profit: g.profit, faktur: g.faktur, sales: g.sales, bayar: g.bayar, customer: g.customer, isBatal: g.isBatal, hasMinus: g.hasMinus }); }); });
+    list.forEach(g => { g.items.forEach((x, idx) => { rows.push({ x, isFirst: idx === 0, span: g.items.length, nominal: g.nominal, profit: g.profit, faktur: g.faktur, sales: g.sales, bayar: g.bayar, customer: g.customer, isBatal: g.isBatal, hasMinus: g.hasMinus, hasLineBatal: g.hasLineBatal, lineBatal: !g.isBatal && batalLineSet.has(lineKeyOf(x)) }); }); });
     return rows;
   }
   let fakturViewMode = 'card';
@@ -2700,8 +2869,11 @@ self.onmessage = function(e){
       const total = N(x.Total);
       const pr = total - N(x.Jumlah) * N(x['Harga Beli']);
       let g = groups.get(nf);
-      if (!g){ g = { faktur: nf, items: [], nominal: 0, profit: 0, tgl: x.Tanggal, ts: x._ts || 0, sales: x.Sales || '', bayar: x.Pembayaran || '', customer: x.Customer || '', isBatal: isBatalFaktur(nf), hasMinus: false }; groups.set(nf, g); }
-      g.items.push(x); g.nominal += total; g.profit += pr;
+      if (!g){ g = { faktur: nf, items: [], nominal: 0, profit: 0, tgl: x.Tanggal, ts: x._ts || 0, sales: x.Sales || '', bayar: x.Pembayaran || '', customer: x.Customer || '', isBatal: isBatalFaktur(nf), hasMinus: false, hasLineBatal: false }; groups.set(nf, g); }
+      g.items.push(x);
+      const lineBatal = !g.isBatal && batalLineSet.has(lineKeyOf(x));
+      if (lineBatal) g.hasLineBatal = true;
+      if (!g.isBatal && !lineBatal) { g.nominal += total; g.profit += pr; }
       if (N(x.Jumlah) < 0) g.hasMinus = true;
       if (x._ts && (!g.ts || x._ts < g.ts)){ g.ts = x._ts; g.tgl = x.Tanggal; }
       if (!g.sales && x.Sales) g.sales = x.Sales;
@@ -2731,11 +2903,11 @@ self.onmessage = function(e){
         return '<li><span class="fc-prod" title="' + prod.replace(/"/g,'&quot;') + '">' + prod + '</span><span class="fc-qty">' + qty + (sat ? ' ' + sat : '') + '</span><span class="fc-line">' + line + '</span></li>';
       }).join('');
       const fkEsc = String(g.faktur).replace(/</g,'&lt;').replace(/"/g,'&quot;');
-      const fkClickable = g.hasMinus || g.isBatal;
-      const fkCls = 'fc-faktur' + (fkClickable ? ' fk-link' : '') + (g.hasMinus && !g.isBatal ? ' has-minus' : '') + (g.isBatal ? ' batal' : '');
+      const fkClickable = g.hasMinus || g.isBatal || g.hasLineBatal;
+      const fkCls = 'fc-faktur' + (fkClickable ? ' fk-link' : '') + ((g.hasMinus || g.hasLineBatal) && !g.isBatal ? ' has-minus' : '') + (g.isBatal ? ' batal' : '');
       const fkAttr = fkClickable ? (' onclick="openFkBatalModal(\'' + String(g.faktur).replace(/\\/g,'\\\\').replace(/'/g,"\\'") + '\')" title="Klik untuk detail / transaksi batal"') : '';
-      const batalBadge = g.isBatal ? '<span class="fk-badge-batal">BATAL</span>' : '';
-      return '<div class="faktur-card' + (g.isBatal ? ' fk-batal' : '') + '"><div class="fc-head"><div class="' + fkCls + '"' + fkAttr + '>' + fkEsc + batalBadge + '</div><div class="fc-head-right"><div class="fc-tgl">' + fmtTgl(g.tgl) + '</div>' + (g.bayar ? '<span class="fc-badge ' + badgeCls + '">' + String(g.bayar).replace(/</g,'&lt;') + '</span>' : '') + '</div></div><div class="fc-meta">' + (g.sales ? '<span>Sales <b>' + String(g.sales).replace(/</g,'&lt;') + '</b></span>' : '') + (g.customer ? '<span>Cust <b title="' + String(g.customer).replace(/"/g,'&quot;') + '">' + String(g.customer).replace(/</g,'&lt;') + '</b></span>' : '') + '</div><ul class="fc-items">' + items + '</ul><div class="fc-nums"><div><div class="fc-num-label">Nominal</div><div class="fc-num-val">' + rp(g.nominal) + '</div></div><div style="text-align:right"><div class="fc-num-label">Profit</div><div class="fc-num-val profit">' + rp(g.profit) + '</div></div></div></div>';
+      const batalBadge = g.isBatal ? '<span class="fk-badge-batal">BATAL</span>' : (g.hasLineBatal ? '<span class="fk-badge-batal">ITEM BATAL</span>' : '');
+      return '<div class="faktur-card' + (g.isBatal || g.hasLineBatal ? ' fk-batal' : '') + '"><div class="fc-head"><div class="' + fkCls + '"' + fkAttr + '>' + fkEsc + batalBadge + '</div><div class="fc-head-right"><div class="fc-tgl">' + fmtTgl(g.tgl) + '</div>' + (g.bayar ? '<span class="fc-badge ' + badgeCls + '">' + String(g.bayar).replace(/</g,'&lt;') + '</span>' : '') + '</div></div><div class="fc-meta">' + (g.sales ? '<span>Sales <b>' + String(g.sales).replace(/</g,'&lt;') + '</b></span>' : '') + (g.customer ? '<span>Cust <b title="' + String(g.customer).replace(/"/g,'&quot;') + '">' + String(g.customer).replace(/</g,'&lt;') + '</b></span>' : '') + '</div><ul class="fc-items">' + items + '</ul><div class="fc-nums"><div><div class="fc-num-label">Nominal</div><div class="fc-num-val">' + rp(g.nominal) + '</div></div><div style="text-align:right"><div class="fc-num-label">Profit</div><div class="fc-num-val profit">' + rp(g.profit) + '</div></div></div></div>';
     }).join('');
     const summary = '<div style="font-size:12px;color:#475569;margin:0 0 10px;font-weight:600">' + all.length.toLocaleString('id-ID') + ' faktur · Qty ' + (R.qty||0).toLocaleString('id-ID') + ' · Nominal ' + rp(R.sales) + ' · Profit ' + rp(R.profit) + (truncated ? ' · Menampilkan ' + list.length.toLocaleString('id-ID') + ' kartu pertama' : '') + '</div>';
     const more = truncated
@@ -2769,15 +2941,16 @@ self.onmessage = function(e){
       shownFaktur.add(row.faktur);
       const nomCell = showAgg ? ('<td class="num" style="font-weight:700">' + rp(row.nominal) + '</td>') : '<td class="num"></td>';
       const prCell  = showAgg ? ('<td class="num" style="font-weight:700">' + rp(row.profit) + '</td>') : '<td class="num"></td>';
-      const fkClickable = row.hasMinus || row.isBatal;
+      const fkClickable = row.hasMinus || row.isBatal || row.hasLineBatal;
       let fkCell = String(row.faktur || '');
       if (fkClickable) {
-        const cls = 'fk-link' + (row.hasMinus && !row.isBatal ? ' has-minus' : '') + (row.isBatal ? ' batal' : '');
-        fkCell = '<span class="' + cls + '" onclick="openFkBatalModal(\'' + String(row.faktur).replace(/\\/g,'\\\\').replace(/'/g,"\\'") + '\')" title="Klik untuk detail / transaksi batal">' + fkCell.replace(/</g,'&lt;') + '</span>' + (row.isBatal ? '<span class="fk-badge-batal">BATAL</span>' : '');
+        const cls = 'fk-link' + ((row.hasMinus || row.hasLineBatal) && !row.isBatal ? ' has-minus' : '') + (row.isBatal ? ' batal' : '');
+        const badge = row.isBatal ? '<span class="fk-badge-batal">BATAL</span>' : (row.hasLineBatal ? '<span class="fk-badge-batal">ITEM BATAL</span>' : '');
+        fkCell = '<span class="' + cls + '" onclick="openFkBatalModal(\'' + String(row.faktur).replace(/\\/g,'\\\\').replace(/'/g,"\\'") + '\')" title="Klik untuk detail / transaksi batal">' + fkCell.replace(/</g,'&lt;') + '</span>' + badge;
       } else {
         fkCell = fkCell.replace(/</g,'&lt;');
       }
-      const rowStyle = row.isBatal ? ' style="opacity:.7;background:#fef2f2"' : (qty < 0 ? ' style="background:#fef2f2"' : '');
+      const rowStyle = row.isBatal ? ' style="opacity:.7;background:#fef2f2"' : (row.lineBatal ? ' style="opacity:.65;background:#f1f5f9;text-decoration:line-through"' : (qty < 0 ? ' style="background:#fef2f2"' : ''));
       body += '<tr' + rowStyle + '><td class="num">' + no + '</td><td>' + tgl + '</td><td>' + fkCell + '</td><td>' + sales + '</td><td title="' + String(produk).replace(/"/g,'&quot;') + '">' + produk + '</td><td class="num">' + qty + '</td><td>' + satuan + '</td><td class="num">' + hj + '</td><td class="num">' + disc + '</td><td class="num">' + total + '</td>' + nomCell + prCell + '<td>' + bayar + '</td><td title="' + String(cust).replace(/"/g,'&quot;') + '">' + cust + '</td></tr>';
     });
     const foot = '<tr><td class="num">TOTAL</td><td></td><td></td><td></td><td></td><td class="num">' + (R.qty || 0) + '</td><td></td><td></td><td></td><td class="num">' + rp(R.sales) + '</td><td class="num">' + rp(R.sales) + '</td><td class="num">' + rp(R.profit) + '</td><td></td><td></td></tr>';
@@ -2977,7 +3150,7 @@ self.onmessage = function(e){
           if (toTs != null && (r._ts == null || r._ts > toTs)) return false;
           if (mode === 'fitri' && !isFitriProduct(r.produk)) return false;
           if (mode === 'rupa' && isFitriProduct(r.produk)) return false;
-          if (isBatalFaktur(r.faktur)) return false;
+          if (isExcludedRow(r, false)) return false;
           return true;
         });
         raw = await coll.toArray();
@@ -2988,7 +3161,7 @@ self.onmessage = function(e){
       if (fromTs != null || toTs != null) raw = raw.filter(x => rowInDateRange(x, fromTs, toTs));
       if (mode === 'fitri') raw = raw.filter(x => isFitriProduct(x.produk));
       if (mode === 'rupa')  raw = raw.filter(x => !isFitriProduct(x.produk));
-      if (batalFakturSet.size) raw = raw.filter(x => !isBatalFaktur(x.faktur ?? x['No. Faktur']));
+      if (batalFakturSet.size || batalLineSet.size) raw = raw.filter(x => !isExcludedRow(x, false));
     }
     return raw || [];
   }
