@@ -421,6 +421,34 @@ body.dark .gmodal-field label{color:#94a3b8}
 body.dark .gmodal-field input{background:#0f172a;color:#e2e8f0;border-color:#475569}
 body.dark .gmodal-info{background:#0f172a;border-color:#334155;color:#cbd5e1}
 body.dark .gmodal-ghost{background:#334155;color:#e2e8f0}
+/* ===== Modal Faktur Batal ===== */
+.fk-link{color:#1f4e78;font-weight:800;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.fk-link:hover{color:#0c3a66}
+.fk-link.has-minus{color:#b42318}
+.fk-link.batal{color:#94a3b8;text-decoration:line-through}
+.fk-badge-batal{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:800;background:#fee2e2;color:#b42318;vertical-align:middle;letter-spacing:.03em}
+.faktur-card.fk-batal{opacity:.72;border-color:#fca5a5;background:linear-gradient(145deg,#fff 0%,#fff5f5 100%)}
+.faktur-card .fc-faktur.fk-link{cursor:pointer}
+#fkBatalOverlay .gmodal-box{max-width:640px;width:100%;max-height:88vh;display:flex;flex-direction:column;padding:18px 20px 16px}
+#fkBatalOverlay .fk-modal-body{overflow:auto;flex:1;min-height:0;margin:8px 0 12px}
+#fkBatalOverlay .fk-meta-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:10px;font-size:12px}
+#fkBatalOverlay .fk-meta-grid b{color:#0f172a}
+#fkBatalOverlay table{width:100%;border-collapse:collapse;font-size:12px;min-width:0}
+#fkBatalOverlay th{background:#1f4e78;color:#fff;padding:6px 8px;text-align:left;position:sticky;top:0}
+#fkBatalOverlay td{padding:6px 8px;border-bottom:1px solid #e2e8f0}
+#fkBatalOverlay td.num{text-align:right}
+#fkBatalOverlay tr.row-minus td{background:#fef2f2;color:#7f1d1d}
+#fkBatalOverlay .fk-warn{font-size:12px;color:#9a3412;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:8px 10px;margin-bottom:10px;line-height:1.45}
+#fkBatalOverlay .fk-batal-btn{background:#b42318}
+#fkBatalOverlay .fk-restore-btn{background:#166534}
+body.dark .fk-link{color:#93c5fd}
+body.dark .fk-link.has-minus{color:#fca5a5}
+body.dark .fk-badge-batal{background:#7f1d1d;color:#fecaca}
+body.dark #fkBatalOverlay th{background:#1e3a5f}
+body.dark #fkBatalOverlay td{border-color:#334155}
+body.dark #fkBatalOverlay tr.row-minus td{background:#450a0a;color:#fecaca}
+body.dark #fkBatalOverlay .fk-warn{background:#431407;border-color:#9a3412;color:#fed7aa}
+body.dark #fkBatalOverlay .fk-meta-grid b{color:#f1f5f9}
 body.dark .report-bar{background:#1e293b;border-color:#334155}
 body.dark #table button[style*="background:#fff"],body.dark #table button[style*="background: #fff"]{background:#1e293b !important;color:#cbd5e1 !important;border-color:#475569 !important}
 body.dark .busy{background:rgba(15,23,42,.7);color:#93c5fd}
@@ -447,22 +475,13 @@ body.dark .backup-action.green{background:#14532d;color:#86efac;border-color:#16
 body.dark .backup-action.warn{background:#422006;color:#fdba74;border-color:#92400e}
 
 /* ===== Tab Sales/Customer (halaman baru) ===== */
-#page-salescust{padding-top:4px}
-#page-salescust > .card{margin:6px 0;padding:10px 12px}
-#page-salescust .cs-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:0 0 8px}
-#page-salescust .cs-kpi{background:#fff;border:1px solid #d6dde6;border-left:3px solid #1f4e78;border-radius:10px;padding:6px 10px;min-width:0;box-shadow:0 1px 4px rgba(31,78,120,.06)}
+#page-salescust{padding-top:8px}
+#page-salescust .cs-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:2px 0 12px}
+#page-salescust .cs-kpi{background:#fff;border:1px solid #d6dde6;border-left:3px solid #1f4e78;border-radius:10px;padding:8px 12px;min-width:0;box-shadow:0 1px 4px rgba(31,78,120,.06)}
 #page-salescust .cs-kpi small{display:block;font-size:10px;color:#64748b;font-weight:600;letter-spacing:.03em}
-#page-salescust .cs-kpi b{display:block;font-size:16px;margin-top:2px;color:#0f172a;font-weight:800;line-height:1.2}
+#page-salescust .cs-kpi b{display:block;font-size:17px;margin-top:2px;color:#0f172a;font-weight:800;line-height:1.25}
 #page-salescust .cs-kpi.cs-total{border-left-color:#d08a2e;background:linear-gradient(145deg,#fff 0%,#fff6e8 100%)}
-#page-salescust .cek-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px}
-#page-salescust .cek-card-title{font-size:12px;font-weight:700;color:#1f4e78;white-space:nowrap;letter-spacing:.02em}
-#page-salescust .cek-card-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-#page-salescust .cek-card-actions label{font-size:11px;font-weight:700;color:#475569}
-#page-salescust .cek-card-actions select{width:auto;min-width:140px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:11px;background:#fff;color:#172033}
-#page-salescust .cek-card-actions > button{padding:4px 10px;font-size:11px;font-weight:700;border-radius:6px;line-height:1.3}
-#page-salescust .cek-refresh-btn{padding:4px 8px;font-size:12px;min-width:30px}
 #scsCustMin{width:78px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12px;background:#fff;color:#172033;box-sizing:border-box}
-#scsCustSearch{width:180px;max-width:40vw;padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:11px;background:#fff;color:#172033}
 #scsCustTable{min-width:900px}
 #scsCustTable thead th{height:34px;box-sizing:border-box;padding:0 8px;text-align:center;font-size:11px;letter-spacing:.03em;z-index:4}
 #scsCustTable thead tr:first-child th[rowspan]{z-index:5}
@@ -478,8 +497,6 @@ body.dark #page-salescust .cs-kpi{background:#1e293b;border-color:#334155;border
 body.dark #page-salescust .cs-kpi small{color:#94a3b8}
 body.dark #page-salescust .cs-kpi b,body.dark #page-salescust .cs-kpi select{color:#f1f5f9}
 body.dark #page-salescust .cs-kpi.cs-total{border-left-color:#d08a2e;background:linear-gradient(145deg,#1e293b 0%,#2a2418 100%)}
-body.dark #page-salescust .cek-card-title{color:#93c5fd}
-body.dark #page-salescust .cek-card-actions label{color:#94a3b8}
 body.dark #scsCustTable thead tr:nth-child(2) th{background:#2d4a6f;color:#e2e8f0}
 body.dark #scsCustTable tbody tr:nth-child(even){background:#1a2536}
 body.dark #scsCustTable tbody tr:hover{background:#243447}
@@ -706,10 +723,6 @@ body.dark #scsCustTable tfoot td{background:#1e3a5f;color:#f1f5f9}
 <!-- ===== PAGE SALES/CUSTOMER (TAB BARU) ===== -->
 <div id="page-salescust" style="display:none">
   <div class="card">
-    <div class="cs-kpis" id="scsCustKpis">
-      <div class="cs-kpi"><small>nama sales</small><b id="scsCustKpiSales">Semua Sales</b></div>
-      <div id="scsCustKpiDyn" style="display:contents"></div>
-    </div>
     <div class="cek-card-head">
       <div class="cek-card-title">🏪 FITRI — SALES / CUSTOMER</div>
       <div class="cek-card-actions">
@@ -727,6 +740,10 @@ body.dark #scsCustTable tfoot td{background:#1e3a5f;color:#f1f5f9}
         <button type="button" class="cek-refresh-btn" onclick="renderScsCust()" title="Segarkan">↻</button>
         <button type="button" onclick="downloadScsCust()">⬇ Download</button>
       </div>
+    </div>
+    <div class="cs-kpis" id="scsCustKpis">
+      <div class="cs-kpi"><small>nama sales</small><b id="scsCustKpiSales">Semua Sales</b></div>
+      <div id="scsCustKpiDyn" style="display:contents"></div>
     </div>
     <div class="tablebox" id="scsCustBox">
       <table id="scsCustTable">
@@ -922,6 +939,18 @@ body.dark #scsCustTable tfoot td{background:#1e3a5f;color:#f1f5f9}
   </div>
 </div>
 
+<div class="gmodal-overlay" id="fkBatalOverlay" onclick="if(event.target===this) closeFkBatalModal()">
+  <div class="gmodal-box">
+    <h3>Detail Faktur — <span id="fkBatalNo">-</span></h3>
+    <div class="gmodal-sub" id="fkBatalSub">Faktur berisi baris qty minus / koreksi</div>
+    <div class="fk-modal-body" id="fkBatalBody"></div>
+    <div class="gmodal-actions" id="fkBatalActions">
+      <button type="button" class="gmodal-ghost" onclick="closeFkBatalModal()">Tutup</button>
+      <button type="button" class="fk-batal-btn" id="fkBatalBtn" onclick="confirmFkBatal()">Transaksi Batal</button>
+    </div>
+  </div>
+</div>
+
 <div class="gmodal-overlay" id="hbDiffOverlay">
   <div class="hbdiff-box">
     <h3>⚠️ Harga Beli Berbeda Ditemukan</h3>
@@ -1105,9 +1134,40 @@ body.dark #scsCustTable tfoot td{background:#1e3a5f;color:#f1f5f9}
 
   let rows = [];
   let filteredRows = [];
+  let filteredRowsInclBatal = [];
   let materialisedRows = [];
   let R = {};
   let filters = {month:'',sales:'',product:'',payment:'',dateFrom:'',dateTo:'',kdCustomer:'',q:''};
+  let batalFakturSet = new Set();
+  let _fkBatalCurrent = null;
+  function isBatalFaktur(nf){
+    const k = String(nf ?? '').trim();
+    return !!(k && batalFakturSet.has(k));
+  }
+  function fakturKeyOf(r){
+    return String(r?.faktur ?? r?.['No. Faktur'] ?? '').trim();
+  }
+  async function loadBatalFaktur(){
+    batalFakturSet = new Set();
+    try {
+      if (useIDB && db){
+        const m = await db.meta.get('batalFaktur');
+        const arr = (m && Array.isArray(m.value)) ? m.value : [];
+        arr.forEach(x => { const s = String(x||'').trim(); if (s) batalFakturSet.add(s); });
+      } else {
+        const raw = localStorage.getItem('rekap-batal-faktur');
+        if (raw) JSON.parse(raw).forEach(x => { const s = String(x||'').trim(); if (s) batalFakturSet.add(s); });
+      }
+    } catch(e){ console.warn('loadBatalFaktur', e); }
+  }
+  async function saveBatalFaktur(){
+    const arr = [...batalFakturSet];
+    try {
+      if (useIDB && db) await db.meta.put({ key: 'batalFaktur', value: arr });
+      else localStorage.setItem('rekap-batal-faktur', JSON.stringify(arr));
+    } catch(e){ console.warn('saveBatalFaktur', e); }
+    try { schedulePush(); } catch(e){}
+  }
   let _qsTimer = null;
   function onQuickSearchInput(){
     clearTimeout(_qsTimer);
@@ -1530,9 +1590,15 @@ self.onmessage = function(e){
   async function postParseDone(_totalRaw, replacedDays, newCount){
     let totalRows, sortData;
     if (useIDB){ totalRows = await db.tx.count(); sortData = await fetchFiltered(); }
-    else { totalRows = rows.length; sortData = rows.slice(); }
+    else { totalRows = rows.length; sortData = await fetchFiltered(); }
     sortData.sort((a,b) => (b._ts || 0) - (a._ts || 0));
-    filteredRows = sortData; materialise();
+    filteredRows = sortData;
+    try {
+      const withBatal = await fetchFiltered({ includeBatal: true });
+      withBatal.sort((a,b) => (b._ts||0) - (a._ts||0));
+      filteredRowsInclBatal = withBatal;
+    } catch(e){ filteredRowsInclBatal = sortData.slice(); }
+    materialise();
     invalidateBuildCache();
     build(materialisedRows);
     updateSummary();
@@ -1597,11 +1663,17 @@ self.onmessage = function(e){
     if (!b) return true;
     return a === b || a.includes(b);
   }
-  async function fetchFiltered(){
+  async function fetchFiltered(opts){
+    opts = opts || {};
+    const includeBatal = !!opts.includeBatal;
     const fromTs = dateStrToStartTs(filters.dateFrom);
     const toTs = dateStrToEndTs(filters.dateTo);
     const kdQ = (filters.kdCustomer || '').trim();
     const qLower = (filters.q || '').trim().toLowerCase();
+    const dropBatal = (list) => {
+      if (includeBatal || !batalFakturSet.size) return list;
+      return list.filter(x => !isBatalFaktur(x.faktur ?? x['No. Faktur']));
+    };
     if (!useIDB){
       let out = rows;
       if (filters.month)   out = out.filter(x => x.bulan === filters.month);
@@ -1612,7 +1684,7 @@ self.onmessage = function(e){
       if (fromTs != null || toTs != null) out = out.filter(x => rowInDateRange(x, fromTs, toTs));
       if (kdQ) out = out.filter(x => matchKdCustomer(x.kdCustomer ?? x['Kd Customer'], kdQ));
       if (qLower) out = out.filter(x => matchQuickSearch(x, qLower));
-      return out;
+      return dropBatal(out);
     }
     let coll;
     if (filters.month && filters.sales) coll = db.tx.where('[bulan+sales]').equals([filters.month, filters.sales]);
@@ -1631,6 +1703,7 @@ self.onmessage = function(e){
       if (!rowInDateRange(r, fromTs, toTs)) return false;
       if (kdQ && !matchKdCustomer(r.kdCustomer, kdQ)) return false;
       if (qLower && !matchQuickSearch(r, qLower)) return false;
+      if (!includeBatal && isBatalFaktur(r.faktur)) return false;
       return true;
     });
     return await coll.toArray();
@@ -1676,7 +1749,13 @@ self.onmessage = function(e){
     const filtr = await fetchFiltered();
     if (_myToken !== _applyFiltersToken) { return; }
     filtr.sort((a,b) => (b._ts||0) - (a._ts||0));
-    filteredRows = filtr; materialise();
+    filteredRows = filtr;
+    try {
+      const withBatal = await fetchFiltered({ includeBatal: true });
+      withBatal.sort((a,b) => (b._ts||0) - (a._ts||0));
+      filteredRowsInclBatal = withBatal;
+    } catch(e){ filteredRowsInclBatal = filtr.slice(); }
+    materialise();
     buildCached(materialisedRows);
     s7DateFilter = ''; s7Page = 0; viewCache = {};
     updateSummary(); updateFilterUi();
@@ -1837,6 +1916,11 @@ self.onmessage = function(e){
     if (useIDB) await populateFiltersDOM();
     filteredRows = await fetchFiltered();
     filteredRows.sort((a,b) => (b._ts||0) - (a._ts||0));
+    try {
+      const withBatal = await fetchFiltered({ includeBatal: true });
+      withBatal.sort((a,b) => (b._ts||0) - (a._ts||0));
+      filteredRowsInclBatal = withBatal;
+    } catch(e){ filteredRowsInclBatal = filteredRows.slice(); }
     materialise();
     invalidateBuildCache(); build(materialisedRows); updateSummary();
     if (!useIDB){
@@ -1872,7 +1956,7 @@ self.onmessage = function(e){
     if (!confirm('Hapus ' + count.toLocaleString('id-ID') + ' baris pada ' + monthLabel(m) + '?')) return;
     rows = rows.filter(x => monthKey(x.Tanggal || x.tanggal) !== m);
     if (!rows.length){
-      filteredRows = []; materialisedRows = []; R = {};
+      filteredRows = []; filteredRowsInclBatal = []; materialisedRows = []; R = {};
       dataVersion++; viewCache = {}; s0KeyBuilt = ''; invalidateBuildCache();
       document.getElementById('summary').style.display = 'none';
       document.getElementById('result').style.display = 'none';
@@ -2236,10 +2320,19 @@ self.onmessage = function(e){
     const totVal = N(x.Total);
     const margin = totVal !== 0 ? (pr / totVal) * 100 : null;
     const lowMargin = margin !== null && margin < 3;
-    const all = {no:i+1,tgl:fmtTgl(x.Tanggal),faktur:x['No. Faktur'],produk:x.Produk,qty:x.Jumlah,satuan:x.Satuan||'',hjual:rp(x['Harga Jual']),hargabeli:rp(x['Harga Beli']),disc:rp(x.Discount),total:rp(x.Total),hpp:rp(N(x.Jumlah) * N(x['Harga Beli'])),profit:rp(pr),sales:x.Sales,bayar:x.Pembayaran,customer:x.Customer||'',kdcustomer:x['Kd Customer']||'',alamat:x.Alamat||''};
-    const cells = s0Vis.map(c => { const v = all[c.k], cls = (typeof v === 'number') ? 'num' : ''; const title = (typeof v === 'string' && v.length > 10) ? ' title="' + v.replace(/"/g,'&quot;') + '"' : ''; return '<td class="' + cls + '"' + title + '>' + v + '</td>'; }).join('');
+    const qtyVal = N(x.Jumlah);
+    const nf = String(x['No. Faktur'] ?? '').trim();
+    let fakturCell = nf;
+    if (nf && qtyVal < 0) {
+      fakturCell = '<span class="fk-link has-minus" onclick="event.stopPropagation();openFkBatalModal(\'' + nf.replace(/\\/g,'\\\\').replace(/'/g,"\\'") + '\')" title="Klik untuk detail / transaksi batal">' + nf.replace(/</g,'&lt;') + '</span>';
+    } else {
+      fakturCell = String(nf).replace(/</g,'&lt;');
+    }
+    const all = {no:i+1,tgl:fmtTgl(x.Tanggal),faktur:fakturCell,produk:x.Produk,qty:x.Jumlah,satuan:x.Satuan||'',hjual:rp(x['Harga Jual']),hargabeli:rp(x['Harga Beli']),disc:rp(x.Discount),total:rp(x.Total),hpp:rp(N(x.Jumlah) * N(x['Harga Beli'])),profit:rp(pr),sales:x.Sales,bayar:x.Pembayaran,customer:x.Customer||'',kdcustomer:x['Kd Customer']||'',alamat:x.Alamat||''};
+    const cells = s0Vis.map(c => { const v = all[c.k], cls = (typeof v === 'number') ? 'num' : ''; const title = (c.k !== 'faktur' && typeof v === 'string' && v.length > 10) ? ' title="' + v.replace(/"/g,'&quot;') + '"' : ''; return '<td class="' + cls + '"' + title + '>' + v + '</td>'; }).join('');
     const clickAttr = lowMargin ? ' onclick="showMarginDetail(' + i + ')" title="Klik untuk lihat detail anomali margin"' : '';
-    return '<tr class="vrow' + (lowMargin ? ' low-margin' : '') + '"' + clickAttr + '>' + cells + '</tr>';
+    const rowExtra = qtyVal < 0 ? ' style="background:#fef2f2"' : '';
+    return '<tr class="vrow' + (lowMargin ? ' low-margin' : '') + '"' + clickAttr + rowExtra + '>' + cells + '</tr>';
   }
   const MARGIN_MIN = 3;
   function showMarginDetail(i){
@@ -2471,17 +2564,114 @@ self.onmessage = function(e){
     const table = '<div class="tablebox"><table class="s10table"><thead><tr><th class="s10-h0" rowspan="2">Bulan</th><th class="s10-h1" colspan="3">Produk Fitri</th><th class="s10-h1" colspan="3">Produk Rupa rupa</th><th class="s10-h0" rowspan="2">Total<br>Nominal Penjualan</th><th class="s10-h0" rowspan="2">Total<br>Profit</th></tr><tr><th class="s10-h2">Qty</th><th class="s10-h2">Nominal Penjualan</th><th class="s10-h2">Profit</th><th class="s10-h2">Qty</th><th class="s10-h2">Nominal Penjualan</th><th class="s10-h2">Profit</th></tr></thead><tbody>' + body + '</tbody>' + (foot ? '<tfoot>' + foot + '</tfoot>' : '') + '</table></div>';
     return reportBar('s10','Data Bulanan') + caption + table;
   }
+  function getFakturSourceRows(){
+    const src = (filteredRowsInclBatal && filteredRowsInclBatal.length) ? filteredRowsInclBatal : filteredRows;
+    return src.map((r) => {
+      if (r.Produk !== undefined || r['No. Faktur'] !== undefined) return r;
+      return materialiseOne(r);
+    });
+  }
+  function collectRowsForFaktur(nf){
+    const key = String(nf || '').trim();
+    if (!key) return [];
+    const src = getFakturSourceRows();
+    return src.filter(x => String(x['No. Faktur'] ?? x.faktur ?? '').trim() === key);
+  }
+  function openFkBatalModal(nf){
+    const key = String(nf || '').trim();
+    if (!key) return;
+    const items = collectRowsForFaktur(key);
+    if (!items.length){ alert('Detail faktur tidak ditemukan.'); return; }
+    const isBatal = isBatalFaktur(key);
+    const hasMinus = items.some(x => N(x.Jumlah) < 0);
+    _fkBatalCurrent = { faktur: key, items, isBatal, hasMinus };
+    document.getElementById('fkBatalNo').textContent = key;
+    document.getElementById('fkBatalSub').textContent = isBatal
+      ? 'Status: TRANSAKSI BATAL — data ini tidak dihitung di tab/sub-tab lain'
+      : (hasMinus ? 'Faktur berisi baris qty minus / koreksi' : 'Detail faktur');
+    const first = items[0];
+    let nom = 0, pr = 0;
+    items.forEach(x => { const t = N(x.Total); nom += t; pr += t - N(x.Jumlah) * N(x['Harga Beli']); });
+    let html = '';
+    if (hasMinus && !isBatal) {
+      html += '<div class="fk-warn">⚠ Faktur ini punya baris qty <b>minus</b>. Jika ini transaksi batal/koreksi, tekan <b>Transaksi Batal</b> agar seluruh baris faktur ini <b>tidak dihitung</b> di semua tab &amp; sub-tab (Penjualan, Cek, Sales/Customer, Analisa, dll).</div>';
+    }
+    if (isBatal) {
+      html += '<div class="fk-warn" style="background:#f0fdf4;border-color:#86efac;color:#166534">✅ Faktur ini sudah ditandai <b>BATAL</b> dan dikecualikan dari perhitungan. Anda bisa mengaktifkan kembali jika salah.</div>';
+    }
+    html += '<div class="fk-meta-grid">';
+    html += '<div>Tanggal<br><b>' + fmtTgl(first.Tanggal) + '</b></div>';
+    html += '<div>Sales<br><b>' + escHtml(first.Sales || '-') + '</b></div>';
+    html += '<div>Customer<br><b>' + escHtml(first.Customer || '-') + '</b></div>';
+    html += '<div>Pembayaran<br><b>' + escHtml(first.Pembayaran || '-') + '</b></div>';
+    html += '<div>Nominal net<br><b>' + rp(nom) + '</b></div>';
+    html += '<div>Profit net<br><b>' + rp(pr) + '</b></div>';
+    html += '</div>';
+    html += '<table><thead><tr><th>Produk</th><th class="num">Qty</th><th>Sat</th><th class="num">Harga Jual</th><th class="num">Disc</th><th class="num">Total</th></tr></thead><tbody>';
+    items.forEach(x => {
+      const q = N(x.Jumlah);
+      html += '<tr' + (q < 0 ? ' class="row-minus"' : '') + '><td>' + escHtml(x.Produk || '') + '</td><td class="num">' + q + '</td><td>' + escHtml(x.Satuan || '') + '</td><td class="num">' + rp(x['Harga Jual']) + '</td><td class="num">' + rp(x.Discount) + '</td><td class="num">' + rp(x.Total) + '</td></tr>';
+    });
+    html += '</tbody></table>';
+    document.getElementById('fkBatalBody').innerHTML = html;
+    const btn = document.getElementById('fkBatalBtn');
+    if (isBatal) {
+      btn.textContent = 'Aktifkan Kembali';
+      btn.className = 'fk-restore-btn';
+      btn.onclick = confirmFkRestore;
+    } else {
+      btn.textContent = 'Transaksi Batal';
+      btn.className = 'fk-batal-btn';
+      btn.onclick = confirmFkBatal;
+    }
+    document.getElementById('fkBatalOverlay').classList.add('show');
+  }
+  function closeFkBatalModal(){
+    document.getElementById('fkBatalOverlay').classList.remove('show');
+    _fkBatalCurrent = null;
+  }
+  async function confirmFkBatal(){
+    if (!_fkBatalCurrent) return;
+    const nf = _fkBatalCurrent.faktur;
+    if (!confirm('Tandai faktur "' + nf + '" sebagai TRANSAKSI BATAL?\n\nSeluruh baris faktur ini tidak akan dihitung di semua tab & sub-tab.\nData tetap tersimpan dan bisa diaktifkan kembali.')) return;
+    batalFakturSet.add(nf);
+    await saveBatalFaktur();
+    closeFkBatalModal();
+    showBusy('Memperbarui…');
+    await refreshAfterDataChange();
+    hideBusy();
+    setStatus('Faktur ' + nf + ' ditandai BATAL — dikecualikan dari perhitungan.');
+  }
+  async function confirmFkRestore(){
+    if (!_fkBatalCurrent) return;
+    const nf = _fkBatalCurrent.faktur;
+    if (!confirm('Aktifkan kembali faktur "' + nf + '"?\n\nData faktur ini akan kembali dihitung di semua tab.')) return;
+    batalFakturSet.delete(nf);
+    await saveBatalFaktur();
+    closeFkBatalModal();
+    showBusy('Memperbarui…');
+    await refreshAfterDataChange();
+    hideBusy();
+    setStatus('Faktur ' + nf + ' diaktifkan kembali.');
+  }
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape'){
+      const ov = document.getElementById('fkBatalOverlay');
+      if (ov && ov.classList.contains('show')) closeFkBatalModal();
+    }
+  });
   function buildFakturRows(){
     const groups = new Map();
-    const n = filteredRows.length;
-    for (let i = 0; i < n; i++){
-      const x = getUiRow(i); if (!x) continue;
+    const src = getFakturSourceRows();
+    for (let i = 0; i < src.length; i++){
+      const x = src[i]; if (!x) continue;
       const nf = String(x['No. Faktur'] ?? x.faktur ?? '').trim() || '(Tanpa Faktur)';
       const total = N(x.Total);
       const pr = total - N(x.Jumlah) * N(x['Harga Beli']);
       let g = groups.get(nf);
-      if (!g){ g = { faktur: nf, items: [], nominal: 0, profit: 0, tgl: x.Tanggal, ts: x._ts || 0, sales: x.Sales || '', bayar: x.Pembayaran || '', customer: x.Customer || '' }; groups.set(nf, g); }
+      if (!g){ g = { faktur: nf, items: [], nominal: 0, profit: 0, tgl: x.Tanggal, ts: x._ts || 0, sales: x.Sales || '', bayar: x.Pembayaran || '', customer: x.Customer || '', isBatal: isBatalFaktur(nf), hasMinus: false }; groups.set(nf, g); }
       g.items.push(x); g.nominal += total; g.profit += pr;
+      if (N(x.Jumlah) < 0) g.hasMinus = true;
       if (x._ts && (!g.ts || x._ts < g.ts)){ g.ts = x._ts; g.tgl = x.Tanggal; }
       if (!g.sales && x.Sales) g.sales = x.Sales;
       if (!g.bayar && x.Pembayaran) g.bayar = x.Pembayaran;
@@ -2489,7 +2679,7 @@ self.onmessage = function(e){
     }
     const list = [...groups.values()].sort((a,b) => { if (a.ts !== b.ts) return (b.ts||0) - (a.ts||0); return String(a.faktur).localeCompare(String(b.faktur)); });
     const rows = [];
-    list.forEach(g => { g.items.forEach((x, idx) => { rows.push({ x, isFirst: idx === 0, span: g.items.length, nominal: g.nominal, profit: g.profit, faktur: g.faktur, sales: g.sales, bayar: g.bayar, customer: g.customer }); }); });
+    list.forEach(g => { g.items.forEach((x, idx) => { rows.push({ x, isFirst: idx === 0, span: g.items.length, nominal: g.nominal, profit: g.profit, faktur: g.faktur, sales: g.sales, bayar: g.bayar, customer: g.customer, isBatal: g.isBatal, hasMinus: g.hasMinus }); }); });
     return rows;
   }
   let fakturViewMode = 'card';
@@ -2503,15 +2693,16 @@ self.onmessage = function(e){
   }
   function buildFakturGroups(){
     const groups = new Map();
-    const n = filteredRows.length;
-    for (let i = 0; i < n; i++){
-      const x = getUiRow(i); if (!x) continue;
+    const src = getFakturSourceRows();
+    for (let i = 0; i < src.length; i++){
+      const x = src[i]; if (!x) continue;
       const nf = String(x['No. Faktur'] ?? x.faktur ?? '').trim() || '(Tanpa Faktur)';
       const total = N(x.Total);
       const pr = total - N(x.Jumlah) * N(x['Harga Beli']);
       let g = groups.get(nf);
-      if (!g){ g = { faktur: nf, items: [], nominal: 0, profit: 0, tgl: x.Tanggal, ts: x._ts || 0, sales: x.Sales || '', bayar: x.Pembayaran || '', customer: x.Customer || '' }; groups.set(nf, g); }
+      if (!g){ g = { faktur: nf, items: [], nominal: 0, profit: 0, tgl: x.Tanggal, ts: x._ts || 0, sales: x.Sales || '', bayar: x.Pembayaran || '', customer: x.Customer || '', isBatal: isBatalFaktur(nf), hasMinus: false }; groups.set(nf, g); }
       g.items.push(x); g.nominal += total; g.profit += pr;
+      if (N(x.Jumlah) < 0) g.hasMinus = true;
       if (x._ts && (!g.ts || x._ts < g.ts)){ g.ts = x._ts; g.tgl = x.Tanggal; }
       if (!g.sales && x.Sales) g.sales = x.Sales;
       if (!g.bayar && x.Pembayaran) g.bayar = x.Pembayaran;
@@ -2539,7 +2730,12 @@ self.onmessage = function(e){
         const prod = String(x.Produk || '').replace(/</g,'&lt;'); const qty = N(x.Jumlah); const sat = x.Satuan || ''; const line = rp(x.Total);
         return '<li><span class="fc-prod" title="' + prod.replace(/"/g,'&quot;') + '">' + prod + '</span><span class="fc-qty">' + qty + (sat ? ' ' + sat : '') + '</span><span class="fc-line">' + line + '</span></li>';
       }).join('');
-      return '<div class="faktur-card"><div class="fc-head"><div class="fc-faktur">' + String(g.faktur).replace(/</g,'&lt;') + '</div><div class="fc-head-right"><div class="fc-tgl">' + fmtTgl(g.tgl) + '</div>' + (g.bayar ? '<span class="fc-badge ' + badgeCls + '">' + String(g.bayar).replace(/</g,'&lt;') + '</span>' : '') + '</div></div><div class="fc-meta">' + (g.sales ? '<span>Sales <b>' + String(g.sales).replace(/</g,'&lt;') + '</b></span>' : '') + (g.customer ? '<span>Cust <b title="' + String(g.customer).replace(/"/g,'&quot;') + '">' + String(g.customer).replace(/</g,'&lt;') + '</b></span>' : '') + '</div><ul class="fc-items">' + items + '</ul><div class="fc-nums"><div><div class="fc-num-label">Nominal</div><div class="fc-num-val">' + rp(g.nominal) + '</div></div><div style="text-align:right"><div class="fc-num-label">Profit</div><div class="fc-num-val profit">' + rp(g.profit) + '</div></div></div></div>';
+      const fkEsc = String(g.faktur).replace(/</g,'&lt;').replace(/"/g,'&quot;');
+      const fkClickable = g.hasMinus || g.isBatal;
+      const fkCls = 'fc-faktur' + (fkClickable ? ' fk-link' : '') + (g.hasMinus && !g.isBatal ? ' has-minus' : '') + (g.isBatal ? ' batal' : '');
+      const fkAttr = fkClickable ? (' onclick="openFkBatalModal(\'' + String(g.faktur).replace(/\\/g,'\\\\').replace(/'/g,"\\'") + '\')" title="Klik untuk detail / transaksi batal"') : '';
+      const batalBadge = g.isBatal ? '<span class="fk-badge-batal">BATAL</span>' : '';
+      return '<div class="faktur-card' + (g.isBatal ? ' fk-batal' : '') + '"><div class="fc-head"><div class="' + fkCls + '"' + fkAttr + '>' + fkEsc + batalBadge + '</div><div class="fc-head-right"><div class="fc-tgl">' + fmtTgl(g.tgl) + '</div>' + (g.bayar ? '<span class="fc-badge ' + badgeCls + '">' + String(g.bayar).replace(/</g,'&lt;') + '</span>' : '') + '</div></div><div class="fc-meta">' + (g.sales ? '<span>Sales <b>' + String(g.sales).replace(/</g,'&lt;') + '</b></span>' : '') + (g.customer ? '<span>Cust <b title="' + String(g.customer).replace(/"/g,'&quot;') + '">' + String(g.customer).replace(/</g,'&lt;') + '</b></span>' : '') + '</div><ul class="fc-items">' + items + '</ul><div class="fc-nums"><div><div class="fc-num-label">Nominal</div><div class="fc-num-val">' + rp(g.nominal) + '</div></div><div style="text-align:right"><div class="fc-num-label">Profit</div><div class="fc-num-val profit">' + rp(g.profit) + '</div></div></div></div>';
     }).join('');
     const summary = '<div style="font-size:12px;color:#475569;margin:0 0 10px;font-weight:600">' + all.length.toLocaleString('id-ID') + ' faktur · Qty ' + (R.qty||0).toLocaleString('id-ID') + ' · Nominal ' + rp(R.sales) + ' · Profit ' + rp(R.profit) + (truncated ? ' · Menampilkan ' + list.length.toLocaleString('id-ID') + ' kartu pertama' : '') + '</div>';
     const more = truncated
@@ -2573,7 +2769,16 @@ self.onmessage = function(e){
       shownFaktur.add(row.faktur);
       const nomCell = showAgg ? ('<td class="num" style="font-weight:700">' + rp(row.nominal) + '</td>') : '<td class="num"></td>';
       const prCell  = showAgg ? ('<td class="num" style="font-weight:700">' + rp(row.profit) + '</td>') : '<td class="num"></td>';
-      body += '<tr><td class="num">' + no + '</td><td>' + tgl + '</td><td>' + row.faktur + '</td><td>' + sales + '</td><td title="' + String(produk).replace(/"/g,'&quot;') + '">' + produk + '</td><td class="num">' + qty + '</td><td>' + satuan + '</td><td class="num">' + hj + '</td><td class="num">' + disc + '</td><td class="num">' + total + '</td>' + nomCell + prCell + '<td>' + bayar + '</td><td title="' + String(cust).replace(/"/g,'&quot;') + '">' + cust + '</td></tr>';
+      const fkClickable = row.hasMinus || row.isBatal;
+      let fkCell = String(row.faktur || '');
+      if (fkClickable) {
+        const cls = 'fk-link' + (row.hasMinus && !row.isBatal ? ' has-minus' : '') + (row.isBatal ? ' batal' : '');
+        fkCell = '<span class="' + cls + '" onclick="openFkBatalModal(\'' + String(row.faktur).replace(/\\/g,'\\\\').replace(/'/g,"\\'") + '\')" title="Klik untuk detail / transaksi batal">' + fkCell.replace(/</g,'&lt;') + '</span>' + (row.isBatal ? '<span class="fk-badge-batal">BATAL</span>' : '');
+      } else {
+        fkCell = fkCell.replace(/</g,'&lt;');
+      }
+      const rowStyle = row.isBatal ? ' style="opacity:.7;background:#fef2f2"' : (qty < 0 ? ' style="background:#fef2f2"' : '');
+      body += '<tr' + rowStyle + '><td class="num">' + no + '</td><td>' + tgl + '</td><td>' + fkCell + '</td><td>' + sales + '</td><td title="' + String(produk).replace(/"/g,'&quot;') + '">' + produk + '</td><td class="num">' + qty + '</td><td>' + satuan + '</td><td class="num">' + hj + '</td><td class="num">' + disc + '</td><td class="num">' + total + '</td>' + nomCell + prCell + '<td>' + bayar + '</td><td title="' + String(cust).replace(/"/g,'&quot;') + '">' + cust + '</td></tr>';
     });
     const foot = '<tr><td class="num">TOTAL</td><td></td><td></td><td></td><td></td><td class="num">' + (R.qty || 0) + '</td><td></td><td></td><td></td><td class="num">' + rp(R.sales) + '</td><td class="num">' + rp(R.sales) + '</td><td class="num">' + rp(R.profit) + '</td><td></td><td></td></tr>';
     if (!totalLines){ return '<div class="tablebox"><table><thead><tr>' + head.map(h => '<th>'+h+'</th>').join('') + '</tr></thead><tbody><tr><td colspan="14" style="text-align:center;padding:28px;color:#64748b">Belum ada data.</td></tr></tbody></table></div>'; }
@@ -2722,6 +2927,7 @@ self.onmessage = function(e){
     try {
       const total = await db.tx.count();
       if (!total) return;
+      await loadBatalFaktur();
       const metaFilters = await db.meta.get('filters');
       if (metaFilters && metaFilters.value) { filters = Object.assign({month:'',sales:'',product:'',payment:'',dateFrom:'',dateTo:'',kdCustomer:'',q:''}, metaFilters.value); }
       const monthsMeta = ((await db.meta.get('months')) || {}).value || [];
@@ -2771,6 +2977,7 @@ self.onmessage = function(e){
           if (toTs != null && (r._ts == null || r._ts > toTs)) return false;
           if (mode === 'fitri' && !isFitriProduct(r.produk)) return false;
           if (mode === 'rupa' && isFitriProduct(r.produk)) return false;
+          if (isBatalFaktur(r.faktur)) return false;
           return true;
         });
         raw = await coll.toArray();
@@ -2781,6 +2988,7 @@ self.onmessage = function(e){
       if (fromTs != null || toTs != null) raw = raw.filter(x => rowInDateRange(x, fromTs, toTs));
       if (mode === 'fitri') raw = raw.filter(x => isFitriProduct(x.produk));
       if (mode === 'rupa')  raw = raw.filter(x => !isFitriProduct(x.produk));
+      if (batalFakturSet.size) raw = raw.filter(x => !isBatalFaktur(x.faktur ?? x['No. Faktur']));
     }
     return raw || [];
   }
