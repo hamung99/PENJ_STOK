@@ -587,6 +587,7 @@ body.dark #scsCustTable tfoot td{background:#1e3a5f;color:#f1f5f9}
       <button type="button" class="main-tab" data-tab="gudang">Data Gudang</button>
       <button type="button" class="main-tab" data-tab="cek">Cek</button>
       <button type="button" class="main-tab" data-tab="analisa">📊 Analisa</button>
+      <button type="button" class="main-tab" data-tab="ar">AR</button>
     </nav>
     <button type="button" class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Mode gelap / terang">🌙</button>
     <div class="dd" id="menuDd">
@@ -1193,6 +1194,10 @@ body.dark #scsCustTable tfoot td{background:#1e3a5f;color:#f1f5f9}
       </div>
     </div>
   </div>
+</div>
+
+<div id="page-ar" style="display:none;padding:0;margin:0">
+  <iframe id="arFrame" src="./AR.html" title="Data AR" style="width:100%;min-height:calc(100vh - 48px);height:calc(100vh - 48px);border:0;display:block;background:#f0f4f8"></iframe>
 </div>
 </main>
 
@@ -3972,11 +3977,13 @@ self.onmessage = function(e){
       const gd = document.getElementById('page-gudang');
       const ck = document.getElementById('page-cek');
       const an = document.getElementById('page-analisa');
+      const ar = document.getElementById('page-ar');
       if (pj) pj.style.display = (tab === 'penjualan') ? 'block' : 'none';
       if (sc) sc.style.display = (tab === 'salescust') ? 'block' : 'none';
       if (gd) gd.style.display = (tab === 'gudang') ? 'block' : 'none';
       if (ck) ck.style.display = (tab === 'cek') ? 'block' : 'none';
       if (an) an.style.display = (tab === 'analisa') ? 'block' : 'none';
+      if (ar) ar.style.display = (tab === 'ar') ? 'block' : 'none';
       if (tab === 'cek') {
         renderCekActive();
       } else if (tab === 'salescust') {
