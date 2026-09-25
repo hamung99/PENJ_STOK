@@ -287,8 +287,8 @@ body.dark #cekRingkasanTable tfoot td,body.dark #cekRupaTable tfoot td{backgroun
 #page-cek .cek-subtab.active{background:#1f4e78;border-color:#1f4e78;color:#fff}
 #page-cek .cek-subtabs{position:relative}
 .cek-alert-flags{display:none;align-items:center;gap:4px;margin-left:auto;min-height:26px}
-.cek-alert-flags .flag-icon{width:22px;height:22px;flex:none;animation:cekFlagPop .28s ease-out}
-@keyframes cekFlagPop{0%{opacity:0;transform:scale(.35) rotate(-6deg)}70%{opacity:1;transform:scale(1.12) rotate(2deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+.cek-alert-flags .flag-icon{width:22px;height:22px;flex:none;display:inline-block;opacity:0;transform:scale(.4) rotate(-8deg);transition:opacity .25s ease-out,transform .25s ease-out}
+.cek-alert-flags .flag-icon.show{opacity:1;transform:scale(1) rotate(0)}
 #page-cek .cek-panel{display:none}
 #page-cek .cek-panel.active{display:block}
 #cekPanelCust .cs-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:2px 0 12px}
@@ -3300,25 +3300,39 @@ self.onmessage = function(e){
   // ===== Indikator flag animasi (muncul jika ada "Penjualan/Gudang Lebih Banyak") =====
   const CEK_FLAG_MAX = 4;
   const CEK_FLAG_INTERVAL_MS = 500;
-  const CEK_FLAG_SVG = '<svg class="flag-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
-    '<rect x="1" y="1" width="22" height="22" rx="3" fill="#111827"/>' +
-    '<circle cx="12" cy="9.5" r="5" fill="#f8fafc"/>' +
-    '<circle cx="9.8" cy="8.6" r="1" fill="#111827"/>' +
-    '<circle cx="14.2" cy="8.6" r="1" fill="#111827"/>' +
-    '<path d="M9.3 11.6c1 .9 3.6.9 5.4 0" stroke="#111827" stroke-width="1" fill="none" stroke-linecap="round"/>' +
-    '<path d="M3.5 17.5l4-2.1 4 2.1 4-2.1 4 2.1" stroke="#f8fafc" stroke-width="1.7" fill="none" stroke-linecap="round"/>' +
-    '<path d="M3.5 20.2l4-2.1 4 2.1 4-2.1 4 2.1" stroke="#f8fafc" stroke-width="1.7" fill="none" stroke-linecap="round"/>' +
+  // Warna sengaja dibuat beda dari bendera One Piece (bukan hitam-putih): dasar navy, tengkorak/tulang warna amber.
+  const CEK_FLAG_SVG_INNER = '<svg viewBox="0 0 24 24" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+    '<rect x="1" y="1" width="22" height="22" rx="3" fill="#1e3a5f"/>' +
+    '<circle cx="12" cy="9.5" r="5" fill="#fbbf24"/>' +
+    '<circle cx="9.8" cy="8.6" r="1" fill="#1e3a5f"/>' +
+    '<circle cx="14.2" cy="8.6" r="1" fill="#1e3a5f"/>' +
+    '<path d="M9.3 11.6c1 .9 3.6.9 5.4 0" stroke="#1e3a5f" stroke-width="1" fill="none" stroke-linecap="round"/>' +
+    '<path d="M3.5 17.5l4-2.1 4 2.1 4-2.1 4 2.1" stroke="#fbbf24" stroke-width="1.7" fill="none" stroke-linecap="round"/>' +
+    '<path d="M3.5 20.2l4-2.1 4 2.1 4-2.1 4 2.1" stroke="#fbbf24" stroke-width="1.7" fill="none" stroke-linecap="round"/>' +
   '</svg>';
-  let _cekFlagTimer = null, _cekFlagCount = 0;
+  let _cekFlagTimer = null, _cekFlagCount = 0, _cekFlagBuilt = false;
+  function ensureCekFlagSlots(el){
+    if (_cekFlagBuilt) return;
+    el.innerHTML = '';
+    for (let i = 0; i < CEK_FLAG_MAX; i++){
+      const span = document.createElement('span');
+      span.className = 'flag-icon';
+      span.innerHTML = CEK_FLAG_SVG_INNER;
+      el.appendChild(span);
+    }
+    _cekFlagBuilt = true;
+  }
   function startCekFlagAnimation(){
     const el = document.getElementById('cekAlertFlags');
     if (!el) return;
+    ensureCekFlagSlots(el);
     el.style.display = 'flex';
     if (_cekFlagTimer) return;
     _cekFlagCount = 0;
     const tick = () => {
       _cekFlagCount = (_cekFlagCount % CEK_FLAG_MAX) + 1;
-      el.innerHTML = CEK_FLAG_SVG.repeat(_cekFlagCount);
+      const icons = el.querySelectorAll('.flag-icon');
+      icons.forEach((icon, idx) => icon.classList.toggle('show', idx < _cekFlagCount));
     };
     tick();
     _cekFlagTimer = setInterval(tick, CEK_FLAG_INTERVAL_MS);
@@ -3326,7 +3340,7 @@ self.onmessage = function(e){
   function stopCekFlagAnimation(){
     if (_cekFlagTimer) { clearInterval(_cekFlagTimer); _cekFlagTimer = null; }
     const el = document.getElementById('cekAlertFlags');
-    if (el) { el.innerHTML = ''; el.style.display = 'none'; }
+    if (el) { el.querySelectorAll('.flag-icon').forEach(icon => icon.classList.remove('show')); el.style.display = 'none'; }
   }
   function updateCekAlertFlags(){
     const activeBtn = document.querySelector('#page-cek .cek-subtab.active');
