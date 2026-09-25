@@ -1506,7 +1506,7 @@ self.onmessage = function(e){
 };
 `;
 
-  let _worker = null, _fallbackMode = false, _parseFileName = '';
+  let _worker = null, _fallbackMode = false, _parseFileName = '', _pendingBuffer = null;
   function getWorker(){
     if (_fallbackMode) return null;
     if (_worker) return _worker;
@@ -1515,7 +1515,23 @@ self.onmessage = function(e){
       const url = URL.createObjectURL(blob);
       _worker = new Worker(url);
       _worker.onmessage = onWorkerMsg;
-      _worker.onerror = function(err){ console.warn('Worker error, switching to in-memory fallback', err); _fallbackMode = true; };
+      _worker.onerror = function(err){
+        console.warn('Worker error, switching to in-memory fallback', err);
+        _fallbackMode = true;
+        // PENTING: reset flag agar upload berikutnya tidak diblokir
+        // dan spinner tidak nyangkut saat CDN XLSX gagal dimuat di worker.
+        if (_inFlightWorker){
+          _inFlightWorker = false;
+          const buf = _pendingBuffer; _pendingBuffer = null;
+          hideBusy();
+          if (buf){
+            try { fallbackSyncParse(buf); }
+            catch(e){ console.warn('fallbackSyncParse (worker error) gagal', e); hideBusy(); setStatus('Gagal membaca Excel: ' + (e.message||e)); }
+          } else {
+            setStatus('Gagal memuat parser worker. Coba muat ulang halaman.');
+          }
+        }
+      };
     } catch(e){ console.warn('Worker init failed; in-memory fallback will be used.', e); _fallbackMode = true; }
     return _worker;
   }
@@ -1648,12 +1664,31 @@ self.onmessage = function(e){
   async function commitIncomingTx(chunkRows, monthList){
     const list = (chunkRows || []);
     const dayKeys = [...new Set(list.map(r => dayKeyOfTs(r._ts)).filter(Boolean))].sort();
+
+    // Baris dengan _ts null (tanggal tidak terbaca) tidak punya "hari" sehingga
+    // tidak bisa di-dedupe lewat range tanggal. Kita dedupe berdasarkan No. Faktur
+    // (fallback ke produk+jumlah+total) supaya re-import tidak menumpuk duplikat
+    // yang tidak bisa dihapus lewat "Hapus Bulan".
+    const nullKeyOf = (r) => {
+      const f = String(r.faktur ?? '').trim();
+      if (f) return 'F|' + f;
+      return 'P|' + String(r.produk ?? '').trim() + '|' + N(r.jumlah) + '|' + N(r.total);
+    };
+    const nullKeySet = new Set(list.filter(r => !r._ts).map(nullKeyOf));
+
     if (useIDB){
       for (const k of dayKeys){ const r = dayRangeOfKey(k); try { await db.tx.where('_ts').between(r[0], r[1], true, true).delete(); } catch(e){ console.warn('delete tanggal', k, e); } }
+      if (nullKeySet.size){
+        try {
+          const toDelete = await db.tx.filter(r => !r._ts && nullKeySet.has(nullKeyOf(r))).toArray();
+          if (toDelete.length) await db.tx.bulkDelete(toDelete.map(r => r.id));
+        } catch(e){ console.warn('delete null-day rows', e); }
+      }
       if (list.length){ try { await db.tx.bulkPut(list.map(r => { const o = Object.assign({}, r); delete o.id; return o; })); } catch(e){ console.warn('bulkPut incoming', e); } }
     } else {
       const daySet = new Set(dayKeys);
       if (daySet.size) rows = rows.filter(x => !daySet.has(dayKeyOfTs(x._ts)));
+      if (nullKeySet.size) rows = rows.filter(x => x._ts || !nullKeySet.has(nullKeyOf(x)));
       rows = rows.concat(list);
     }
     return dayKeys;
@@ -1706,7 +1741,12 @@ self.onmessage = function(e){
     setStatus('Membaca file...');
     const buf = await f.arrayBuffer();
     const w = getWorker();
-    if (w){ _inFlightWorker = true; try { w.postMessage(buf, [buf]); } catch(e){ _inFlightWorker = false; await fallbackSyncParse(buf); } }
+    if (w){
+      _inFlightWorker = true;
+      _pendingBuffer = buf; // simpan agar bisa fallback bila worker error
+      try { w.postMessage(buf); }
+      catch(e){ _inFlightWorker = false; _pendingBuffer = null; await fallbackSyncParse(buf); }
+    }
     else { await fallbackSyncParse(buf); }
   }
   let _inFlightWorker = false;
@@ -1715,8 +1755,9 @@ self.onmessage = function(e){
     const m = e.data;
     if (m.type === 'start'){ _pendingChunks = []; setStatus('Memparsing Excel di worker... (0 / ' + m.total.toLocaleString('id-ID') + ' baris)'); }
     else if (m.type === 'chunk'){ _pendingChunks = _pendingChunks.concat(m.chunk || []); setStatus('Memparsing Excel... (' + _pendingChunks.length.toLocaleString('id-ID') + ' baris)'); }
-    else if (m.type === 'error'){ _pendingChunks = []; _inFlightWorker = false; setStatus('Gagal membaca Excel: ' + m.message); hideBusy(); }
+    else if (m.type === 'error'){ _pendingChunks = []; _inFlightWorker = false; _pendingBuffer = null; setStatus('Gagal membaca Excel: ' + m.message); hideBusy(); }
     else if (m.type === 'done'){
+      _pendingBuffer = null;
       const monthList = (m.months || []).filter(Boolean);
       const incoming = _pendingChunks;
       _pendingChunks = []; _inFlightWorker = false;
@@ -1731,6 +1772,12 @@ self.onmessage = function(e){
     }
   }
   async function postParseDone(_totalRaw, replacedDays, newCount){
+    // PENTING: sinkronkan filters (khususnya filters.month) dari meta SEBELUM fetch,
+    // kalau tidak tabel & KPI bisa menampilkan semua bulan sementara dropdown sudah
+    // menunjuk bulan terbaru — baru berubah saat user menyentuh filter.
+    populatedFiltersBound = true;
+    try { await populateFiltersDOM(); } catch(e){ console.warn('populateFiltersDOM gagal', e); }
+
     let totalRows, sortData;
     if (useIDB){ totalRows = await db.tx.count(); sortData = await fetchFiltered(); }
     else { totalRows = rows.length; sortData = await fetchFiltered(); }
@@ -1748,8 +1795,6 @@ self.onmessage = function(e){
     document.getElementById('summary').style.display = 'block';
     document.getElementById('result').style.display   = 'block';
     document.getElementById('save').disabled          = totalRows === 0;
-    populatedFiltersBound = totalRows > 0;
-    populateFiltersDOM().catch(()=>{});
     if (typeof buildColPicker === 'function') buildColPicker();
     show('s6', document.querySelector('.tabs button.active') || document.querySelector('.tabs button'));
     const dl = (replacedDays && replacedDays.length) ? replacedDays.slice().sort() : [];
@@ -1998,8 +2043,10 @@ self.onmessage = function(e){
     if (!m) return;
     const months = m.months || [], sales = m.sales || [], products = m.products || [];
     document.getElementById('filterMonth').innerHTML = '<option value="">Semua bulan</option>' + months.map(x => '<option value="' + x + '">' + monthLabel(x) + '</option>').join('');
-    if (!filters.month && months.length) filters.month = pickLatestMonth(months);
-    if (filters.month && months.includes(filters.month)) document.getElementById('filterMonth').value = filters.month;
+    // Reset kalau kosong ATAU sudah tidak ada di daftar bulan (mencegah filter
+    // "nyangkut" ke bulan lama, dan menyelaraskan dropdown dengan data terbaru).
+    if (!filters.month || !months.includes(filters.month)) filters.month = pickLatestMonth(months);
+    if (filters.month) document.getElementById('filterMonth').value = filters.month;
     document.getElementById('filterSales').innerHTML = '<option value="">Semua sales</option>' + sales.map(x => '<option value="' + x + '">' + x + '</option>').join('');
     const dm = document.getElementById('deleteMonth');
     if (dm) dm.innerHTML = '<option value="">Pilih bulan...</option>' + months.map(x => '<option value="' + x + '">' + monthLabel(x) + '</option>').join('');
@@ -2022,8 +2069,8 @@ self.onmessage = function(e){
     }
     document.getElementById('filterMonth').innerHTML = '<option value="">Semua bulan</option>' + months.map(m => '<option value="'+m+'">'+monthLabel(m)+'</option>').join('');
     document.getElementById('filterSales').innerHTML = '<option value="">Semua sales</option>' + sales.map(s => '<option value="'+s+'">'+s+'</option>').join('');
-    if (!filters.month && months.length) filters.month = pickLatestMonth(months);
-    if (filters.month && !months.includes(filters.month)) filters.month = pickLatestMonth(months);
+    // Reset filters.month bila sudah tidak ada di daftar bulan.
+    if (!filters.month || !months.includes(filters.month)) filters.month = pickLatestMonth(months);
     document.getElementById('filterMonth').value   = filters.month;
     document.getElementById('filterSales').value   = filters.sales;
     document.getElementById('filterProduct').value = filters.product;
@@ -2589,27 +2636,72 @@ self.onmessage = function(e){
     const pivot = buildS7Pivot(s7DateFilter);
     const head = ['TGL','PRODUK', ...SO_S7.map(s => s === 'PARIMIN' ? 'PRTIMIN' : s), 'TOTAL QTY'];
     const total = pivot.rows.length;
-    const pages = Math.max(1, Math.ceil(total / S7_PAGE_SIZE));
-    if (s7Page > pages - 1) s7Page = pages - 1;
+
+    // Kelompokkan baris per tanggal supaya rowspan tidak terpotong oleh paginasi.
+    const dateGroups = [];
+    let curG = null;
+    pivot.rows.forEach(r => {
+      if (!curG || curG.key !== r.dateKey){
+        curG = { key: r.dateKey, label: r.dateLabel, rows: [] };
+        dateGroups.push(curG);
+      }
+      curG.rows.push(r);
+    });
+
+    // Bagi ke halaman: setiap halaman berisi grup tanggal utuh (rowspan aman),
+    // tapi tetap dibatasi sekitar S7_PAGE_SIZE baris.
+    const pages = [];
+    let curPage = [], curPageRows = 0;
+    dateGroups.forEach(dg => {
+      if (curPage.length && curPageRows + dg.rows.length > S7_PAGE_SIZE){
+        pages.push(curPage); curPage = []; curPageRows = 0;
+      }
+      curPage.push(dg);
+      curPageRows += dg.rows.length;
+    });
+    if (curPage.length) pages.push(curPage);
+
+    const totalPages = Math.max(1, pages.length);
+    if (s7Page > totalPages - 1) s7Page = totalPages - 1;
     if (s7Page < 0) s7Page = 0;
-    const start = s7Page * S7_PAGE_SIZE;
-    const pageRows = pivot.rows.slice(start, start + S7_PAGE_SIZE);
+    const pageGroups = pages[s7Page] || [];
+
+    let startRow = 0;
+    for (let i = 0; i < s7Page; i++) startRow += pages[i].reduce((a, g) => a + g.rows.length, 0);
+    const rowsShown = pageGroups.reduce((a, g) => a + g.rows.length, 0);
+
     let body = '';
-    if (!total){ body = '<tr><td colspan="' + head.length + '" style="text-align:center;padding:28px;color:#64748b">Tidak ada data untuk filter saat ini.</td></tr>'; }
-    else {
-      pageRows.forEach(r => {
-        body += '<tr>';
-        if (r.isFirst){ body += '<td rowspan="' + r.span + '" style="vertical-align:top;font-weight:600;white-space:nowrap">' + r.dateLabel + '</td>'; }
-        body += '<td>' + r.produk + '</td>';
-        SO_S7.forEach(s => { const v = r.q[s] || 0; body += '<td class="num">' + (v ? v.toLocaleString('id-ID') : '') + '</td>'; });
-        body += '<td class="num" style="font-weight:700">' + (r.total ? r.total.toLocaleString('id-ID') : '') + '</td>';
-        body += '</tr>';
+    if (!total){
+      body = '<tr><td colspan="' + head.length + '" style="text-align:center;padding:28px;color:#64748b">Tidak ada data untuk filter saat ini.</td></tr>';
+    } else {
+      pageGroups.forEach(dg => {
+        dg.rows.forEach((r, idx) => {
+          body += '<tr>';
+          if (idx === 0){
+            body += '<td rowspan="' + dg.rows.length + '" style="vertical-align:top;font-weight:600;white-space:nowrap">' + dg.label + '</td>';
+          }
+          body += '<td>' + r.produk + '</td>';
+          SO_S7.forEach(s => { const v = r.q[s] || 0; body += '<td class="num">' + (v ? v.toLocaleString('id-ID') : '') + '</td>'; });
+          body += '<td class="num" style="font-weight:700">' + (r.total ? r.total.toLocaleString('id-ID') : '') + '</td>';
+          body += '</tr>';
+        });
       });
     }
-    const foot = '<tr><td class="num" colspan="2">TOTAL</td>' + SO_S7.map(s => '<td class="num">' + (pivot.grand[s] ? pivot.grand[s].toLocaleString('id-ID') : '0') + '</td>').join('') + '<td class="num">' + (pivot.grandTotal ? pivot.grandTotal.toLocaleString('id-ID') : '0') + '</td></tr>';
+
+    const foot = '<tr><td class="num" colspan="2">TOTAL</td>' +
+      SO_S7.map(s => '<td class="num">' + (pivot.grand[s] ? pivot.grand[s].toLocaleString('id-ID') : '0') + '</td>').join('') +
+      '<td class="num">' + (pivot.grandTotal ? pivot.grandTotal.toLocaleString('id-ID') : '0') + '</td></tr>';
+
     const pager = total > S7_PAGE_SIZE
-      ? '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:8px 4px 10px;font-size:12px;color:#475569"><span>Menampilkan <b>' + (start+1) + '–' + Math.min(total, start+S7_PAGE_SIZE) + '</b> dari <b>' + total.toLocaleString('id-ID') + '</b> baris</span><span style="display:flex;gap:6px;align-items:center"><button type="button" ' + (s7Page<=0?'disabled ':'') + 'onclick="setS7Page(' + (s7Page-1) + ')" style="padding:5px 10px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;cursor:pointer">‹ Prev</button><span>Halaman <b>' + (s7Page+1) + '</b> / ' + pages + '</span><button type="button" ' + (s7Page>=pages-1?'disabled ':'') + 'onclick="setS7Page(' + (s7Page+1) + ')" style="padding:5px 10px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;cursor:pointer">Next ›</button></span></div>'
+      ? '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:8px 4px 10px;font-size:12px;color:#475569">' +
+          '<span>Menampilkan <b>' + (startRow+1) + '–' + (startRow + rowsShown) + '</b> dari <b>' + total.toLocaleString('id-ID') + '</b> baris</span>' +
+          '<span style="display:flex;gap:6px;align-items:center">' +
+            '<button type="button" ' + (s7Page<=0?'disabled ':'') + 'onclick="setS7Page(' + (s7Page-1) + ')" style="padding:5px 10px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;cursor:pointer">‹ Prev</button>' +
+            '<span>Halaman <b>' + (s7Page+1) + '</b> / ' + totalPages + '</span>' +
+            '<button type="button" ' + (s7Page>=totalPages-1?'disabled ':'') + 'onclick="setS7Page(' + (s7Page+1) + ')" style="padding:5px 10px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;cursor:pointer">Next ›</button>' +
+          '</span></div>'
       : '';
+
     return pager + '<div class="tablebox"><table><thead><tr>' + head.map(h => '<th>' + h + '</th>').join('') + '</tr></thead><tbody>' + body + '</tbody><tfoot>' + foot + '</tfoot></table></div>';
   }
   function renderTab(t){
@@ -3195,7 +3287,7 @@ self.onmessage = function(e){
       const metaFilters = await db.meta.get('filters');
       if (metaFilters && metaFilters.value) { filters = Object.assign({month:'',sales:'',product:'',payment:'',dateFrom:'',dateTo:'',kdCustomer:'',q:''}, metaFilters.value); }
       const monthsMeta = ((await db.meta.get('months')) || {}).value || [];
-      if (!filters.month) filters.month = pickLatestMonth(monthsMeta);
+      if (!filters.month || !monthsMeta.includes(filters.month)) filters.month = pickLatestMonth(monthsMeta);
       populateFiltersFromMeta({ products: ((await db.meta.get('products')) || {}).value || [], sales: ((await db.meta.get('sales')) || {}).value || [], months: monthsMeta });
       document.getElementById('summary').style.display = 'block';
       document.getElementById('result').style.display   = 'block';
@@ -3297,10 +3389,8 @@ self.onmessage = function(e){
     keys.forEach(k => { const p = N(pd[k]); const g = N(gd[k]); if (g > p) out.push(cekDateLabelLong(k)); });
     return out;
   }
-  // ===== Indikator flag animasi (muncul jika ada "Penjualan/Gudang Lebih Banyak") =====
   const CEK_FLAG_MAX = 7;
   const CEK_FLAG_INTERVAL_MS = 500;
-  // SVG tengkorak sederhana (gaya gambar 2): putih, mata & hidung hitam, 3 gigi
   const CEK_FLAG_SVG_INNER = '<svg viewBox="0 0 64 64" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
     '<rect width="64" height="64" fill="#0a0a0a" rx="8"/>' +
     '<path fill="#fff" stroke="#fff" stroke-width="2.2" stroke-linejoin="round" d="' +
@@ -3740,7 +3830,6 @@ self.onmessage = function(e){
     if (!rows.length) {
       html += '<div style="text-align:center;padding:24px;color:#64748b">Tidak ada detail transaksi.</div>';
     } else {
-      // group by date
       const byDate = new Map();
       rows.forEach(x => {
         const dk = cekDateKey(x.tanggal ?? x.Tanggal) || '';
@@ -4579,10 +4668,14 @@ self.onmessage = function(e){
     else sel.value = '';
     _analisaRupaMonthInit = true;
   }
+  // FIXED: Analisa Rupa Rupa sekarang memakai gudangData (sumber yang SAMA dengan
+  // Cek > Rupa Rupa) supaya angka "Output Gudang" & "Stok Akhir" konsisten.
   async function renderGudangAnalisaRupa(){
     await populateAnalisaRupaMonths();
     const month = document.getElementById('analisaRupaMonth')?.value || '';
     const sourceRows = await fetchCekRawRows(month, { mode: 'rupa' });
+
+    // === Penjualan ===
     const penjualanMap = new Map();
     for (let i = 0; i < sourceRows.length; i++) {
       const x = sourceRows[i];
@@ -4598,17 +4691,48 @@ self.onmessage = function(e){
       agg.qty += j; agg.total += t; agg.hpp += j * hb;
       if (ts >= agg.latestTs) { agg.latestTs = ts; agg.latestHargaBeli = hb; }
     }
+
+    // === Gudang: pakai gudangData (SAMA dengan Cek > Rupa Rupa) ===
     const gudangMap = new Map();
-    if (gudangRupaData && gudangRupaData.length) {
-      for (let i = 0; i < gudangRupaData.length; i++) {
-        const item = gudangRupaData[i];
-        const key = productMatchKey(item.nama);
+    if (gudangData && gudangData.products) {
+      for (const p of gudangData.products) {
+        if (isFitriProduct(p)) continue;
+        const key = productMatchKey(p);
+        if (!gudangMap.has(key)) gudangMap.set(key, { name: p, keluar: 0, stokAkhir: null });
+      }
+      for (let i = 0; i < gudangData.rows.length; i++) {
+        const r = gudangData.rows[i];
+        const mk = monthKeyUTC(r.tanggal);
+        if (month && mk !== month) continue;
+        for (const p of gudangData.products) {
+          if (isFitriProduct(p)) continue;
+          const key = productMatchKey(p);
+          const v = r.values[p];
+          if (!v) continue;
+          let g = gudangMap.get(key);
+          if (!g) { g = { name: p, keluar: 0, stokAkhir: null }; gudangMap.set(key, g); }
+          g.keluar += N(v.keluar);
+        }
+      }
+      const stokMap = new Map();
+      for (let i = 0; i < gudangData.rows.length; i++) {
+        const r = gudangData.rows[i];
+        const mk = monthKeyUTC(r.tanggal);
+        if (month && mk > month) break;
+        for (const p of gudangData.products) {
+          if (isFitriProduct(p)) continue;
+          const key = productMatchKey(p);
+          const v = r.values[p];
+          if (v && v.stok != null) stokMap.set(key, { stok: v.stok, name: p });
+        }
+      }
+      for (const [key, val] of stokMap) {
         let g = gudangMap.get(key);
-        if (!g) { g = { name: item.nama, kode: item.kode || '', sat: item.sat || '', keluar: 0, stokAkhir: 0 }; gudangMap.set(key, g); }
-        g.keluar    += N(item.keluar);
-        g.stokAkhir += N(item.stokAkhir);
+        if (!g) { g = { name: val.name, keluar: 0, stokAkhir: null }; gudangMap.set(key, g); }
+        g.stokAkhir = val.stok;
       }
     }
+
     const allKeys = new Set([...penjualanMap.keys(), ...gudangMap.keys()]);
     const list = [];
     for (const key of allKeys) {
@@ -4622,10 +4746,10 @@ self.onmessage = function(e){
       const totalPenjualan   = p.total || 0;
       const hpp              = p.hpp || 0;
       const profit           = totalPenjualan - hpp;
-      const stokAkhir        = g.stokAkhir || 0;
+      const stokAkhir        = (g.stokAkhir != null) ? g.stokAkhir : 0;
       const hargaBeliTerbaru = p.latestHargaBeli || 0;
       const nominalStokAkhir = stokAkhir * hargaBeliTerbaru;
-      list.push({ key, name, kode: g.kode || '', sat: g.sat || '', outputPenjualan, outputGudang, selisih, ket, totalPenjualan, hpp, profit, stokAkhir, hargaBeliTerbaru, nominalStokAkhir });
+      list.push({ key, name, kode: '', sat: '', outputPenjualan, outputGudang, selisih, ket, totalPenjualan, hpp, profit, stokAkhir, hargaBeliTerbaru, nominalStokAkhir });
     }
     list.sort((a, b) => a.name.localeCompare(b.name, 'id'));
     const tot = list.reduce((acc, r) => {
@@ -4648,7 +4772,10 @@ self.onmessage = function(e){
     }).join('');
     const totalKetHtml = (tot.outputPenjualan === tot.outputGudang) ? '<span class="ket-badge ok">✅ Cocok</span>' : '';
     const foot = '<tr><td></td><td>TOTAL</td><td class="num">' + nfQty(tot.outputPenjualan) + '</td><td class="num">' + nfQty(tot.outputGudang) + '</td><td>' + totalKetHtml + '</td><td class="num">' + rp(tot.totalPenjualan) + '</td><td class="num">' + rp(tot.hpp) + '</td><td class="num">' + rp(tot.profit) + '</td><td class="num">' + nfQty(tot.stokAkhir) + '</td><td class="num">-</td><td class="num">' + rp(tot.nominalStokAkhir) + '</td></tr>';
-    const hint = (!gudangRupaData || !gudangRupaData.length) ? '<div style="font-size:11px;color:#b45309;background:#fff8e8;border:1px solid #f1dfb2;border-radius:8px;padding:8px 10px;margin-bottom:10px">⚠ Data Gudang Rupa Rupa belum diupload — kolom Output Gudang / Stok Akhir akan kosong. Upload lewat sub-tab <b>Rupa Rupa</b> → ⚙️.</div>' : '';
+    const hasRupaGudang = !!(gudangData && gudangData.products && gudangData.products.some(p => !isFitriProduct(p)));
+    const hint = !hasRupaGudang
+      ? '<div style="font-size:11px;color:#b45309;background:#fff8e8;border:1px solid #f1dfb2;border-radius:8px;padding:8px 10px;margin-bottom:10px">⚠ Data Gudang belum memuat produk Rupa Rupa — kolom Output Gudang / Stok Akhir akan 0. Upload lewat <b>Data Gudang</b> → tab <b>Fitri</b> (file stok yang memuat kolom produk Rupa Rupa).</div>'
+      : '';
     const tableHtml = hint + '<div class="tablebox"><table><thead><tr>' + head.map(h => '<th>' + h + '</th>').join('') + '</tr></thead><tbody>' + (list.length ? body : '<tr><td colspan="11" style="text-align:center;padding:24px;color:#64748b">Belum ada data.</td></tr>') + '</tbody>' + (list.length ? '<tfoot>' + foot + '</tfoot>' : '') + '</table></div>';
     const wrap = document.getElementById('analisaRupaTableWrap');
     if (wrap) wrap.innerHTML = tableHtml;
