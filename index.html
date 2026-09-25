@@ -286,7 +286,7 @@ body.dark #cekRingkasanTable tfoot td,body.dark #cekRupaTable tfoot td{backgroun
 #page-cek .cek-subtab:hover{background:#e2e8f0}
 #page-cek .cek-subtab.active{background:#1f4e78;border-color:#1f4e78;color:#fff}
 #page-cek .cek-subtabs{position:relative}
-.cek-alert-flags{display:none;align-items:center;justify-content:flex-end;gap:2px;margin-left:auto;min-height:26px;width:78px;flex:none;overflow:visible;contain:layout style}.cek-alert-flags .flag-icon{width:24px;height:24px;flex:none;display:inline-block;opacity:0;transform:scale(.55);transform-origin:center center;transition:opacity .22s ease-out,transform .22s ease-out;will-change:opacity,transform;pointer-events:none}.cek-alert-flags .flag-icon.show{opacity:1;transform:scale(1)}.cek-alert-flags .flag-icon.show.signal-pulse{animation:cekSignalPulse .85s ease-in-out infinite}@keyframes cekSignalPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.cek-alert-flags{display:none;align-items:center;justify-content:flex-end;gap:2px;margin-left:auto;min-height:26px;width:186px;flex:none;overflow:visible;contain:layout style}.cek-alert-flags .flag-icon{width:24px;height:24px;flex:none;display:inline-block;opacity:0;transform:scale(.55);transform-origin:center center;transition:opacity .22s ease-out,transform .22s ease-out;will-change:opacity,transform;pointer-events:none}.cek-alert-flags .flag-icon.show{opacity:1;transform:scale(1)}.cek-alert-flags .flag-icon.show.signal-pulse{animation:cekSignalPulse .85s ease-in-out infinite}@keyframes cekSignalPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
 #page-cek .cek-panel{display:none}
 #page-cek .cek-panel.active{display:block}
 #cekPanelCust .cs-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:2px 0 12px}
@@ -3296,37 +3296,31 @@ self.onmessage = function(e){
     return out;
   }
   // ===== Indikator flag animasi (muncul jika ada "Penjualan/Gudang Lebih Banyak") =====
-  // Ikon: logo Topi Jerami — muncul bertahap seperti batang sinyal (tanpa geser layout/scroll)
-  const CEK_FLAG_MAX = 3;
-  const CEK_FLAG_INTERVAL_MS = 420;
+  // Ikon: logo Topi Jerami + tengkorak cute — muncul bertahap seperti batang sinyal (7 bar)
+  const CEK_FLAG_MAX = 7;
+  const CEK_FLAG_INTERVAL_MS = 380;
   const CEK_FLAG_SVG_INNER = '<svg viewBox="0 0 64 64" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
     '<circle cx="32" cy="32" r="30.5" fill="#F4C430"/>' +
     '<circle cx="32" cy="32" r="30.5" fill="none" stroke="#C9A227" stroke-width="1.2"/>' +
-    // wajah
-    '<ellipse cx="32" cy="38" rx="15.2" ry="13.8" fill="none" stroke="#C41E3A" stroke-width="2.3"/>' +
-    // mata X kiri
-    '<path d="M24 32 L29.5 37.5 M29.5 32 L24 37.5" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/>' +
-    // mata kanan
-    '<circle cx="40" cy="34.5" r="1.9" fill="#1a1a1a"/>' +
-    // senyum
-    '<path d="M25.5 42.5 Q32 48.8 39 42.5" fill="none" stroke="#C41E3A" stroke-width="2.2" stroke-linecap="round"/>' +
-    // brim topi
-    '<ellipse cx="32" cy="21.5" rx="23.5" ry="5.8" fill="#C41E3A"/>' +
-    // crown
-    '<path d="M17 21.5 C17 9.5 24.5 6.5 32 6.5 C39.5 6.5 47 9.5 47 21.5 Z" fill="#C41E3A"/>' +
-    // stripe putih
-    '<path d="M20.5 17.5 C21 11.8 26.2 9.8 32 9.8 C37.8 9.8 43 11.8 43.5 17.5" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round"/>' +
-    // pita hitam lebih tebal agar tengkorak jelas
-    '<rect x="17.5" y="18.2" width="29" height="5.2" rx="0.8" fill="#1a1a1a"/>' +
-    // tengkorak lebih besar + jelas
-    '<circle cx="32" cy="20.2" r="2.35" fill="#fff"/>' +
-    // mata tengkorak
-    '<circle cx="31.15" cy="19.9" r="0.45" fill="#1a1a1a"/>' +
-    '<circle cx="32.85" cy="19.9" r="0.45" fill="#1a1a1a"/>' +
-    // rahang
-    '<path d="M30.4 21.7 L32 23.5 L33.6 21.7" fill="none" stroke="#fff" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>' +
-    // tulang silang
-    '<path d="M28.8 19.6 L35.2 21.2 M35.2 19.6 L28.8 21.2" stroke="#fff" stroke-width="1.05" stroke-linecap="round"/>' +
+    '<ellipse cx="32" cy="40" rx="14" ry="11.5" fill="none" stroke="#C41E3A" stroke-width="2.2"/>' +
+    '<path d="M24.8 35 L29.5 39.7 M29.5 35 L24.8 39.7" stroke="#1a1a1a" stroke-width="2.3" stroke-linecap="round"/>' +
+    '<circle cx="39.2" cy="37.3" r="1.85" fill="#1a1a1a"/>' +
+    '<path d="M26.2 44 Q32 49 38.2 44" fill="none" stroke="#C41E3A" stroke-width="2.1" stroke-linecap="round"/>' +
+    '<ellipse cx="32" cy="22.5" rx="24" ry="5.8" fill="#C41E3A"/>' +
+    '<path d="M16.5 22.5 C16.5 9.5 24 6 32 6 C40 6 47.5 9.5 47.5 22.5 Z" fill="#C41E3A"/>' +
+    '<path d="M20 18.2 C20.5 12 26 9.8 32 9.8 C38 9.8 43.5 12 44 18.2" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round"/>' +
+    '<rect x="15.5" y="18" width="33" height="8.5" rx="1" fill="#1a1a1a"/>' +
+    '<ellipse cx="32" cy="21.2" rx="6.2" ry="5.4" fill="#fff" stroke="#222" stroke-width="0.7"/>' +
+    '<path d="M27.2 23.5 Q27 26.8 32 27.2 Q37 26.8 36.8 23.5" fill="#fff" stroke="#222" stroke-width="0.7"/>' +
+    '<ellipse cx="29.3" cy="20.2" rx="2.15" ry="2.35" fill="#d4c4a8" stroke="#222" stroke-width="0.55"/>' +
+    '<circle cx="29.3" cy="20.4" r="1.15" fill="#1a1a1a"/>' +
+    '<circle cx="29.65" cy="20" r="0.35" fill="#fff"/>' +
+    '<ellipse cx="34.7" cy="20.2" rx="2.15" ry="2.35" fill="#d4c4a8" stroke="#222" stroke-width="0.55"/>' +
+    '<circle cx="34.7" cy="20.4" r="1.15" fill="#1a1a1a"/>' +
+    '<circle cx="35.05" cy="20" r="0.35" fill="#fff"/>' +
+    '<path d="M32 21.6 C31.3 21.6 30.7 22.2 30.7 22.8 C30.7 23.5 32 24.4 32 24.4 C32 24.4 33.3 23.5 33.3 22.8 C33.3 22.2 32.7 21.6 32 21.6 Z" fill="#1a1a1a"/>' +
+    '<path d="M28.2 25.2 L28.2 27 M30.1 25.3 L30.1 27.1 M32 25.4 L32 27.2 M33.9 25.3 L33.9 27.1 M35.8 25.2 L35.8 27" stroke="#222" stroke-width="0.7" stroke-linecap="round"/>' +
+    '<path d="M28 25.2 Q32 26 36 25.2" fill="none" stroke="#222" stroke-width="0.65"/>' +
   '</svg>';
   let _cekFlagTimer = null, _cekFlagCount = 0, _cekFlagBuilt = false;
   function ensureCekFlagSlots(el){
