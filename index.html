@@ -330,10 +330,34 @@ body.dark #page-gudang .gudang-dd-menu{background:#1e293b;border-color:#475569}
 body.dark #page-gudang .gudang-dd-menu button{color:#cbd5e1}
 body.dark #page-gudang .gudang-dd-menu button:hover{background:#334155}
 body.dark #page-gudang .gudang-dd-menu button.active{background:#1d4ed8;color:#fff}
-#gudangAnalisaPanel .analisa-tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-#gudangAnalisaPanel .analisa-tools label{font-size:10px!important}
-#gudangAnalisaPanel .analisa-tools select{min-width:128px!important;padding:2px 8px!important;font-size:11px!important;border-radius:6px!important;height:24px;line-height:1.2}
-#gudangAnalisaPanel .analisa-tools button{padding:2px 11px;font-size:11px;border-radius:6px;height:24px;line-height:1.2}
+
+/* ===== Tab Analisa (tab utama baru) ===== */
+#page-analisa{padding-top:8px}
+#page-analisa .gudang-subtabs{display:flex;gap:6px;margin:0 0 12px;flex-wrap:wrap;align-items:center;padding:0;background:transparent;border:0;box-shadow:none;border-radius:0}
+#page-analisa .gudang-subtab{padding:6px 14px;border:1px solid #cbd5e1;background:#e2e8f0;border-radius:7px;font-size:12px;cursor:pointer;color:#334155;font-weight:700;transition:background .15s,color .15s,border-color .15s}
+#page-analisa .gudang-subtab:hover{background:#e2e8f0}
+#page-analisa .gudang-subtab.active{background:#1f4e78;border-color:#1f4e78;color:#fff}
+#page-analisa .gudang-dd{position:relative;display:inline-block}
+#page-analisa .gudang-dd-caret{font-size:10px;opacity:.85}
+#page-analisa #analisaDDLabel{font-weight:600;opacity:.9}
+#page-analisa .gudang-dd-menu[hidden]{display:none}
+#page-analisa .gudang-dd-menu{position:absolute;top:calc(100% + 4px);left:0;min-width:160px;background:#fff;border:1px solid #cbd5e1;border-radius:9px;box-shadow:0 8px 22px rgba(15,23,42,.18);padding:4px;z-index:60}
+#page-analisa .gudang-dd-menu button{display:block;width:100%;text-align:left;background:transparent;color:#334155;padding:6px 10px;font-size:12px;font-weight:700;border-radius:6px;border:0}
+#page-analisa .gudang-dd-menu button:hover{background:#e2e8f0}
+#page-analisa .gudang-dd-menu button.active{background:#dbeafe;color:#1f4e78}
+body.dark #page-analisa .gudang-dd-menu{background:#1e293b;border-color:#475569}
+body.dark #page-analisa .gudang-dd-menu button{color:#cbd5e1}
+body.dark #page-analisa .gudang-dd-menu button:hover{background:#334155}
+body.dark #page-analisa .gudang-dd-menu button.active{background:#1d4ed8;color:#fff}
+body.dark #page-analisa .gudang-subtab{background:#1e293b;color:#94a3b8;border-color:#475569}
+body.dark #page-analisa .gudang-subtab:hover{background:#334155;color:#e2e8f0}
+body.dark #page-analisa .gudang-subtab.active{background:#3b82f6;border-color:#3b82f6;color:#fff}
+#page-analisa .analisa-tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+#page-analisa .analisa-tools label{font-size:10px!important}
+#page-analisa .analisa-tools select{min-width:128px!important;padding:2px 8px!important;font-size:11px!important;border-radius:6px!important;height:24px;line-height:1.2}
+#page-analisa .analisa-tools button{padding:2px 11px;font-size:11px;border-radius:6px;height:24px;line-height:1.2}
+#page-analisa .analisa-tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+
 #page-gudang tr.gudang-saldo-row{background:#eef2fb;font-weight:bold}
 #page-gudang tr.gudang-saldo-row td{color:#0f172a;font-weight:700}
 body.dark #page-gudang tr.gudang-saldo-row{background:#1e3a5f}
@@ -562,6 +586,7 @@ body.dark #scsCustTable tfoot td{background:#1e3a5f;color:#f1f5f9}
       <button type="button" class="main-tab" data-tab="salescust">Sales/Customer</button>
       <button type="button" class="main-tab" data-tab="gudang">Data Gudang</button>
       <button type="button" class="main-tab" data-tab="cek">Cek</button>
+      <button type="button" class="main-tab" data-tab="analisa">📊 Analisa</button>
     </nav>
     <button type="button" class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Mode gelap / terang">🌙</button>
     <div class="dd" id="menuDd">
@@ -811,13 +836,6 @@ body.dark #scsCustTable tfoot td{background:#1e3a5f;color:#f1f5f9}
   <div class="gudang-subtabs" role="tablist">
     <button type="button" class="gudang-subtab active" data-gudang="fitri" onclick="switchGudangSub('fitri',this)">🧴 Fitri</button>
     <button type="button" class="gudang-subtab" data-gudang="rupa" onclick="switchGudangSub('rupa',this)">📦 Rupa Rupa</button>
-    <div class="gudang-dd" id="analisaDD">
-      <button type="button" class="gudang-subtab" id="analisaTabBtn" data-gudang="analisa" aria-haspopup="true" aria-expanded="false" onclick="toggleAnalisaMenu(event)">📊 Analisa<span id="analisaDDLabel"></span> <span class="gudang-dd-caret">▾</span></button>
-      <div class="gudang-dd-menu" id="analisaMenu" role="menu" hidden>
-        <button type="button" role="menuitem" data-analisa="fitri" onclick="pickAnalisa('fitri')">🧴 Fitri</button>
-        <button type="button" role="menuitem" data-analisa="rupa" onclick="pickAnalisa('rupa')">📦 Rupa Rupa</button>
-      </div>
-    </div>
   </div>
 
   <div id="gudangRegularPanel">
@@ -905,59 +923,6 @@ body.dark #scsCustTable tfoot td{background:#1e3a5f;color:#f1f5f9}
             <tfoot id="gudangRupaTfoot"></tfoot>
           </table>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Panel Analisa -->
-  <div id="gudangAnalisaPanel" style="display:none">
-    <!-- ============ Analisa Fitri ============ -->
-    <div id="analisaFitriPanel">
-      <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px">
-          <div style="display:flex;gap:10px;flex-wrap:wrap;flex:1;min-width:280px">
-            <div class="kpi" style="flex:1;min-width:220px;margin:0">
-              <small>TOTAL PROFIT PENJUALAN FITRI</small>
-              <b id="analisaProfit">Rp 0</b>
-            </div>
-            <div class="kpi" style="flex:1;min-width:240px;margin:0">
-              <small>TOTAL NOMINAL STOK AKHIR</small>
-              <b id="analisaNominalStok">Rp 0</b>
-            </div>
-          </div>
-          <div class="analisa-tools">
-            <label for="analisaMonth" style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.04em">Bulan</label>
-            <select id="analisaMonth" onchange="renderGudangAnalisa()" style="width:auto;min-width:150px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:7px;font-size:12px;background:#fff;color:#172033"></select>
-            <button type="button" onclick="downloadAnalisaFitri()">⬇ Download</button>
-          </div>
-        </div>
-        <div style="font-weight:800;color:#1f4e78;font-size:12px;letter-spacing:.02em;margin-bottom:8px">📊 ANALISA FITRI — PENJUALAN vs GUDANG vs PROFIT vs STOK</div>
-        <div id="analisaTableWrap"></div>
-      </div>
-    </div>
-
-    <!-- ============ Analisa Rupa Rupa ============ -->
-    <div id="analisaRupaPanel" style="display:none">
-      <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px">
-          <div style="display:flex;gap:10px;flex-wrap:wrap;flex:1;min-width:280px">
-            <div class="kpi" style="flex:1;min-width:220px;margin:0">
-              <small>TOTAL PROFIT PENJUALAN RUPA RUPA</small>
-              <b id="analisaRupaProfit">Rp 0</b>
-            </div>
-            <div class="kpi" style="flex:1;min-width:240px;margin:0">
-              <small>TOTAL NOMINAL STOK AKHIR</small>
-              <b id="analisaRupaNominalStok">Rp 0</b>
-            </div>
-          </div>
-          <div class="analisa-tools">
-            <label for="analisaRupaMonth" style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.04em">Bulan</label>
-            <select id="analisaRupaMonth" onchange="renderGudangAnalisaRupa()" style="width:auto;min-width:150px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:7px;font-size:12px;background:#fff;color:#172033"></select>
-            <button type="button" onclick="downloadAnalisaRupa()">⬇ Download</button>
-          </div>
-        </div>
-        <div style="font-weight:800;color:#1f4e78;font-size:12px;letter-spacing:.02em;margin-bottom:8px">📊 ANALISA RUPA RUPA — PENJUALAN vs GUDANG vs PROFIT vs STOK</div>
-        <div id="analisaRupaTableWrap"></div>
       </div>
     </div>
   </div>
@@ -1160,6 +1125,71 @@ body.dark #scsCustTable tfoot td{background:#1e3a5f;color:#f1f5f9}
           </tbody>
           <tfoot id="cekCustTfoot"></tfoot>
         </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PAGE ANALISA (TAB UTAMA BARU) ===== -->
+<div id="page-analisa" style="display:none">
+  <div class="gudang-subtabs" role="tablist">
+    <div class="gudang-dd" id="analisaDD">
+      <button type="button" class="gudang-subtab active" id="analisaTabBtn" data-gudang="analisa" aria-haspopup="true" aria-expanded="false" onclick="toggleAnalisaMenu(event)">📊 Analisa<span id="analisaDDLabel"> · Fitri</span> <span class="gudang-dd-caret">▾</span></button>
+      <div class="gudang-dd-menu" id="analisaMenu" role="menu" hidden>
+        <button type="button" role="menuitem" data-analisa="fitri" onclick="pickAnalisa('fitri')">🧴 Fitri</button>
+        <button type="button" role="menuitem" data-analisa="rupa" onclick="pickAnalisa('rupa')">📦 Rupa Rupa</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="gudangAnalisaPanel">
+    <!-- ============ Analisa Fitri ============ -->
+    <div id="analisaFitriPanel">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;flex:1;min-width:280px">
+            <div class="kpi" style="flex:1;min-width:220px;margin:0">
+              <small>TOTAL PROFIT PENJUALAN FITRI</small>
+              <b id="analisaProfit">Rp 0</b>
+            </div>
+            <div class="kpi" style="flex:1;min-width:240px;margin:0">
+              <small>TOTAL NOMINAL STOK AKHIR</small>
+              <b id="analisaNominalStok">Rp 0</b>
+            </div>
+          </div>
+          <div class="analisa-tools">
+            <label for="analisaMonth" style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.04em">Bulan</label>
+            <select id="analisaMonth" onchange="renderGudangAnalisa()" style="width:auto;min-width:150px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:7px;font-size:12px;background:#fff;color:#172033"></select>
+            <button type="button" onclick="downloadAnalisaFitri()">⬇ Download</button>
+          </div>
+        </div>
+        <div style="font-weight:800;color:#1f4e78;font-size:12px;letter-spacing:.02em;margin-bottom:8px">📊 ANALISA FITRI — PENJUALAN vs GUDANG vs PROFIT vs STOK</div>
+        <div id="analisaTableWrap"></div>
+      </div>
+    </div>
+
+    <!-- ============ Analisa Rupa Rupa ============ -->
+    <div id="analisaRupaPanel" style="display:none">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;flex:1;min-width:280px">
+            <div class="kpi" style="flex:1;min-width:220px;margin:0">
+              <small>TOTAL PROFIT PENJUALAN RUPA RUPA</small>
+              <b id="analisaRupaProfit">Rp 0</b>
+            </div>
+            <div class="kpi" style="flex:1;min-width:240px;margin:0">
+              <small>TOTAL NOMINAL STOK AKHIR</small>
+              <b id="analisaRupaNominalStok">Rp 0</b>
+            </div>
+          </div>
+          <div class="analisa-tools">
+            <label for="analisaRupaMonth" style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.04em">Bulan</label>
+            <select id="analisaRupaMonth" onchange="renderGudangAnalisaRupa()" style="width:auto;min-width:150px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:7px;font-size:12px;background:#fff;color:#172033"></select>
+            <button type="button" onclick="downloadAnalisaRupa()">⬇ Download</button>
+          </div>
+        </div>
+        <div style="font-weight:800;color:#1f4e78;font-size:12px;letter-spacing:.02em;margin-bottom:8px">📊 ANALISA RUPA RUPA — PENJUALAN vs GUDANG vs PROFIT vs STOK</div>
+        <div id="analisaRupaTableWrap"></div>
       </div>
     </div>
   </div>
@@ -2037,6 +2067,7 @@ self.onmessage = function(e){
     const total = useIDB ? await db.tx.count() : rows.length;
     document.getElementById('save').disabled = total === 0;
     schedulePush();
+    refreshAnalisaIfVisible();
   }
   async function deleteMonthData(){
     let m = document.getElementById('deleteMonth').value;
@@ -3940,14 +3971,18 @@ self.onmessage = function(e){
       const sc = document.getElementById('page-salescust');
       const gd = document.getElementById('page-gudang');
       const ck = document.getElementById('page-cek');
+      const an = document.getElementById('page-analisa');
       if (pj) pj.style.display = (tab === 'penjualan') ? 'block' : 'none';
       if (sc) sc.style.display = (tab === 'salescust') ? 'block' : 'none';
       if (gd) gd.style.display = (tab === 'gudang') ? 'block' : 'none';
       if (ck) ck.style.display = (tab === 'cek') ? 'block' : 'none';
+      if (an) an.style.display = (tab === 'analisa') ? 'block' : 'none';
       if (tab === 'cek') {
         renderCekActive();
       } else if (tab === 'salescust') {
         renderScsCust();
+      } else if (tab === 'analisa') {
+        switchAnalisaSub(_analisaSub);
       }
     });
   }
@@ -4027,8 +4062,10 @@ self.onmessage = function(e){
       const merged = mergeGudangData(gudangData, parsed);
       gudangData = merged;
       await saveGudangToDB(merged);
-      if (_gudangSub === 'analisa') renderGudangAnalisa(); else renderGudangPage(merged);
+      if (_gudangSub === 'rupa') renderGudangRupaPage(gudangRupaData);
+      else renderGudangPage(merged);
       renderCekFitri();
+      refreshAnalisaIfVisible();
       setGudangStatus('Berhasil memproses ' + parsed.rows.length.toLocaleString('id-ID') + ' baris baru. Total tersimpan: ' + merged.rows.length.toLocaleString('id-ID') + ' baris tanggal, ' + merged.products.length + ' produk.');
       inp.value = ''; closeGudangDd();
     } catch(e){ console.error(e); setGudangStatus('Gagal memproses file: ' + e.message); }
@@ -4038,9 +4075,11 @@ self.onmessage = function(e){
     if (!confirm('Hapus SEMUA data gudang dari SEMUA bulan yang tersimpan? Tindakan ini tidak bisa dibatalkan.')) return;
     gudangData = null;
     if (useIDB){ try{ await db.meta.delete('gudangData'); } catch(e){} }
-    if (_gudangSub === 'analisa') renderGudangAnalisa(); else renderGudangPage(null);
+    if (_gudangSub === 'rupa') renderGudangRupaPage(gudangRupaData);
+    else renderGudangPage(null);
     renderCekFitri(); setGudangStatus('Data gudang sudah dihapus.');
     closeGudangDd(); schedulePush();
+    refreshAnalisaIfVisible();
   }
   function recomputeGudangStok(data){
     if (!data || !data.rows) return data;
@@ -4065,10 +4104,12 @@ self.onmessage = function(e){
     recomputeGudangStok(gudangData);
     if (!gudangData.rows.length) gudangData = null;
     if (useIDB){ try{ if (gudangData) await db.meta.put({key:'gudangData', value:gudangData}); else await db.meta.delete('gudangData'); } catch(e){ console.warn('save gudang', e); } }
-    if (_gudangSub === 'analisa') renderGudangAnalisa(); else renderGudangPage(gudangData);
+    if (_gudangSub === 'rupa') renderGudangRupaPage(gudangRupaData);
+    else renderGudangPage(gudangData);
     populateGudangDeleteMonth(); renderCekFitri();
     setGudangStatus('Data gudang bulan ' + monthLabel(month) + ' sudah dihapus.');
     schedulePush();
+    refreshAnalisaIfVisible();
   }
   async function saveGudangToDB(data){
     if (useIDB){ try{ await db.meta.put({key:'gudangData', value:data}); } catch(e){ console.warn('save gudang', e); } }
@@ -4083,43 +4124,28 @@ self.onmessage = function(e){
         if (recRupa && recRupa.value){ gudangRupaData = recRupa.value; }
       } catch(e){ console.warn('load gudang', e); }
     }
-    if (_gudangSub === 'analisa') {
-      if (_analisaSub === 'rupa') renderGudangAnalisaRupa(); else renderGudangAnalisa();
-    }
-    else if (_gudangSub === 'rupa') renderGudangRupaPage(gudangRupaData);
+    if (_gudangSub === 'rupa') renderGudangRupaPage(gudangRupaData);
     else renderGudangPage(gudangData);
     renderCekFitri();
+    refreshAnalisaIfVisible();
   }
   let _gudangSub = 'fitri';
   function switchGudangSub(which, btn){
-    _gudangSub = (which === 'analisa') ? 'analisa' : (which === 'rupa' ? 'rupa' : 'fitri');
+    _gudangSub = (which === 'rupa') ? 'rupa' : 'fitri';
     document.querySelectorAll('#page-gudang > .gudang-subtabs .gudang-subtab').forEach(b => b.classList.remove('active'));
-    updateAnalisaDDLabel();
     if (btn) btn.classList.add('active');
     else {
       const match = document.querySelector('#page-gudang > .gudang-subtabs .gudang-subtab[data-gudang="' + _gudangSub + '"]');
       if (match) match.classList.add('active');
     }
-    const regular = document.getElementById('gudangRegularPanel');
-    const analisa = document.getElementById('gudangAnalisaPanel');
     const fitriPanel = document.getElementById('gudangFitriPanel');
     const rupaPanel  = document.getElementById('gudangRupaPanel');
-    if (_gudangSub === 'analisa') {
-      if (regular) regular.style.display = 'none';
-      if (analisa) analisa.style.display = 'block';
-      if (_analisaSub === 'rupa') renderGudangAnalisaRupa();
-      else renderGudangAnalisa();
-      return;
-    }
-    if (regular) regular.style.display = 'block';
-    if (analisa) analisa.style.display = 'none';
     if (fitriPanel) fitriPanel.style.display = (_gudangSub === 'fitri') ? 'block' : 'none';
     if (rupaPanel)  rupaPanel.style.display  = (_gudangSub === 'rupa')  ? 'block' : 'none';
     if (_gudangSub === 'rupa') renderGudangRupaPage(gudangRupaData);
     else renderGudangPage(gudangData);
   }
   function renderGudangPage(data){
-    if (_gudangSub === 'analisa') return;
     if (_gudangSub === 'rupa') { renderGudangRupaPage(gudangRupaData); return; }
     const kpiBox = document.getElementById('gudangKpis');
     const thead  = document.getElementById('gudangThead');
@@ -4303,8 +4329,8 @@ self.onmessage = function(e){
   let _analisaSub = 'fitri';
   function updateAnalisaDDLabel(){
     const lb = document.getElementById('analisaDDLabel');
-    if (lb) lb.textContent = (_gudangSub === 'analisa') ? ' · ' + (_analisaSub === 'rupa' ? 'Rupa Rupa' : 'Fitri') : '';
-    document.querySelectorAll('#analisaMenu button').forEach(b => b.classList.toggle('active', _gudangSub === 'analisa' && b.dataset.analisa === _analisaSub));
+    if (lb) lb.textContent = ' · ' + (_analisaSub === 'rupa' ? 'Rupa Rupa' : 'Fitri');
+    document.querySelectorAll('#analisaMenu button').forEach(b => b.classList.toggle('active', b.dataset.analisa === _analisaSub));
   }
   function closeAnalisaMenu(){
     const m = document.getElementById('analisaMenu'); if (m) m.hidden = true;
@@ -4323,8 +4349,6 @@ self.onmessage = function(e){
   function pickAnalisa(which){
     closeAnalisaMenu();
     switchAnalisaSub(which);
-    if (_gudangSub !== 'analisa') switchGudangSub('analisa', document.getElementById('analisaTabBtn'));
-    else updateAnalisaDDLabel();
   }
   function switchAnalisaSub(which){
     _analisaSub = (which === 'rupa') ? 'rupa' : 'fitri';
@@ -4333,9 +4357,14 @@ self.onmessage = function(e){
     if (fp) fp.style.display = (_analisaSub === 'fitri') ? 'block' : 'none';
     if (rp) rp.style.display = (_analisaSub === 'rupa') ? 'block' : 'none';
     updateAnalisaDDLabel();
-    if (_gudangSub !== 'analisa') return;
     if (_analisaSub === 'fitri') renderGudangAnalisa();
     else renderGudangAnalisaRupa();
+  }
+  function refreshAnalisaIfVisible(){
+    const an = document.getElementById('page-analisa');
+    if (!an || an.style.display === 'none') return;
+    if (_analisaSub === 'rupa') renderGudangAnalisaRupa();
+    else renderGudangAnalisa();
   }
 
   async function populateAnalisaMonths(){
@@ -4641,11 +4670,11 @@ self.onmessage = function(e){
     let running = N(gudangData.saldoAwal[product]);
     gudangData.rows.forEach(r => { const v = r.values[product]; running = running + N(v.masuk) - N(v.keluar); v.stok = running; });
     await saveGudangToDB(gudangData);
-    if (_gudangSub === 'analisa') {
-      if (_analisaSub === 'rupa') renderGudangAnalisaRupa(); else renderGudangAnalisa();
-    } else renderGudangPage(gudangData);
+    if (_gudangSub === 'rupa') renderGudangRupaPage(gudangRupaData);
+    else renderGudangPage(gudangData);
     renderCekFitri(); closeGInputModal();
     setGudangStatus('Stok "' + product + '" pada ' + gudangFmtDate(utcDate) + ' disimpan — Masuk ' + nfQty(masuk) + ', Keluar ' + nfQty(keluar) + '.');
+    refreshAnalisaIfVisible();
   }
   document.addEventListener('keydown', function(e){ if (e.key === 'Escape'){ const ov = document.getElementById('gInputOverlay'); if (ov && ov.classList.contains('show')) closeGInputModal(); } });
 
