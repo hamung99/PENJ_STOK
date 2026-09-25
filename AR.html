@@ -17,6 +17,8 @@
 
 <!-- Tailwind CDN (preflight dimatikan agar tidak menimpa CSS lama) -->
 <script src="https://cdn.tailwindcss.com"></script>
+<!-- Supabase (untuk sinkronisasi data AR antar-device, sama seperti index.html) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
   tailwind.config = {
     corePlugins: { preflight: false },
@@ -839,6 +841,13 @@
         <div class="menu-item danger" id="delBtnB" role="button">
           <span>🗑 Hapus Data AR Rupa‑rupa</span>
         </div>
+        <div class="menu-divider"></div>
+        <div class="menu-item" id="btnArCloudPush" role="button">
+          <span>⬆️ Upload AR ke Cloud</span>
+        </div>
+        <div class="menu-item" id="btnArCloudPull" role="button">
+          <span>⬇️ Ambil AR dari Cloud</span>
+        </div>
       </div>
     </div>
   </div>
@@ -1262,6 +1271,120 @@ function openIDB(){
   return idbPromise;
 }
 
+// ---------- Cloud Sync (Supabase) ----------
+// Pakai project Supabase yang sama dengan index.html, tapi row id beda ('ar_piutang')
+// supaya data AR tidak menimpa data Penjualan/Gudang di tabel app_sync.
+const SUPABASE_URL = 'https://twrfpovxjuubisskljjv.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_AeR-sG7aYIFrP5nIsloGfw_uJVYO3GN';
+const AR_SYNC_ROW_ID = 'ar_piutang';
+let sbClientAr = null, isSyncingArFromCloud = false, arPushTimer = null, arRealtimeReady = false;
+
+function initSupabaseAr(){
+  try {
+    if (typeof supabase === 'undefined') return null;
+    sbClientAr = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { realtime: { params: { eventsPerSecond: 2 } } });
+  } catch(e){ console.warn('Supabase init gagal (AR)', e); sbClientAr = null; }
+  return sbClientAr;
+}
+
+function setArCloudStatus(msg){
+  let el = document.getElementById('arCloudSyncStatus');
+  if (!el){
+    el = document.createElement('div');
+    el.id = 'arCloudSyncStatus';
+    el.style.cssText = 'position:fixed;left:8px;bottom:8px;font-size:11px;color:#fff;background:#1e3a5fcc;padding:4px 9px;border-radius:6px;z-index:9999;pointer-events:none;';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+}
+
+async function gatherArSnapshot(){
+  const db = await openIDB();
+  const tx = db.transaction(IDB_STORE, 'readonly');
+  const store = tx.objectStore(IDB_STORE);
+  const [recA, recB] = await Promise.all([
+    new Promise((r) => { const q = store.get('A'); q.onsuccess = () => r(q.result); q.onerror = () => r(null); }),
+    new Promise((r) => { const q = store.get('B'); q.onsuccess = () => r(q.result); q.onerror = () => r(null); })
+  ]);
+  const snap = {};
+  if (recA) snap.A = { filename: recA.filename, label: recA.label, rows: recA.rows, ts: recA.ts };
+  if (recB) snap.B = { filename: recB.filename, label: recB.label, rows: recB.rows, ts: recB.ts };
+  return snap;
+}
+
+async function writeArSnapshotToIDB(snap){
+  const db = await openIDB();
+  const tx = db.transaction(IDB_STORE, 'readwrite');
+  const store = tx.objectStore(IDB_STORE);
+  ['A','B'].forEach((k) => {
+    if (snap && snap[k]) store.put({ slot: k, filename: snap[k].filename, label: snap[k].label, rows: snap[k].rows, ts: snap[k].ts });
+    else store.delete(k);
+  });
+  await new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
+}
+
+async function pushArToCloud(){
+  if (!sbClientAr) throw new Error('Cloud belum terhubung.');
+  if (isSyncingArFromCloud) return {skipped:true};
+  const snapshot = await gatherArSnapshot();
+  const payload = { id: AR_SYNC_ROW_ID, data: snapshot, updated_at: new Date().toISOString() };
+  const result = await sbClientAr.from('app_sync').upsert(payload, { onConflict: 'id' });
+  if (result.error) { console.error('pushArToCloud gagal:', result.error); throw new Error(result.error.message || 'Cloud menolak data.'); }
+  setArCloudStatus('Upload berhasil ke cloud • ' + new Date().toLocaleTimeString('id-ID'));
+  return result.data;
+}
+
+function scheduleArPush(){
+  if (!sbClientAr) return;
+  clearTimeout(arPushTimer);
+  setArCloudStatus('Menyinkronkan…');
+  arPushTimer = setTimeout(async () => {
+    arPushTimer = null;
+    try { await pushArToCloud(); }
+    catch(e){ console.error('pushArToCloud gagal:', e); setArCloudStatus('Gagal upload ke cloud'); }
+  }, 1200);
+}
+
+async function pullArFromCloud(opts){
+  opts = opts || {};
+  if (!sbClientAr) { await loadStateFromStorage(); return; }
+  try {
+    const { data, error } = await sbClientAr.from('app_sync').select('data,updated_at').eq('id', AR_SYNC_ROW_ID).maybeSingle();
+    if (error) throw error;
+    if (data && data.data) {
+      isSyncingArFromCloud = true;
+      try {
+        await writeArSnapshotToIDB(data.data);
+        setArCloudStatus('Sinkron dari cloud • ' + new Date().toLocaleTimeString('id-ID'));
+      } finally { isSyncingArFromCloud = false; }
+    } else {
+      const db = await openIDB();
+      const tx = db.transaction(IDB_STORE, 'readonly');
+      const cnt = await new Promise((res) => { const r = tx.objectStore(IDB_STORE).count(); r.onsuccess = () => res(r.result); r.onerror = () => res(0); });
+      if (cnt > 0) await pushArToCloud();
+    }
+  } catch(e){
+    console.warn('pullArFromCloud gagal', e);
+    setArCloudStatus('Gagal terhubung ke cloud (mode lokal)');
+  } finally {
+    await loadStateFromStorage();
+    updateUploadStatus();
+    rebuildSumberFilter();
+    rebuildSalesFilter();
+    render();
+  }
+}
+
+function subscribeArRealtime(){
+  if (!sbClientAr || arRealtimeReady) return;
+  arRealtimeReady = true;
+  sbClientAr.channel('app_sync_ar_live')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'app_sync', filter: 'id=eq.' + AR_SYNC_ROW_ID }, () => {
+      if (!isSyncingArFromCloud) pullArFromCloud({ silent: true });
+    })
+    .subscribe();
+}
+
 async function saveStateToStorage(){
   try{
     const db = await openIDB();
@@ -1284,6 +1407,7 @@ async function saveStateToStorage(){
       tx.oncomplete = res;
       tx.onerror = () => rej(tx.error);
     });
+    if (!isSyncingArFromCloud) scheduleArPush();
   } catch(e){
     console.error('Gagal menyimpan data ke IndexedDB:', e);
     const msg = (e && e.name === 'QuotaExceededError')
@@ -2405,6 +2529,16 @@ function initTheme(){
   }
   applyTheme(saved);
 }
+document.getElementById('btnArCloudPush')?.addEventListener('click', async () => {
+  try { await pushArToCloud(); alert('Berhasil upload data AR ke cloud.'); }
+  catch(e){ alert('Gagal upload ke cloud: ' + (e && e.message || e)); }
+});
+document.getElementById('btnArCloudPull')?.addEventListener('click', async () => {
+  if (!confirm('Ambil data AR terbaru dari cloud? Data AR lokal di device ini akan ditimpa.')) return;
+  await pullArFromCloud({ silent: false });
+  alert('Selesai mengambil data AR dari cloud.');
+});
+
 const __themeToggleBtn = document.getElementById('themeToggle');
 if (__themeToggleBtn) __themeToggleBtn.addEventListener('click', () => {
   const current = document.documentElement.getAttribute('data-theme') || 'light';
@@ -2436,11 +2570,17 @@ async function requestPersistentStorage(){
 initTheme();
 (async function initApp(){
   requestPersistentStorage();
-  await loadStateFromStorage();
-  updateUploadStatus();
-  rebuildSumberFilter();
-  rebuildSalesFilter();
-  render();
+  initSupabaseAr();
+  if (sbClientAr) {
+    await pullArFromCloud({ silent: true });
+    subscribeArRealtime();
+  } else {
+    await loadStateFromStorage();
+    updateUploadStatus();
+    rebuildSumberFilter();
+    rebuildSalesFilter();
+    render();
+  }
 })();
 
 window.__SCAN_GET_AR = function(){

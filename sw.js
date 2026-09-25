@@ -1,12 +1,13 @@
 /* Service worker — Rekap Penjualan (PWA)
    Naikkan CACHE_VERSION setiap kali file aplikasi diubah agar cache lama dibuang. */
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v4';
 const APP_CACHE = 'rekap-app-' + CACHE_VERSION;
 const CDN_CACHE = 'rekap-cdn-' + CACHE_VERSION;
 
 const APP_SHELL = [
   './',
   './index.html',
+  './AR.html',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -55,10 +56,10 @@ self.addEventListener('fetch', (event) => {
       try {
         const fresh = await fetch(req);
         const cache = await caches.open(APP_CACHE);
-        cache.put('./index.html', fresh.clone());
+        cache.put(req, fresh.clone());
         return fresh;
       } catch (e) {
-        return (await caches.match('./index.html')) || (await caches.match('./')) || Response.error();
+        return (await caches.match(req)) || (await caches.match('./index.html')) || (await caches.match('./')) || Response.error();
       }
     })());
     return;
