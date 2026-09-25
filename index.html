@@ -285,6 +285,10 @@ body.dark #cekRingkasanTable tfoot td,body.dark #cekRupaTable tfoot td{backgroun
 #page-cek .cek-subtab{padding:6px 14px;border:1px solid #cbd5e1;background:#e2e8f0;border-radius:7px;font-size:12px;cursor:pointer;color:#334155;font-weight:700;transition:background .15s,color .15s,border-color .15s}
 #page-cek .cek-subtab:hover{background:#e2e8f0}
 #page-cek .cek-subtab.active{background:#1f4e78;border-color:#1f4e78;color:#fff}
+#page-cek .cek-subtabs{position:relative}
+.cek-alert-flags{display:none;align-items:center;gap:4px;margin-left:auto;min-height:26px}
+.cek-alert-flags .flag-icon{width:22px;height:22px;flex:none;animation:cekFlagPop .28s ease-out}
+@keyframes cekFlagPop{0%{opacity:0;transform:scale(.35) rotate(-6deg)}70%{opacity:1;transform:scale(1.12) rotate(2deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
 #page-cek .cek-panel{display:none}
 #page-cek .cek-panel.active{display:block}
 #cekPanelCust .cs-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:2px 0 12px}
@@ -1006,6 +1010,7 @@ body.dark #scsCustTable tfoot td{background:#1e3a5f;color:#f1f5f9}
     <button type="button" class="cek-subtab active" data-cek="fitri" onclick="switchCekSub('fitri',this)">🧴 Fitri</button>
     <button type="button" class="cek-subtab" data-cek="rupa" onclick="switchCekSub('rupa',this)">📦 Rupa Rupa</button>
     <button type="button" class="cek-subtab" data-cek="cust" onclick="switchCekSub('cust',this)">🏪 Fitri Sales/Customer</button>
+    <span class="cek-alert-flags" id="cekAlertFlags" title="Ada selisih Gudang/Penjualan yang perlu dicek"></span>
   </div>
 
   <div id="cekPanelFitri" class="cek-panel active">
@@ -3292,6 +3297,47 @@ self.onmessage = function(e){
     keys.forEach(k => { const p = N(pd[k]); const g = N(gd[k]); if (g > p) out.push(cekDateLabelLong(k)); });
     return out;
   }
+  // ===== Indikator flag animasi (muncul jika ada "Penjualan/Gudang Lebih Banyak") =====
+  const CEK_FLAG_MAX = 4;
+  const CEK_FLAG_INTERVAL_MS = 500;
+  const CEK_FLAG_SVG = '<svg class="flag-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+    '<rect x="1" y="1" width="22" height="22" rx="3" fill="#111827"/>' +
+    '<circle cx="12" cy="9.5" r="5" fill="#f8fafc"/>' +
+    '<circle cx="9.8" cy="8.6" r="1" fill="#111827"/>' +
+    '<circle cx="14.2" cy="8.6" r="1" fill="#111827"/>' +
+    '<path d="M9.3 11.6c1 .9 3.6.9 5.4 0" stroke="#111827" stroke-width="1" fill="none" stroke-linecap="round"/>' +
+    '<path d="M3.5 17.5l4-2.1 4 2.1 4-2.1 4 2.1" stroke="#f8fafc" stroke-width="1.7" fill="none" stroke-linecap="round"/>' +
+    '<path d="M3.5 20.2l4-2.1 4 2.1 4-2.1 4 2.1" stroke="#f8fafc" stroke-width="1.7" fill="none" stroke-linecap="round"/>' +
+  '</svg>';
+  let _cekFlagTimer = null, _cekFlagCount = 0;
+  function startCekFlagAnimation(){
+    const el = document.getElementById('cekAlertFlags');
+    if (!el) return;
+    el.style.display = 'flex';
+    if (_cekFlagTimer) return;
+    _cekFlagCount = 0;
+    const tick = () => {
+      _cekFlagCount = (_cekFlagCount % CEK_FLAG_MAX) + 1;
+      el.innerHTML = CEK_FLAG_SVG.repeat(_cekFlagCount);
+    };
+    tick();
+    _cekFlagTimer = setInterval(tick, CEK_FLAG_INTERVAL_MS);
+  }
+  function stopCekFlagAnimation(){
+    if (_cekFlagTimer) { clearInterval(_cekFlagTimer); _cekFlagTimer = null; }
+    const el = document.getElementById('cekAlertFlags');
+    if (el) { el.innerHTML = ''; el.style.display = 'none'; }
+  }
+  function updateCekAlertFlags(){
+    const activeBtn = document.querySelector('#page-cek .cek-subtab.active');
+    const which = (activeBtn && activeBtn.dataset && activeBtn.dataset.cek) || 'fitri';
+    let tbody = null;
+    if (which === 'fitri') tbody = document.getElementById('cekRingkasanTbody');
+    else if (which === 'rupa') tbody = document.getElementById('cekRupaTbody');
+    const hasAlert = !!(tbody && tbody.querySelector('.ket-badge.warn, .ket-badge.alert'));
+    if (hasAlert) startCekFlagAnimation(); else stopCekFlagAnimation();
+  }
+
   function collectCekData(month, mode, sourceRows, opts){
     const src = sourceRows || [];
     opts = opts || {};
@@ -3417,6 +3463,7 @@ self.onmessage = function(e){
         dtbody.innerHTML = dBody;
       }
     }
+    updateCekAlertFlags();
   }
   function downloadCekRingkasan(){
     if (!_cekLastData || !_cekLastData.products.length) return alert('Belum ada data untuk diunduh.');
@@ -3468,6 +3515,7 @@ self.onmessage = function(e){
     if (pf) pf.classList.toggle('active', which === 'fitri');
     if (pr) pr.classList.toggle('active', which === 'rupa');
     if (pc) pc.classList.toggle('active', which === 'cust');
+    if (which === 'cust') stopCekFlagAnimation();
     renderCekActive(which);
   }
   function renderCekActive(which){
@@ -3904,7 +3952,7 @@ self.onmessage = function(e){
     const tbody = document.getElementById('cekRupaTbody');
     const tfoot = document.getElementById('cekRupaTfoot');
     if (!thead || !tbody || !tfoot) return;
-    if (!_cekRupaLastData) { tbody.innerHTML = '<tr><td style="text-align:center;padding:24px;color:#64748b">Belum ada data.</td></tr>'; thead.innerHTML = ''; tfoot.innerHTML = ''; return; }
+    if (!_cekRupaLastData) { tbody.innerHTML = '<tr><td style="text-align:center;padding:24px;color:#64748b">Belum ada data.</td></tr>'; thead.innerHTML = ''; tfoot.innerHTML = ''; updateCekAlertFlags(); return; }
     const {products, salesList, penjualanPS, penjualanPD, gudangPD, hasGudang} = _cekRupaLastData;
     const q = (document.getElementById('cekRupaSearch')?.value || '').trim().toUpperCase();
     let list = products;
@@ -3913,10 +3961,10 @@ self.onmessage = function(e){
     if (!products.length) {
       thead.innerHTML = '<tr><th>PRODUK</th><th>TOTAL</th><th>OUTPUT GUDANG</th><th>SELISIH</th><th>KET</th></tr>';
       tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:#64748b">Belum ada data Rupa Rupa.</td></tr>';
-      tfoot.innerHTML = ''; return;
+      tfoot.innerHTML = ''; updateCekAlertFlags(); return;
     }
     thead.innerHTML = '<tr><th>PRODUK</th>' + salesList.map(s => '<th>' + s + '</th>').join('') + '<th>TOTAL</th><th>OUTPUT GUDANG</th><th>SELISIH</th><th>KET</th></tr>';
-    if (!list.length) { tbody.innerHTML = '<tr><td colspan="' + (salesList.length + 5) + '" style="text-align:center;padding:24px;color:#64748b">Tidak ada produk yang cocok dengan filter.</td></tr>'; tfoot.innerHTML = ''; return; }
+    if (!list.length) { tbody.innerHTML = '<tr><td colspan="' + (salesList.length + 5) + '" style="text-align:center;padding:24px;color:#64748b">Tidak ada produk yang cocok dengan filter.</td></tr>'; tfoot.innerHTML = ''; updateCekAlertFlags(); return; }
     let rBody = '';
     const salesGrand = salesList.map(() => 0);
     let grandTotal = 0, grandGudang = 0;
@@ -3937,6 +3985,7 @@ self.onmessage = function(e){
     const anyGudang = list.some(p => hasGudang && Object.keys(gudangPD[p.key] || {}).length > 0);
     const net = grandTotal - grandGudang;
     tfoot.innerHTML = '<tr><td>TOTAL</td>' + salesGrand.map(v => '<td class="num">' + nfQty(v) + '</td>').join('') + '<td class="num">' + nfQty(grandTotal) + '</td><td class="num">' + (anyGudang ? nfQty(grandGudang) : '—') + '</td><td class="num" style="color:' + (net === 0 ? '#166534' : '#b42318') + '">' + (anyGudang ? ((net > 0 ? '+' : '') + nfQty(net)) : '—') + '</td><td>—</td></tr>';
+    updateCekAlertFlags();
   }
   function downloadCekRupa(){
     if (!_cekRupaLastData || !_cekRupaLastData.products.length) return alert('Belum ada data untuk diunduh.');
