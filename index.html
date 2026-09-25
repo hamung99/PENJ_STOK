@@ -360,7 +360,6 @@ body.dark #page-analisa .gudang-subtab.active{background:#3b82f6;border-color:#3
 #page-analisa .analisa-tools label{font-size:10px!important}
 #page-analisa .analisa-tools select{min-width:128px!important;padding:2px 8px!important;font-size:11px!important;border-radius:6px!important;height:24px;line-height:1.2}
 #page-analisa .analisa-tools button{padding:2px 11px;font-size:11px;border-radius:6px;height:24px;line-height:1.2}
-#page-analisa .analisa-tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 
 #page-gudang tr.gudang-saldo-row{background:#eef2fb;font-weight:bold}
 #page-gudang tr.gudang-saldo-row td{color:#0f172a;font-weight:700}
@@ -577,6 +576,30 @@ body.dark #scsCustTable tbody tr:nth-child(even){background:#1a2536}
 body.dark #scsCustTable tbody tr:hover{background:#243447}
 body.dark #scsCustTable td.tot{color:#93c5fd}
 body.dark #scsCustTable tfoot td{background:#1e3a5f;color:#f1f5f9}
+
+/* ===== Tabs jadi Dropdown ===== */
+.tabs-wrap{position:relative;display:inline-block;margin-bottom:8px}
+.tabs-toggle{display:flex;align-items:center;gap:6px;padding:6px 14px;border:1px solid #cbd5e1;
+  border-radius:7px;background:#f1f5f9;color:#1f4e78;font-weight:700;cursor:pointer;font-size:12px;line-height:1.2}
+.tabs-toggle:hover{background:#e2e8f0}
+.tabs-toggle .chev{font-size:10px;transition:transform .2s;display:inline-block}
+.tabs-wrap.open .tabs-toggle .chev{transform:rotate(180deg)}
+.tabs.tabs-collapsible{
+  display:none;position:absolute;top:calc(100% + 6px);left:0;
+  background:#fff;border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.2);
+  padding:8px;z-index:80;flex-direction:column;min-width:240px;gap:4px;margin-bottom:0}
+.tabs-wrap.open .tabs.tabs-collapsible{display:flex}
+.tabs.tabs-collapsible button{
+  width:100%;text-align:left;padding:8px 12px;background:#f1f5f9;color:#334155;
+  font-size:12px;border-radius:6px;font-weight:600;border:0;cursor:pointer;line-height:1.2}
+.tabs.tabs-collapsible button:hover{background:#e2e8f0}
+.tabs.tabs-collapsible button.active{background:#1f4e78;color:#fff}
+body.dark .tabs-toggle{background:#334155;color:#93c5fd;border-color:#475569}
+body.dark .tabs-toggle:hover{background:#475569}
+body.dark .tabs.tabs-collapsible{background:#1e293b;box-shadow:0 8px 28px #0008}
+body.dark .tabs.tabs-collapsible button{background:#0f172a;color:#cbd5e1}
+body.dark .tabs.tabs-collapsible button:hover{background:#334155}
+body.dark .tabs.tabs-collapsible button.active{background:#3b82f6;color:#fff}
 </style>
 </head>
 <body>
@@ -687,18 +710,23 @@ body.dark #scsCustTable tfoot td{background:#1e3a5f;color:#f1f5f9}
     </div>
   </div>
   <div id="result" class="card" style="display:none">
-    <div class="tabs">
-      <button onclick="show('s0',this)">Transaksi</button>
-      <button onclick="show('s7',this)">Sales per Produk</button>
-      <button class="active" onclick="show('s6',this)">Faktur</button>
-      <button onclick="show('s1',this)">Produk</button>
-      <button onclick="show('s8',this)">Profit/Faktur</button>
-      <button onclick="show('s2',this)">Profit Per Pembayaran</button>
-      <button onclick="show('s3',this)">Profit Penjualan per Produk</button>
-      <button onclick="show('s4',this)">Rekap per Sales</button>
-      <button onclick="show('s5',this)">Margin % per Produk</button>
-      <button onclick="show('s9',this)">Data Harga</button>
-      <button onclick="show('s10',this)">Data Bulanan</button>
+    <div class="tabs-wrap" id="tabsWrap">
+      <button type="button" class="tabs-toggle" id="tabsToggleBtn" onclick="toggleTabsMenu(event)">
+        <span id="tabsToggleLabel">📑 Faktur</span><span class="chev">▼</span>
+      </button>
+      <div class="tabs tabs-collapsible" id="tabsMenu">
+        <button onclick="show('s0',this)">Transaksi</button>
+        <button onclick="show('s7',this)">Sales per Produk</button>
+        <button class="active" onclick="show('s6',this)">Faktur</button>
+        <button onclick="show('s1',this)">Produk</button>
+        <button onclick="show('s8',this)">Profit/Faktur</button>
+        <button onclick="show('s2',this)">Profit Per Pembayaran</button>
+        <button onclick="show('s3',this)">Profit Penjualan per Produk</button>
+        <button onclick="show('s4',this)">Rekap per Sales</button>
+        <button onclick="show('s5',this)">Margin % per Produk</button>
+        <button onclick="show('s9',this)">Data Harga</button>
+        <button onclick="show('s10',this)">Data Bulanan</button>
+      </div>
     </div>
     <div class="toolbar-row">
       <div class="toolbar-left">
@@ -719,16 +747,7 @@ body.dark #scsCustTable tfoot td{background:#1e3a5f;color:#f1f5f9}
           <div class="filter-menu" id="filterMenu" onclick="event.stopPropagation()">
           <div class="filter-group">
             <label>Tanggal</label>
-            <div class="filter-date-row">
-              <div class="filter-date-col">
-                <label for="filterDateFrom">Dari</label>
-                <input type="date" id="filterDateFrom">
-              </div>
-              <div class="filter-date-col">
-                <label for="filterDateTo">Sampai</label>
-                <input type="date" id="filterDateTo">
-              </div>
-            </div>
+            <input type="date" id="filterDateSingle" style="width:100%;box-sizing:border-box;padding:7px 8px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;color:#172033;font-size:12px">
           </div>
           <div class="filter-group">
             <label>Sales</label>
@@ -1518,8 +1537,6 @@ self.onmessage = function(e){
       _worker.onerror = function(err){
         console.warn('Worker error, switching to in-memory fallback', err);
         _fallbackMode = true;
-        // PENTING: reset flag agar upload berikutnya tidak diblokir
-        // dan spinner tidak nyangkut saat CDN XLSX gagal dimuat di worker.
         if (_inFlightWorker){
           _inFlightWorker = false;
           const buf = _pendingBuffer; _pendingBuffer = null;
@@ -1664,18 +1681,12 @@ self.onmessage = function(e){
   async function commitIncomingTx(chunkRows, monthList){
     const list = (chunkRows || []);
     const dayKeys = [...new Set(list.map(r => dayKeyOfTs(r._ts)).filter(Boolean))].sort();
-
-    // Baris dengan _ts null (tanggal tidak terbaca) tidak punya "hari" sehingga
-    // tidak bisa di-dedupe lewat range tanggal. Kita dedupe berdasarkan No. Faktur
-    // (fallback ke produk+jumlah+total) supaya re-import tidak menumpuk duplikat
-    // yang tidak bisa dihapus lewat "Hapus Bulan".
     const nullKeyOf = (r) => {
       const f = String(r.faktur ?? '').trim();
       if (f) return 'F|' + f;
       return 'P|' + String(r.produk ?? '').trim() + '|' + N(r.jumlah) + '|' + N(r.total);
     };
     const nullKeySet = new Set(list.filter(r => !r._ts).map(nullKeyOf));
-
     if (useIDB){
       for (const k of dayKeys){ const r = dayRangeOfKey(k); try { await db.tx.where('_ts').between(r[0], r[1], true, true).delete(); } catch(e){ console.warn('delete tanggal', k, e); } }
       if (nullKeySet.size){
@@ -1743,7 +1754,7 @@ self.onmessage = function(e){
     const w = getWorker();
     if (w){
       _inFlightWorker = true;
-      _pendingBuffer = buf; // simpan agar bisa fallback bila worker error
+      _pendingBuffer = buf;
       try { w.postMessage(buf); }
       catch(e){ _inFlightWorker = false; _pendingBuffer = null; await fallbackSyncParse(buf); }
     }
@@ -1772,12 +1783,8 @@ self.onmessage = function(e){
     }
   }
   async function postParseDone(_totalRaw, replacedDays, newCount){
-    // PENTING: sinkronkan filters (khususnya filters.month) dari meta SEBELUM fetch,
-    // kalau tidak tabel & KPI bisa menampilkan semua bulan sementara dropdown sudah
-    // menunjuk bulan terbaru — baru berubah saat user menyentuh filter.
     populatedFiltersBound = true;
     try { await populateFiltersDOM(); } catch(e){ console.warn('populateFiltersDOM gagal', e); }
-
     let totalRows, sortData;
     if (useIDB){ totalRows = await db.tx.count(); sortData = await fetchFiltered(); }
     else { totalRows = rows.length; sortData = await fetchFiltered(); }
@@ -1917,21 +1924,17 @@ self.onmessage = function(e){
       else if (document.activeElement === p) q.value = p.value;
       else if (q.value !== p.value) q.value = p.value;
     }
+    const _singleDate = document.getElementById('filterDateSingle')?.value || '';
     filters = {
       month: document.getElementById('filterMonth').value,
       sales: document.getElementById('filterSales').value,
       product: document.getElementById('filterProduct').value,
       payment: document.getElementById('filterPayment').value,
-      dateFrom: document.getElementById('filterDateFrom')?.value || '',
-      dateTo: document.getElementById('filterDateTo')?.value || '',
+      dateFrom: _singleDate,
+      dateTo:   _singleDate,
       kdCustomer: (document.getElementById('filterKdCustomer')?.value || '').trim(),
       q: (document.getElementById('quickSearch')?.value || '').trim()
     };
-    if (filters.dateFrom && filters.dateTo && filters.dateFrom > filters.dateTo) {
-      const tmp = filters.dateFrom; filters.dateFrom = filters.dateTo; filters.dateTo = tmp;
-      const a = document.getElementById('filterDateFrom'); const b = document.getElementById('filterDateTo');
-      if (a) a.value = filters.dateFrom; if (b) b.value = filters.dateTo;
-    }
     if (useIDB) { try { await db.meta.put({key:'filters', value:filters}); } catch(e){} }
     showBusy('Memfilter…');
     const filtr = await fetchFiltered();
@@ -1966,9 +1969,9 @@ self.onmessage = function(e){
   }
   async function resetFilters(){
     filters = {month:'',sales:'',product:'',payment:'',dateFrom:'',dateTo:'',kdCustomer:'',q:''};
-    const df = document.getElementById('filterDateFrom'); const dt = document.getElementById('filterDateTo');
+    const df = document.getElementById('filterDateSingle');
     const kd = document.getElementById('filterKdCustomer'); const qs = document.getElementById('quickSearch');
-    if (df) df.value = ''; if (dt) dt.value = ''; if (kd) kd.value = ''; if (qs) qs.value = '';
+    if (df) df.value = ''; if (kd) kd.value = ''; if (qs) qs.value = '';
     if (useIDB) { try { await db.meta.put({key:'filters', value:filters}); } catch(e){} }
     await populateFiltersDOM();
     await applyFilters();
@@ -1999,6 +2002,19 @@ self.onmessage = function(e){
     if (cp && cp.classList.contains('open') && !cp.contains(e.target)) closeColPicker();
     if (fp && fp.classList.contains('open') && !fp.contains(e.target)) closeFilterPicker();
   });
+  function toggleTabsMenu(e){
+    if (e) e.stopPropagation();
+    const w = document.getElementById('tabsWrap');
+    if (w) w.classList.toggle('open');
+  }
+  function closeTabsMenu(){
+    const w = document.getElementById('tabsWrap');
+    if (w) w.classList.remove('open');
+  }
+  document.addEventListener('click', function(e){
+    const w = document.getElementById('tabsWrap');
+    if (w && w.classList.contains('open') && !w.contains(e.target)) closeTabsMenu();
+  });
   function buildColPicker(){
     document.getElementById('colPickerMenu').innerHTML = TX_COLS.map(c =>
       '<label><input type="checkbox" data-k="' + c.k + '" ' + (colVis[c.k]?'checked':'') + ' onchange="onColChange(this)"> ' + c.label + '</label>').join('');
@@ -2016,6 +2032,8 @@ self.onmessage = function(e){
     document.querySelectorAll('#table .view').forEach(v => v.style.display = 'none');
     const panel = document.getElementById('panel_s0'); if (panel) panel.style.display = 'block';
     s0KeyBuilt = ''; s0Widths = computeColWidths(); buildPanelS0();
+    const lbl = document.getElementById('tabsToggleLabel');
+    if (lbl) lbl.textContent = '📑 Transaksi';
   }
   function toDate(v){
     if (!v) return null;
@@ -2043,15 +2061,11 @@ self.onmessage = function(e){
     if (!m) return;
     const months = m.months || [], sales = m.sales || [], products = m.products || [];
     document.getElementById('filterMonth').innerHTML = '<option value="">Semua bulan</option>' + months.map(x => '<option value="' + x + '">' + monthLabel(x) + '</option>').join('');
-    // Reset kalau kosong ATAU sudah tidak ada di daftar bulan (mencegah filter
-    // "nyangkut" ke bulan lama, dan menyelaraskan dropdown dengan data terbaru).
     if (!filters.month || !months.includes(filters.month)) filters.month = pickLatestMonth(months);
     if (filters.month) document.getElementById('filterMonth').value = filters.month;
     document.getElementById('filterSales').innerHTML = '<option value="">Semua sales</option>' + sales.map(x => '<option value="' + x + '">' + x + '</option>').join('');
     const dm = document.getElementById('deleteMonth');
     if (dm) dm.innerHTML = '<option value="">Pilih bulan...</option>' + months.map(x => '<option value="' + x + '">' + monthLabel(x) + '</option>').join('');
-    const bm = document.getElementById('bulkHargaMonth');
-    if (bm){ const sel = bm.value; bm.innerHTML = '<option value="">Pilih bulan...</option>' + months.map(x => '<option value="' + x + '">' + monthLabel(x) + '</option>').join(''); bm.value = months.includes(sel) ? sel : ''; }
     const bp = document.getElementById('bulkHargaProduct');
     if (bp){ const sel = bp.value; bp.innerHTML = '<option value="">Pilih produk...</option>' + products.map(x => '<option value="' + x.replace(/"/g,'&quot;') + '">' + x + '</option>').join(''); bp.value = products.includes(sel) ? sel : ''; }
   }
@@ -2069,21 +2083,18 @@ self.onmessage = function(e){
     }
     document.getElementById('filterMonth').innerHTML = '<option value="">Semua bulan</option>' + months.map(m => '<option value="'+m+'">'+monthLabel(m)+'</option>').join('');
     document.getElementById('filterSales').innerHTML = '<option value="">Semua sales</option>' + sales.map(s => '<option value="'+s+'">'+s+'</option>').join('');
-    // Reset filters.month bila sudah tidak ada di daftar bulan.
     if (!filters.month || !months.includes(filters.month)) filters.month = pickLatestMonth(months);
     document.getElementById('filterMonth').value   = filters.month;
     document.getElementById('filterSales').value   = filters.sales;
     document.getElementById('filterProduct').value = filters.product;
     const _fpq = document.getElementById('filterProductQuick'); if (_fpq) _fpq.value = filters.product || '';
     document.getElementById('filterPayment').value = filters.payment;
-    const df = document.getElementById('filterDateFrom'); const dt = document.getElementById('filterDateTo');
+    const df = document.getElementById('filterDateSingle');
     const kd = document.getElementById('filterKdCustomer'); const qs = document.getElementById('quickSearch');
-    if (df) df.value = filters.dateFrom || ''; if (dt) dt.value = filters.dateTo || '';
+    if (df) df.value = filters.dateFrom || filters.dateTo || '';
     if (kd) kd.value = filters.kdCustomer || ''; if (qs) qs.value = filters.q || '';
     const dm = document.getElementById('deleteMonth');
     if (dm) dm.innerHTML = '<option value="">Pilih bulan...</option>' + months.map(m => '<option value="'+m+'">'+monthLabel(m)+'</option>').join('');
-    const bm = document.getElementById('bulkHargaMonth');
-    if (bm){ const sel = bm.value; bm.innerHTML = '<option value="">Pilih bulan...</option>' + months.map(m => '<option value="'+m+'">'+monthLabel(m)+'</option>').join(''); bm.value = months.includes(sel) ? sel : ''; }
     const bp = document.getElementById('bulkHargaProduct');
     if (bp){ const sel = bp.value; bp.innerHTML = '<option value="">Pilih produk...</option>' + products.map(p => '<option value="'+p.replace(/"/g,'&quot;')+'">'+p+'</option>').join(''); bp.value = products.includes(sel) ? sel : ''; }
     updateFilterUi();
@@ -2414,6 +2425,10 @@ self.onmessage = function(e){
     _activeTab = t;
     document.querySelectorAll('.tabs button').forEach(x => x.classList.remove('active'));
     if (b) b.classList.add('active');
+    const lbl = document.getElementById('tabsToggleLabel');
+    const act = document.querySelector('.tabs button.active') || b;
+    if (lbl && act) lbl.textContent = '📑 ' + act.textContent.trim();
+    closeTabsMenu();
     document.getElementById('colPicker').style.display = (t === 's0') ? 'block' : 'none';
     const s7q = document.getElementById('s7DateQuick');
     if (s7q) {
@@ -2636,8 +2651,6 @@ self.onmessage = function(e){
     const pivot = buildS7Pivot(s7DateFilter);
     const head = ['TGL','PRODUK', ...SO_S7.map(s => s === 'PARIMIN' ? 'PRTIMIN' : s), 'TOTAL QTY'];
     const total = pivot.rows.length;
-
-    // Kelompokkan baris per tanggal supaya rowspan tidak terpotong oleh paginasi.
     const dateGroups = [];
     let curG = null;
     pivot.rows.forEach(r => {
@@ -2647,9 +2660,6 @@ self.onmessage = function(e){
       }
       curG.rows.push(r);
     });
-
-    // Bagi ke halaman: setiap halaman berisi grup tanggal utuh (rowspan aman),
-    // tapi tetap dibatasi sekitar S7_PAGE_SIZE baris.
     const pages = [];
     let curPage = [], curPageRows = 0;
     dateGroups.forEach(dg => {
@@ -2660,16 +2670,13 @@ self.onmessage = function(e){
       curPageRows += dg.rows.length;
     });
     if (curPage.length) pages.push(curPage);
-
     const totalPages = Math.max(1, pages.length);
     if (s7Page > totalPages - 1) s7Page = totalPages - 1;
     if (s7Page < 0) s7Page = 0;
     const pageGroups = pages[s7Page] || [];
-
     let startRow = 0;
     for (let i = 0; i < s7Page; i++) startRow += pages[i].reduce((a, g) => a + g.rows.length, 0);
     const rowsShown = pageGroups.reduce((a, g) => a + g.rows.length, 0);
-
     let body = '';
     if (!total){
       body = '<tr><td colspan="' + head.length + '" style="text-align:center;padding:28px;color:#64748b">Tidak ada data untuk filter saat ini.</td></tr>';
@@ -2687,11 +2694,9 @@ self.onmessage = function(e){
         });
       });
     }
-
     const foot = '<tr><td class="num" colspan="2">TOTAL</td>' +
       SO_S7.map(s => '<td class="num">' + (pivot.grand[s] ? pivot.grand[s].toLocaleString('id-ID') : '0') + '</td>').join('') +
       '<td class="num">' + (pivot.grandTotal ? pivot.grandTotal.toLocaleString('id-ID') : '0') + '</td></tr>';
-
     const pager = total > S7_PAGE_SIZE
       ? '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:8px 4px 10px;font-size:12px;color:#475569">' +
           '<span>Menampilkan <b>' + (startRow+1) + '–' + (startRow + rowsShown) + '</b> dari <b>' + total.toLocaleString('id-ID') + '</b> baris</span>' +
@@ -2701,7 +2706,6 @@ self.onmessage = function(e){
             '<button type="button" ' + (s7Page>=totalPages-1?'disabled ':'') + 'onclick="setS7Page(' + (s7Page+1) + ')" style="padding:5px 10px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;cursor:pointer">Next ›</button>' +
           '</span></div>'
       : '';
-
     return pager + '<div class="tablebox"><table><thead><tr>' + head.map(h => '<th>' + h + '</th>').join('') + '</tr></thead><tbody>' + body + '</tbody><tfoot>' + foot + '</tfoot></table></div>';
   }
   function renderTab(t){
@@ -4668,14 +4672,10 @@ self.onmessage = function(e){
     else sel.value = '';
     _analisaRupaMonthInit = true;
   }
-  // FIXED: Analisa Rupa Rupa sekarang memakai gudangData (sumber yang SAMA dengan
-  // Cek > Rupa Rupa) supaya angka "Output Gudang" & "Stok Akhir" konsisten.
   async function renderGudangAnalisaRupa(){
     await populateAnalisaRupaMonths();
     const month = document.getElementById('analisaRupaMonth')?.value || '';
     const sourceRows = await fetchCekRawRows(month, { mode: 'rupa' });
-
-    // === Penjualan ===
     const penjualanMap = new Map();
     for (let i = 0; i < sourceRows.length; i++) {
       const x = sourceRows[i];
@@ -4691,8 +4691,6 @@ self.onmessage = function(e){
       agg.qty += j; agg.total += t; agg.hpp += j * hb;
       if (ts >= agg.latestTs) { agg.latestTs = ts; agg.latestHargaBeli = hb; }
     }
-
-    // === Gudang: pakai gudangData (SAMA dengan Cek > Rupa Rupa) ===
     const gudangMap = new Map();
     if (gudangData && gudangData.products) {
       for (const p of gudangData.products) {
@@ -4732,7 +4730,6 @@ self.onmessage = function(e){
         g.stokAkhir = val.stok;
       }
     }
-
     const allKeys = new Set([...penjualanMap.keys(), ...gudangMap.keys()]);
     const list = [];
     for (const key of allKeys) {
