@@ -286,9 +286,11 @@ body.dark #cekRingkasanTable tfoot td,body.dark #cekRupaTable tfoot td{backgroun
 #page-cek .cek-subtab:hover{background:#e2e8f0}
 #page-cek .cek-subtab.active{background:#1f4e78;border-color:#1f4e78;color:#fff}
 #page-cek .cek-subtabs{position:relative}
-.cek-alert-flags{display:none;align-items:center;gap:4px;margin-left:auto;min-height:26px}
-.cek-alert-flags .flag-icon{width:22px;height:22px;flex:none;display:inline-block;opacity:0;transform:scale(.4) rotate(-8deg);transition:opacity .25s ease-out,transform .25s ease-out}
-.cek-alert-flags .flag-icon.show{opacity:1;transform:scale(1) rotate(0)}
+.cek-alert-flags{display:none;align-items:center;gap:3px;margin-left:auto;min-height:28px}
+.cek-alert-flags .flag-icon{width:24px;height:24px;flex:none;display:inline-block;opacity:0;transform:scale(.35) translateY(6px);transition:opacity .28s cubic-bezier(.22,1.4,.36,1),transform .28s cubic-bezier(.22,1.4,.36,1);filter:drop-shadow(0 1px 1px rgba(0,0,0,.15))}
+.cek-alert-flags .flag-icon.show{opacity:1;transform:scale(1) translateY(0)}
+.cek-alert-flags .flag-icon.show.signal-pulse{animation:cekSignalPulse .9s ease-in-out infinite}
+@keyframes cekSignalPulse{0%,100%{transform:scale(1) translateY(0)}50%{transform:scale(1.12) translateY(-1px)}}
 #page-cek .cek-panel{display:none}
 #page-cek .cek-panel.active{display:block}
 #cekPanelCust .cs-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:2px 0 12px}
@@ -3298,17 +3300,23 @@ self.onmessage = function(e){
     return out;
   }
   // ===== Indikator flag animasi (muncul jika ada "Penjualan/Gudang Lebih Banyak") =====
-  const CEK_FLAG_MAX = 4;
-  const CEK_FLAG_INTERVAL_MS = 500;
-  // Warna sengaja dibuat beda dari bendera One Piece (bukan hitam-putih): dasar navy, tengkorak/tulang warna amber.
-  const CEK_FLAG_SVG_INNER = '<svg viewBox="0 0 24 24" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
-    '<rect x="1" y="1" width="22" height="22" rx="3" fill="#1e3a5f"/>' +
-    '<circle cx="12" cy="9.5" r="5" fill="#fbbf24"/>' +
-    '<circle cx="9.8" cy="8.6" r="1" fill="#1e3a5f"/>' +
-    '<circle cx="14.2" cy="8.6" r="1" fill="#1e3a5f"/>' +
-    '<path d="M9.3 11.6c1 .9 3.6.9 5.4 0" stroke="#1e3a5f" stroke-width="1" fill="none" stroke-linecap="round"/>' +
-    '<path d="M3.5 17.5l4-2.1 4 2.1 4-2.1 4 2.1" stroke="#fbbf24" stroke-width="1.7" fill="none" stroke-linecap="round"/>' +
-    '<path d="M3.5 20.2l4-2.1 4 2.1 4-2.1 4 2.1" stroke="#fbbf24" stroke-width="1.7" fill="none" stroke-linecap="round"/>' +
+  // Ikon: logo Topi Jerami (Straw Hat) — muncul bertahap seperti batang sinyal
+  const CEK_FLAG_MAX = 3;
+  const CEK_FLAG_INTERVAL_MS = 420;
+  const CEK_FLAG_SVG_INNER = '<svg viewBox="0 0 64 64" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+    '<circle cx="32" cy="32" r="30.5" fill="#F4C430"/>' +
+    '<circle cx="32" cy="32" r="30.5" fill="none" stroke="#C9A227" stroke-width="1.2"/>' +
+    '<ellipse cx="32" cy="37.5" rx="15.5" ry="14.5" fill="none" stroke="#C41E3A" stroke-width="2.3"/>' +
+    '<path d="M23.8 31.2 L29.8 37.2 M29.8 31.2 L23.8 37.2" stroke="#1a1a1a" stroke-width="2.3" stroke-linecap="round"/>' +
+    '<circle cx="40.2" cy="34.2" r="1.85" fill="#1a1a1a"/>' +
+    '<path d="M25.5 42 Q32 48.5 39.2 42" fill="none" stroke="#C41E3A" stroke-width="2.15" stroke-linecap="round"/>' +
+    '<ellipse cx="32" cy="21.2" rx="23" ry="5.5" fill="#C41E3A"/>' +
+    '<path d="M17.5 21.2 C17.5 10 25 7 32 7 C39 7 46.5 10 46.5 21.2 Z" fill="#C41E3A"/>' +
+    '<path d="M20.8 17.8 C21.2 12.2 26.5 10.2 32 10.2 C37.5 10.2 42.8 12.2 43.2 17.8" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/>' +
+    '<rect x="18.5" y="18.6" width="27" height="4" rx="0.7" fill="#1a1a1a"/>' +
+    '<circle cx="32" cy="20.6" r="1.7" fill="#fff"/>' +
+    '<path d="M29.8 20.2 L34.2 21 M34.2 20.2 L29.8 21" stroke="#fff" stroke-width="0.85" stroke-linecap="round"/>' +
+    '<path d="M30.7 22.1 L32 23.6 L33.3 22.1" fill="none" stroke="#fff" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round"/>' +
   '</svg>';
   let _cekFlagTimer = null, _cekFlagCount = 0, _cekFlagBuilt = false;
   function ensureCekFlagSlots(el){
@@ -3332,7 +3340,11 @@ self.onmessage = function(e){
     const tick = () => {
       _cekFlagCount = (_cekFlagCount % CEK_FLAG_MAX) + 1;
       const icons = el.querySelectorAll('.flag-icon');
-      icons.forEach((icon, idx) => icon.classList.toggle('show', idx < _cekFlagCount));
+      icons.forEach((icon, idx) => {
+        const on = idx < _cekFlagCount;
+        icon.classList.toggle('show', on);
+        icon.classList.toggle('signal-pulse', on && idx === _cekFlagCount - 1);
+      });
     };
     tick();
     _cekFlagTimer = setInterval(tick, CEK_FLAG_INTERVAL_MS);
@@ -3340,7 +3352,12 @@ self.onmessage = function(e){
   function stopCekFlagAnimation(){
     if (_cekFlagTimer) { clearInterval(_cekFlagTimer); _cekFlagTimer = null; }
     const el = document.getElementById('cekAlertFlags');
-    if (el) { el.querySelectorAll('.flag-icon').forEach(icon => icon.classList.remove('show')); el.style.display = 'none'; }
+    if (el) {
+      el.querySelectorAll('.flag-icon').forEach(icon => {
+        icon.classList.remove('show', 'signal-pulse');
+      });
+      el.style.display = 'none';
+    }
   }
   function updateCekAlertFlags(){
     const activeBtn = document.querySelector('#page-cek .cek-subtab.active');
