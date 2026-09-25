@@ -286,8 +286,8 @@ body.dark #cekRingkasanTable tfoot td,body.dark #cekRupaTable tfoot td{backgroun
 #page-cek .cek-subtab:hover{background:#e2e8f0}
 #page-cek .cek-subtab.active{background:#1f4e78;border-color:#1f4e78;color:#fff}
 #page-cek .cek-subtabs{position:relative}
-.cek-alert-flags{display:none;align-items:center;gap:4px;margin-left:auto;min-height:26px}
-.cek-alert-flags .flag-icon{width:22px;height:22px;flex:none;display:inline-block;opacity:0;transform:scale(.4) rotate(-8deg);transition:opacity .25s ease-out,transform .25s ease-out}
+.cek-alert-flags{display:none;align-items:center;gap:5px;margin-left:auto;min-height:34px}
+.cek-alert-flags .flag-icon{width:30px;height:30px;flex:none;display:inline-block;opacity:0;transform:scale(.4) rotate(-8deg);transition:opacity .25s ease-out,transform .25s ease-out}
 .cek-alert-flags .flag-icon.show{opacity:1;transform:scale(1) rotate(0)}
 #page-cek .cek-panel{display:none}
 #page-cek .cek-panel.active{display:block}
@@ -3300,45 +3300,19 @@ self.onmessage = function(e){
   // ===== Indikator flag animasi (muncul jika ada "Penjualan/Gudang Lebih Banyak") =====
   const CEK_FLAG_MAX = 7;
   const CEK_FLAG_INTERVAL_MS = 500;
-  // Warna sengaja dibuat beda dari bendera One Piece (bukan hitam-putih): dasar navy, tengkorak/tulang warna amber.
+  // SVG tengkorak sederhana (gaya gambar 2): putih, mata & hidung hitam, 3 gigi
   const CEK_FLAG_SVG_INNER = '<svg viewBox="0 0 64 64" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
-    '<circle cx="32" cy="32" r="30.5" fill="#0a0a0a"/>' +
-    // tulang silang (path, tanpa transform)
-    '<g fill="#fff">' +
-    // diagonal \\ 
-    '<path d="M16.5 14.5 L19.5 11.5 L22.5 14.5 L19.5 17.5 Z"/>' +
-    '<path d="M41.5 46.5 L44.5 43.5 L47.5 46.5 L44.5 49.5 Z"/>' +
-    '<path d="M18.2 15.8 L45.8 43.4 L43.4 45.8 L15.8 18.2 Z"/>' +
-    // diagonal //
-    '<path d="M47.5 14.5 L44.5 11.5 L41.5 14.5 L44.5 17.5 Z"/>' +
-    '<path d="M22.5 46.5 L19.5 43.5 L16.5 46.5 L19.5 49.5 Z"/>' +
-    '<path d="M45.8 15.8 L18.2 43.4 L15.8 45.8 L43.4 18.2 Z"/>' +
-    // ujung tulang bulat
-    '<circle cx="18" cy="15" r="3.6"/>' +
-    '<circle cx="46" cy="47" r="3.6"/>' +
-    '<circle cx="46" cy="15" r="3.6"/>' +
-    '<circle cx="18" cy="47" r="3.6"/>' +
-    // kepala tengkorak
-    '<ellipse cx="32" cy="27" rx="13.8" ry="12.8"/>' +
-    // rahang
-    '<ellipse cx="32" cy="42.5" rx="9.8" ry="7.8"/>' +
-    // pipi
-    '<path d="M20 33.5 Q18 40 23.5 45.5 L29 39 Z"/>' +
-    '<path d="M44 33.5 Q46 40 40.5 45.5 L35 39 Z"/>' +
-    '</g>' +
-    // mata
-    '<ellipse cx="26.2" cy="26" rx="4.4" ry="4.9" fill="#0a0a0a"/>' +
-    '<ellipse cx="37.8" cy="26" rx="4.4" ry="4.9" fill="#0a0a0a"/>' +
-    // hidung
-    '<circle cx="32" cy="34" r="2.2" fill="#0a0a0a"/>' +
-    // gigi
-    '<rect x="23.2" y="38" width="17.6" height="9.8" rx="1.2" fill="#fff" stroke="#0a0a0a" stroke-width="1.15"/>' +
-    '<line x1="23.2" y1="41.3" x2="40.8" y2="41.3" stroke="#0a0a0a" stroke-width="1.05"/>' +
-    '<line x1="23.2" y1="44.5" x2="40.8" y2="44.5" stroke="#0a0a0a" stroke-width="1.05"/>' +
-    '<line x1="26.7" y1="38" x2="26.7" y2="47.8" stroke="#0a0a0a" stroke-width="1.05"/>' +
-    '<line x1="30.2" y1="38" x2="30.2" y2="47.8" stroke="#0a0a0a" stroke-width="1.05"/>' +
-    '<line x1="33.8" y1="38" x2="33.8" y2="47.8" stroke="#0a0a0a" stroke-width="1.05"/>' +
-    '<line x1="37.3" y1="38" x2="37.3" y2="47.8" stroke="#0a0a0a" stroke-width="1.05"/>' +
+    '<rect width="64" height="64" fill="#0a0a0a" rx="8"/>' +
+    '<path fill="#fff" stroke="#fff" stroke-width="2.2" stroke-linejoin="round" d="' +
+      'M32 6 C18 6 10 16 10 28 C10 36 12 40 14 44 ' +
+      'C12 48 14 54 20 56 L24 56 L26 52 L28 56 L32 56 L36 56 L38 52 L40 56 L44 56 ' +
+      'C50 54 52 48 50 44 C52 40 54 36 54 28 C54 16 46 6 32 6 Z"/>' +
+    '<ellipse cx="24" cy="28" rx="5.5" ry="6.2" fill="#0a0a0a"/>' +
+    '<ellipse cx="40" cy="28" rx="5.5" ry="6.2" fill="#0a0a0a"/>' +
+    '<path fill="#0a0a0a" d="M32 34 L28 42 L36 42 Z"/>' +
+    '<rect x="25" y="48" width="3.2" height="7" rx="0.8" fill="#0a0a0a"/>' +
+    '<rect x="30.4" y="48" width="3.2" height="7" rx="0.8" fill="#0a0a0a"/>' +
+    '<rect x="35.8" y="48" width="3.2" height="7" rx="0.8" fill="#0a0a0a"/>' +
   '</svg>';
   let _cekFlagTimer = null, _cekFlagCount = 0, _cekFlagBuilt = false;
   function ensureCekFlagSlots(el){
