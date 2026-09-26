@@ -284,20 +284,6 @@ body.dark .hbdiff-cancel{background:#334155;color:#e2e8f0}
 #page-cek .cek-card-actions > button{padding:4px 10px;font-size:11px;font-weight:700;border-radius:6px;line-height:1.3}
 #page-cek .cek-refresh-btn{padding:4px 8px;font-size:12px;min-width:30px}
 #page-cek .cek-bulan-label{font-weight:700;color:#334155;font-size:13px}
-#page-cek .cek-actions-dd{position:relative;display:inline-block}
-#page-cek .cek-actions-dd-toggle{display:flex;align-items:center;gap:5px;padding:4px 10px;font-size:11px;font-weight:700;border-radius:6px;line-height:1.3}
-#page-cek .cek-actions-dd-caret{font-size:9px;transition:transform .2s}
-#page-cek .cek-actions-dd.open .cek-actions-dd-caret{transform:rotate(180deg)}
-#page-cek .cek-actions-dd-backdrop{display:none;position:fixed;inset:0;z-index:110}
-#page-cek .cek-actions-dd.open .cek-actions-dd-backdrop{display:block}
-#page-cek .cek-actions-dd-menu{display:none;position:absolute;right:0;top:calc(100% + 6px);min-width:190px;background:#fff;border:1px solid #cbd5e1;border-radius:9px;box-shadow:0 8px 22px rgba(15,23,42,.18);padding:4px;z-index:120}
-#page-cek .cek-actions-dd.open .cek-actions-dd-menu{display:block}
-#page-cek .cek-actions-dd-menu button{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:transparent;color:#334155;padding:8px 10px;font-size:12px;font-weight:700;border-radius:6px;border:0}
-#page-cek .cek-actions-dd-menu button:hover{background:#e2e8f0}
-body.dark #page-cek .cek-actions-dd-toggle{background:rgba(255,255,255,.12);color:#fff}
-body.dark #page-cek .cek-actions-dd-menu{background:#1e293b;border-color:#475569}
-body.dark #page-cek .cek-actions-dd-menu button{color:#cbd5e1}
-body.dark #page-cek .cek-actions-dd-menu button:hover{background:#334155}
 #page-cek .kpis{margin-top:10px}
 #page-cek .tablebox{max-height:68vh}
 #page-cek .cek-ok{font-weight:800}
@@ -1061,6 +1047,7 @@ body.dark .rr-app .dd-upload .field input[type=text]{background:#0f172a;color:#e
               <div class="dd-backdrop" onclick="rrCloseAllDd()"></div>
               <div class="dd-menu">
                 <button type="button" onclick="rrCloseAllDd();rrDownloadExcel()">⬇ Download Excel</button>
+                <button type="button" onclick="rrCloseAllDd();openCekRupaNamaFix()" title="Perbaiki nama produk untuk pencocokan Cek Rupa Rupa">✏️ Perbaiki Nama</button>
                 <hr>
                 <button type="button" id="rrBtnDeleteCat" onclick="rrCloseAllDd();rrDeleteCategory()" disabled>🗑 Hapus Kategori Ini</button>
                 <button type="button" class="danger" onclick="rrCloseAllDd();rrClearAll()">🗑 Hapus Semua</button>
@@ -1295,14 +1282,7 @@ body.dark .rr-app .dd-upload .field input[type=text]{background:#0f172a;color:#e
           </select>
           <button type="button" class="cek-all-btn active" id="cekRupaAllBtn" onclick="cekRupaShowAll()">≡ SEMUA PRODUK</button>
           <button type="button" class="cek-refresh-btn" onclick="resetCekRupaFilters()" title="Reset semua filter ke Semua">↻ Reset</button>
-          <div class="cek-actions-dd" id="cekRupaActionsDd">
-            <button type="button" class="cek-actions-dd-toggle" onclick="toggleCekRupaActionsDd(event)" title="Menu Aksi">☰ Aksi <span class="cek-actions-dd-caret">▾</span></button>
-            <div class="cek-actions-dd-backdrop" onclick="closeCekRupaActionsDd()"></div>
-            <div class="cek-actions-dd-menu" role="menu">
-              <button type="button" role="menuitem" onclick="closeCekRupaActionsDd();openCekRupaNamaFix()" title="Perbaiki nama produk untuk pencocokan Cek Rupa Rupa">✏️ Perbaiki Nama</button>
-              <button type="button" role="menuitem" onclick="closeCekRupaActionsDd();downloadCekRupa()">⬇ Download</button>
-            </div>
-          </div>
+          <button type="button" onclick="downloadCekRupa()">⬇ Download</button>
         </div>
       </div>
       <div class="tablebox" id="cekRupaBox">
@@ -3483,10 +3463,9 @@ self.onmessage = function(e){
 
   const nfQty = x => (x === null || x === undefined || x === '') ? '-' : Math.round(N(x)).toLocaleString('id-ID');
   const gudangFmtDate = (d) => d instanceof Date && !isNaN(d.getTime()) ? String(d.getUTCDate()).padStart(2,'0') + '/' + String(d.getUTCMonth()+1).padStart(2,'0') + '/' + d.getUTCFullYear() : String(d ?? '');
+
   function toggleGudangDd(){ document.getElementById('gudangDd').classList.toggle('open') }
   function closeGudangDd(){ document.getElementById('gudangDd').classList.remove('open') }
-  function toggleCekRupaActionsDd(e){ if(e) e.stopPropagation(); document.getElementById('cekRupaActionsDd').classList.toggle('open') }
-  function closeCekRupaActionsDd(){ document.getElementById('cekRupaActionsDd').classList.remove('open') }
 
   function cekDateKey(v){ const d = toDate(v); if (!d || isNaN(d.getTime())) return ''; return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
   function cekDateKeyUTC(v){ const d = (v instanceof Date) ? v : toDate(v); if (!d || isNaN(d.getTime())) return ''; return d.getUTCFullYear() + '-' + String(d.getUTCMonth()+1).padStart(2,'0') + '-' + String(d.getUTCDate()).padStart(2,'0'); }
