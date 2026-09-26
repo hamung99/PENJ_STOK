@@ -200,6 +200,29 @@ tfoot td{background:#ffe699;font-weight:bold}
 .gmodal-actions button{padding:9px 16px;font-size:13px}
 .gmodal-ghost{background:#e2e8f0;color:#334155}
 .hbdiff-box{background:#fff;border-radius:14px;padding:20px 22px 18px;width:100%;max-width:720px;max-height:86vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(15,23,42,.35)}
+.nama-fix-box{background:#fff;border-radius:14px;padding:20px 22px 18px;width:100%;max-width:900px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(15,23,42,.35)}
+.nama-fix-box h3{margin:0 0 4px;font-size:16px;color:#1f4e78}
+.nama-fix-sub{font-size:12px;color:#64748b;margin-bottom:12px;line-height:1.5}
+.nama-fix-list{overflow:auto;border:1px solid #e2e8f0;border-radius:10px}
+.nama-fix-row{display:grid;grid-template-columns:1.1fr 1.5fr;gap:12px;align-items:center;padding:9px 12px;border-bottom:1px solid #eef2f7;font-size:12px}
+.nama-fix-row:last-child{border-bottom:0}
+.nama-fix-head{background:#f8fafc;font-weight:700;color:#475569;text-transform:uppercase;font-size:10.5px;letter-spacing:.03em;position:sticky;top:0;z-index:1}
+.nama-fix-old{font-weight:700;color:#172033;word-break:break-word}
+.nama-fix-row input{width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;color:#172033}
+.nama-fix-row input:focus{outline:none;border-color:#2563eb;box-shadow:0 0 0 2px rgba(37,99,235,.1)}
+.nama-fix-actions{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:16px}
+.nama-fix-actions .left{display:flex;gap:6px}
+.nama-fix-actions button{font-size:12px;padding:7px 11px}
+.nama-fix-ghost{background:#e2e8f0;color:#334155}
+body.dark .nama-fix-box{background:#1e293b;color:#e2e8f0}
+body.dark .nama-fix-box h3{color:#93c5fd}
+body.dark .nama-fix-sub{color:#94a3b8}
+body.dark .nama-fix-list{border-color:#334155}
+body.dark .nama-fix-row{border-color:#334155}
+body.dark .nama-fix-head{background:#0f172a;color:#94a3b8}
+body.dark .nama-fix-old{color:#f1f5f9}
+body.dark .nama-fix-row input{background:#0f172a;border-color:#475569;color:#f1f5f9}
+
 .hbdiff-box h3{margin:0 0 4px;font-size:16px;color:#b45309}
 .hbdiff-sub{font-size:12px;color:#64748b;margin-bottom:12px;line-height:1.5}
 .hbdiff-list{overflow:auto;border:1px solid #e2e8f0;border-radius:10px}
@@ -1090,6 +1113,27 @@ body.dark .rr-app .dd-upload .field input[type=text]{background:#0f172a;color:#e
   </div>
 </div>
 
+
+<div class="gmodal-overlay" id="cekRupaNamaFixOverlay" onclick="if(event.target===this) closeCekRupaNamaFix()">
+  <div class="nama-fix-box">
+    <h3>✏️ Perbaiki Nama Produk — Cek Rupa Rupa</h3>
+    <div class="nama-fix-sub">Perubahan ini hanya menjadi <b>nama baku untuk pencocokan dan tampilan Cek Rupa Rupa</b>. Data asli pada Data Penjualan dan Data Gudang tidak diubah. Contoh: <b>SAMBAL STIK 9 GR</b> → <b>SAMBAL STICK 9 GR</b>.</div>
+    <div class="nama-fix-list">
+      <div class="nama-fix-row nama-fix-head"><div>Nama yang ditemukan</div><div>Nama Produk Baku</div></div>
+      <div id="cekRupaNamaFixRows"></div>
+    </div>
+    <div class="nama-fix-actions">
+      <div class="left">
+        <button type="button" class="nama-fix-ghost" onclick="resetCekRupaNamaFix()">↺ Hapus Semua Perbaikan</button>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button type="button" class="nama-fix-ghost" onclick="closeCekRupaNamaFix()">Batal</button>
+        <button type="button" onclick="saveCekRupaNamaFix()">💾 Simpan Perbaikan</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="gmodal-overlay" id="gInputOverlay" onclick="if(event.target===this) closeGInputModal()">
   <div class="gmodal-box">
     <h3>Input Stok — <span id="gInputProdName">-</span></h3>
@@ -1237,6 +1281,7 @@ body.dark .rr-app .dd-upload .field input[type=text]{background:#0f172a;color:#e
           </select>
           <button type="button" class="cek-all-btn active" id="cekRupaAllBtn" onclick="cekRupaShowAll()">≡ SEMUA PRODUK</button>
           <button type="button" class="cek-refresh-btn" onclick="resetCekRupaFilters()" title="Reset semua filter ke Semua">↻ Reset</button>
+          <button type="button" onclick="openCekRupaNamaFix()" title="Perbaiki nama produk untuk pencocokan Cek Rupa Rupa">✏️ Perbaiki Nama</button>
           <button type="button" onclick="downloadCekRupa()">⬇ Download</button>
         </div>
       </div>
@@ -3564,6 +3609,49 @@ self.onmessage = function(e){
     if (hasAlert) startCekFlagAnimation(); else stopCekFlagAnimation();
   }
 
+  const CEK_RUPA_NAME_MAP_KEY = 'cekRupaNamaProdukMap_v1';
+  function getCekRupaNamaMap(){
+    try { const v = JSON.parse(localStorage.getItem(CEK_RUPA_NAME_MAP_KEY) || '{}'); return (v && typeof v === 'object') ? v : {}; } catch(e){ return {}; }
+  }
+  function saveCekRupaNamaMap(map){
+    try { localStorage.setItem(CEK_RUPA_NAME_MAP_KEY, JSON.stringify(map || {})); } catch(e) {}
+  }
+  function cekRupaDisplayName(key, fallback){
+    const map = getCekRupaNamaMap();
+    return String(map[key] || fallback || '').trim() || fallback || '';
+  }
+  function openCekRupaNamaFix(){
+    const overlay=document.getElementById('cekRupaNamaFixOverlay');
+    const wrap=document.getElementById('cekRupaNamaFixRows');
+    if(!overlay || !wrap) return;
+    const data=_cekRupaLastData;
+    if(!data || !Array.isArray(data.products) || !data.products.length){
+      alert('Belum ada data Rupa Rupa.'); return;
+    }
+    const map=getCekRupaNamaMap();
+    wrap.innerHTML=data.products.map((p,i)=>{
+      const safe=String(cekRupaDisplayName(p.key,p.name)||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      const old=String(p.name||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      return '<div class="nama-fix-row"><div class="nama-fix-old">'+old+'</div><div><input type="text" data-key="'+String(p.key).replace(/"/g,'&quot;')+'" value="'+safe+'" placeholder="Nama produk baku"></div></div>';
+    }).join('');
+    overlay.classList.add('show');
+  }
+  function closeCekRupaNamaFix(){ const el=document.getElementById('cekRupaNamaFixOverlay'); if(el) el.classList.remove('show'); }
+  function saveCekRupaNamaFix(){
+    const rows=document.querySelectorAll('#cekRupaNamaFixRows input[data-key]');
+    const map=getCekRupaNamaMap();
+    rows.forEach(inp=>{ const key=inp.dataset.key; const val=(inp.value||'').trim(); if(!key) return; if(val) map[key]=val; else delete map[key]; });
+    saveCekRupaNamaMap(map);
+    closeCekRupaNamaFix();
+    renderCekRupa();
+  }
+  function resetCekRupaNamaFix(){
+    if(!confirm('Hapus semua nama produk yang sudah diperbaiki untuk Cek Rupa Rupa?')) return;
+    saveCekRupaNamaMap({});
+    openCekRupaNamaFix();
+    renderCekRupa();
+  }
+
   function collectCekData(month, mode, sourceRows, opts){
     const src = sourceRows || [];
     opts = opts || {};
@@ -3589,7 +3677,7 @@ self.onmessage = function(e){
       }
       const name = String(produk ?? '').trim();
       const pk = productMatchKey(name);
-      if (!productMap.has(pk)) productMap.set(pk, name);
+      if (!productMap.has(pk)) productMap.set(pk, cekRupaDisplayName(pk, name));
       const j = N(x.jumlah ?? x.Jumlah);
       const s = String(x.sales ?? x.Sales ?? '').trim() || '(Tanpa Sales)';
       salesTotals.set(s, (salesTotals.get(s) || 0) + j);
@@ -3598,10 +3686,20 @@ self.onmessage = function(e){
       const dk = cekDateKey(x.tanggal ?? x.Tanggal) || '';
       if (dk) { if (!penjualanPD[pk]) penjualanPD[pk] = {}; penjualanPD[pk][dk] = (penjualanPD[pk][dk] || 0) + j; }
     }
+    // OUTPUT GUDANG harus mengikuti tab yang sedang dicek.
+    // Rupa Rupa hanya mengambil data dari Data Gudang -> Rupa Rupa,
+    // supaya data Gudang Fitri tidak ikut tercampur.
     const gudangSources = [];
-    if (gudangData && gudangData.products) gudangSources.push({ products: gudangData.products, rows: (gudangData.rows || []) });
-    if (mode === 'rupa' && Array.isArray(rrCategories)) {
-      rrCategories.forEach(c => { if (c && Array.isArray(c.products) && c.products.length) gudangSources.push({ products: c.products, rows: (c.rows || []) }); });
+    if (mode === 'fitri') {
+      if (gudangData && gudangData.products) {
+        gudangSources.push({ products: gudangData.products, rows: (gudangData.rows || []) });
+      }
+    } else if (mode === 'rupa' && Array.isArray(rrCategories)) {
+      rrCategories.forEach(c => {
+        if (c && Array.isArray(c.products) && c.products.length) {
+          gudangSources.push({ products: c.products, rows: (c.rows || []) });
+        }
+      });
     }
     const gudangProductByKey = {};
     gudangSources.forEach(src => src.products.forEach(p => { if (!isTarget(p)) return; const kk = productMatchKey(p); if (!gudangProductByKey[kk]) gudangProductByKey[kk] = p; }));
@@ -3620,7 +3718,7 @@ self.onmessage = function(e){
             const colName = gudangProductByKey[key];
             const keluar = N((r.values[colName] || {}).keluar);
             if (!keluar) continue;
-            if (!productMap.has(key)) productMap.set(key, colName);
+            if (!productMap.has(key)) productMap.set(key, cekRupaDisplayName(key, colName));
             if (!gudangPD[key]) gudangPD[key] = {};
             gudangPD[key][dk] = (gudangPD[key][dk] || 0) + keluar;
           }
@@ -3631,7 +3729,7 @@ self.onmessage = function(e){
     products.forEach(p => { if (!penjualanPS[p.key]) penjualanPS[p.key] = {}; if (!penjualanPD[p.key]) penjualanPD[p.key] = {}; if (!gudangPD[p.key]) gudangPD[p.key] = {}; });
     const salesList = [...salesTotals.entries()].sort((a,b) => b[1]-a[1]).map(([name]) => name);
     const hasRrGudang = (mode === 'rupa' && Array.isArray(rrCategories) && rrCategories.some(c => c && Array.isArray(c.products) && c.products.length));
-    const hasGudang = !!(gudangData && gudangData.products && gudangData.products.length) || hasRrGudang;
+    const hasGudang = mode === 'rupa' ? hasRrGudang : !!(gudangData && gudangData.products && gudangData.products.length);
     return {products, salesList, penjualanPS, penjualanPD, gudangPD, hasGudang, mode, dateFrom, dateTo};
   }
   function collectCekFitriData(month, sourceRows, opts){ return collectCekData(month, 'fitri', sourceRows, opts); }
