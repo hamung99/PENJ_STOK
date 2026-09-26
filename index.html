@@ -526,10 +526,13 @@ body.dark .backup-action.warn{background:#422006;color:#fdba74;border-color:#924
 #page-salescust .cek-refresh-btn{padding:4px 8px;font-size:12px;min-width:30px}
 #page-salescust .cek-search{padding:6px 12px;border:1px solid #cbd5e1;border-radius:7px;font-size:12px;width:180px;background:#fff;color:#172033}
 #page-salescust .cs-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:0 0 4px}
-#page-salescust .cs-kpi{background:#fff;border:1px solid #d6dde6;border-left:3px solid #1f4e78;border-radius:10px;padding:10px 14px;min-width:0;box-shadow:0 1px 4px rgba(31,78,120,.06)}
-#page-salescust .cs-kpi small{display:block;font-size:10px;color:#64748b;font-weight:600;letter-spacing:.03em}
-#page-salescust .cs-kpi b{display:block;font-size:17px;margin-top:2px;color:#0f172a;font-weight:800;line-height:1.25}
-#page-salescust .cs-kpi.cs-total{border-left-color:#d08a2e;background:linear-gradient(145deg,#fff 0%,#fff6e8 100%)}
+#page-salescust .cs-kpi{position:relative;background:linear-gradient(145deg,#ffffff 0%,#f0f6ff 100%);border:1px solid transparent;border-radius:12px;padding:10px 14px;min-width:0;box-shadow:0 0 0 1px rgba(47,110,180,.12),0 4px 16px rgba(31,78,120,.08),inset 0 1px 0 rgba(255,255,255,.9);overflow:hidden;transition:transform .2s,box-shadow .2s}
+#page-salescust .cs-kpi::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(48,84,150,.06) 0%,transparent 50%,rgba(80,160,255,.05) 100%);pointer-events:none}
+#page-salescust .cs-kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#305496,#5b9bd5,#305496);opacity:.7}
+#page-salescust .cs-kpi:hover{transform:translateY(-2px);box-shadow:0 0 0 1px rgba(47,110,180,.22),0 8px 24px rgba(31,78,120,.14),0 0 20px rgba(91,155,213,.15)}
+#page-salescust .cs-kpi small{display:block;font-size:10px;color:#64748b;font-weight:600;letter-spacing:.08em;text-transform:uppercase;position:relative;z-index:1}
+#page-salescust .cs-kpi b{display:block;font-size:16px;margin-top:4px;color:#0f172a;font-weight:700;letter-spacing:-.01em;line-height:1.2;position:relative;z-index:1}
+#page-salescust .cs-kpi select{position:relative;z-index:1}
 body.dark #page-salescust .cek-card-title{color:#93c5fd}
 body.dark #page-salescust .cek-card-actions label{color:#94a3b8}
 body.dark #page-salescust .cek-card-actions select,
@@ -567,10 +570,9 @@ body.dark #custTglOverlay td{border-color:#334155}
 body.dark #custTglOverlay .fk-meta-grid b{color:#f1f5f9}
 body.dark #custTglOverlay .cust-tgl-day{color:#93c5fd}
 body.dark #custTglOverlay .cust-tgl-day span{color:#94a3b8}
-body.dark #page-salescust .cs-kpi{background:#1e293b;border-color:#334155;border-left-color:#5b9bd5}
+body.dark #page-salescust .cs-kpi{background:linear-gradient(145deg,#1e293b 0%,#1a2744 100%);border-color:transparent;box-shadow:0 0 0 1px rgba(91,155,213,.18),0 4px 16px rgba(0,0,0,.25)}
 body.dark #page-salescust .cs-kpi small{color:#94a3b8}
 body.dark #page-salescust .cs-kpi b,body.dark #page-salescust .cs-kpi select{color:#f1f5f9}
-body.dark #page-salescust .cs-kpi.cs-total{border-left-color:#d08a2e;background:linear-gradient(145deg,#1e293b 0%,#2a2418 100%)}
 body.dark #scsCustTable thead tr:nth-child(2) th{background:#2d4a6f;color:#e2e8f0}
 body.dark #scsCustTable tbody tr:nth-child(even){background:#1a2536}
 body.dark #scsCustTable tbody tr:hover{background:#243447}
