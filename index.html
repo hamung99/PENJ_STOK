@@ -1532,7 +1532,9 @@ body.dark .rr-app .dd-upload .field input[type=text]{background:#0f172a;color:#e
     if (!useIDB) return null;
     const tx   = await db.tx.toArray();
     const meta = await db.meta.toArray();
-    return { tx, meta };
+    let namaMap = {};
+    try { namaMap = JSON.parse(localStorage.getItem('cekRupaNamaProdukMap_v1') || '{}'); } catch(e){ namaMap = {}; }
+    return { tx, meta, namaMap };
   }
   async function pushToCloud(){
     if (!sbClient) throw new Error('Cloud belum terhubung.');
@@ -1572,6 +1574,7 @@ body.dark .rr-app .dd-upload .field input[type=text]{background:#0f172a;color:#e
           if (snap.tx && snap.tx.length) await db.tx.bulkPut(snap.tx);
           await db.meta.clear();
           if (snap.meta && snap.meta.length) await db.meta.bulkPut(snap.meta);
+          if (snap.namaMap && typeof snap.namaMap === 'object') { try { localStorage.setItem('cekRupaNamaProdukMap_v1', JSON.stringify(snap.namaMap)); } catch(e){} }
           setCloudStatus('Sinkron dari cloud • ' + new Date().toLocaleTimeString('id-ID'));
         } finally { isSyncingFromCloud = false; }
       } else {
@@ -3629,6 +3632,7 @@ self.onmessage = function(e){
   }
   function saveCekRupaNamaMap(map){
     try { localStorage.setItem(CEK_RUPA_NAME_MAP_KEY, JSON.stringify(map || {})); } catch(e) {}
+    try { schedulePush(); } catch(e) {}
   }
   function cekRupaDisplayName(key, fallback){
     const map = getCekRupaNamaMap();
