@@ -617,6 +617,7 @@ body.dark .tabs.tabs-collapsible button.active{background:#3b82f6;color:#fff}
       <button type="button" class="main-tab" data-tab="cek">Cek</button>
       <button type="button" class="main-tab" data-tab="analisa">📊 Analisa</button>
       <button type="button" class="main-tab" data-tab="ar">AR</button>
+      <button type="button" class="main-tab" data-tab="um">UM</button>
     </nav>
     <button type="button" class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Mode gelap / terang">🌙</button>
     <div class="dd" id="menuDd">
@@ -1224,6 +1225,10 @@ body.dark .tabs.tabs-collapsible button.active{background:#3b82f6;color:#fff}
 
 <div id="page-ar" style="display:none;padding:0;margin:0">
   <iframe id="arFrame" src="./AR.html" title="Data AR" style="width:100%;min-height:calc(100vh - 48px);height:calc(100vh - 48px);border:0;display:block;background:#f0f4f8"></iframe>
+</div>
+
+<div id="page-um" style="display:none;padding:0;margin:0">
+  <iframe id="umFrame" src="./UM.html" title="Uang Masuk" style="width:100%;min-height:calc(100vh - 48px);height:calc(100vh - 48px);border:0;display:block;background:#f0f4f8"></iframe>
 </div>
 </main>
 
@@ -4140,12 +4145,14 @@ self.onmessage = function(e){
       const ck = document.getElementById('page-cek');
       const an = document.getElementById('page-analisa');
       const ar = document.getElementById('page-ar');
+      const um = document.getElementById('page-um');
       if (pj) pj.style.display = (tab === 'penjualan') ? 'block' : 'none';
       if (sc) sc.style.display = (tab === 'salescust') ? 'block' : 'none';
       if (gd) gd.style.display = (tab === 'gudang') ? 'block' : 'none';
       if (ck) ck.style.display = (tab === 'cek') ? 'block' : 'none';
       if (an) an.style.display = (tab === 'analisa') ? 'block' : 'none';
       if (ar) ar.style.display = (tab === 'ar') ? 'block' : 'none';
+      if (um) um.style.display = (tab === 'um') ? 'block' : 'none';
       if (tab === 'cek') {
         renderCekActive();
       } else if (tab === 'salescust') {
