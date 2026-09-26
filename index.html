@@ -602,6 +602,24 @@ body.dark .tabs.tabs-collapsible{background:#1e293b;box-shadow:0 8px 28px #0008}
 body.dark .tabs.tabs-collapsible button{background:#0f172a;color:#cbd5e1}
 body.dark .tabs.tabs-collapsible button:hover{background:#334155}
 body.dark .tabs.tabs-collapsible button.active{background:#3b82f6;color:#fff}
+
+/* ===== Toggle Data Gudang: Data / Bulan | Data / Tgl ===== */
+#page-gudang .gudang-subtabs .gudang-view-toggle{
+  margin-left:auto;display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+}
+#page-gudang .gudang-subtabs .gudang-view-toggle label{
+  font-size:11px;font-weight:700;color:#475569;
+  text-transform:uppercase;letter-spacing:.04em;
+}
+#page-gudang .gudang-subtabs .gudang-view-toggle select{
+  width:auto;min-width:130px;padding:6px 10px;
+  border:1px solid #cbd5e1;border-radius:7px;font-size:12px;
+  background:#fff;color:#172033;font-weight:600;
+}
+body.dark #page-gudang .gudang-subtabs .gudang-view-toggle label{color:#94a3b8}
+body.dark #page-gudang .gudang-subtabs .gudang-view-toggle select{
+  background:#0f172a;color:#e2e8f0;border-color:#475569;
+}
 </style>
 </head>
 <body>
@@ -860,48 +878,85 @@ body.dark .tabs.tabs-collapsible button.active{background:#3b82f6;color:#fff}
 </div>
 
 <div id="page-gudang" style="display:none">
+  <!-- Toolbar Fitri (kartu stok + filter Bulan + pengaturan) - tampil di atas saat sub-tab Fitri aktif -->
+  <div class="gudang-toolbar" id="gudangToolbarFitri">
+    <div id="gudangKpis" class="gudang-kpis"></div>
+    <div class="gudang-toolbar-right">
+    <div style="display:flex;align-items:center;gap:8px;flex:none">
+      <label style="font-size:12px;font-weight:bold;color:#475569">Bulan</label>
+      <select id="gudangMonth" onchange="renderGudangPage(gudangData)" style="width:auto;min-width:170px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:7px;font-size:12px">
+        <option value="">Semua bulan</option>
+      </select>
+    </div>
+    <div class="dd" id="gudangDd" style="flex:none">
+      <button type="button" class="dd-toggle" onclick="toggleGudangDd()" title="Pengaturan Data Gudang"><span>⚙️</span></button>
+      <div class="dd-backdrop" onclick="closeGudangDd()"></div>
+      <div class="dd-menu menu-main">
+        <div class="menu-title">📦 Data Gudang — Stok Minyak</div>
+        <div class="menu-section">
+          <div class="hint">Upload file Excel rekap stok gudang (format: TANGGAL, lalu MASUK/KELUAR/STOK SFA per produk). Kolom STOK SFA dihitung otomatis. Upload beberapa file akan digabung otomatis.</div>
+          <div class="file-row"><input id="gudangFile" type="file" accept=".xlsx,.xls"></div>
+          <div class="btn-row">
+            <button type="button" onclick="processGudangFile()">Proses Excel Gudang</button>
+          </div>
+          <div class="bulk-box">
+            <div class="menu-label">Hapus data per bulan</div>
+            <select id="gudangDeleteMonth" style="margin-bottom:8px"><option value="">Pilih bulan…</option></select>
+            <div class="btn-row">
+              <button type="button" class="danger-btn" onclick="deleteGudangMonth()">Hapus Bulan Terpilih</button>
+              <button type="button" class="danger-btn" onclick="clearGudangData()">Hapus SEMUA Data Gudang</button>
+            </div>
+          </div>
+          <div id="gudangStatus" class="hint" style="margin-top:8px">Belum ada data gudang.</div>
+        </div>
+      </div>
+    </div>
+    </div>
+  </div>
+
+  <!-- Toolbar Rupa Rupa (kartu stok + pengaturan) - tampil di atas saat sub-tab Rupa Rupa aktif -->
+  <div class="gudang-toolbar" id="gudangToolbarRupa" style="display:none">
+    <div id="gudangRupaKpis" class="gudang-kpis"></div>
+    <div class="gudang-toolbar-right">
+      <div class="dd" id="gudangRupaDd" style="flex:none">
+        <button type="button" class="dd-toggle" onclick="toggleGudangRupaDd()" title="Pengaturan Data Rupa Rupa"><span>⚙️</span></button>
+        <div class="dd-backdrop" onclick="closeGudangRupaDd()"></div>
+        <div class="dd-menu menu-main">
+          <div class="menu-title">📦 Data Stok Rupa Rupa</div>
+          <div class="menu-section">
+            <div class="hint">Upload file Excel stok Rupa Rupa. Parser mencari baris header berdasarkan nama kolom: <b>Kode</b>, <b>Nama Produk</b>, <b>Stok Awal</b>, <b>Masuk</b>, <b>Keluar</b>, <b>Stok Akhir</b>, dan <b>Sat</b>. Urutan kolom bebas — bisa berbeda-beda antar file. Upload ulang akan <b>meng-update</b> baris dengan Kode yang sama; Kode baru akan ditambahkan.</div>
+            <div class="file-row"><input id="gudangRupaFile" type="file" accept=".xlsx,.xls"></div>
+            <div class="btn-row">
+              <button type="button" onclick="processGudangRupaFile()">Proses Excel Rupa Rupa</button>
+            </div>
+            <div class="bulk-box">
+              <div class="menu-label">Hapus data</div>
+              <div class="btn-row">
+                <button type="button" class="danger-btn" onclick="clearGudangRupaData()">Hapus SEMUA Data Rupa Rupa</button>
+              </div>
+            </div>
+            <div id="gudangRupaStatus" class="hint" style="margin-top:8px">Belum ada data.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="gudang-subtabs" role="tablist">
     <button type="button" class="gudang-subtab active" data-gudang="fitri" onclick="switchGudangSub('fitri',this)">🧴 Fitri</button>
     <button type="button" class="gudang-subtab" data-gudang="rupa" onclick="switchGudangSub('rupa',this)">📦 Rupa Rupa</button>
+    <div class="gudang-view-toggle">
+      <label for="gudangViewMode">Mode</label>
+      <select id="gudangViewMode" onchange="setGudangViewMode(this.value)">
+        <option value="bulan">Data / Bulan</option>
+        <option value="tgl">Data / Tgl</option>
+      </select>
+    </div>
   </div>
 
   <div id="gudangRegularPanel">
     <!-- Panel Fitri -->
     <div id="gudangFitriPanel">
-      <div class="gudang-toolbar">
-        <div id="gudangKpis" class="gudang-kpis"></div>
-        <div class="gudang-toolbar-right">
-        <div style="display:flex;align-items:center;gap:8px;flex:none">
-          <label style="font-size:12px;font-weight:bold;color:#475569">Bulan</label>
-          <select id="gudangMonth" onchange="renderGudangPage(gudangData)" style="width:auto;min-width:170px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:7px;font-size:12px">
-            <option value="">Semua bulan</option>
-          </select>
-        </div>
-        <div class="dd" id="gudangDd" style="flex:none">
-          <button type="button" class="dd-toggle" onclick="toggleGudangDd()" title="Pengaturan Data Gudang"><span>⚙️</span></button>
-          <div class="dd-backdrop" onclick="closeGudangDd()"></div>
-          <div class="dd-menu menu-main">
-            <div class="menu-title">📦 Data Gudang — Stok Minyak</div>
-            <div class="menu-section">
-              <div class="hint">Upload file Excel rekap stok gudang (format: TANGGAL, lalu MASUK/KELUAR/STOK SFA per produk). Kolom STOK SFA dihitung otomatis. Upload beberapa file akan digabung otomatis.</div>
-              <div class="file-row"><input id="gudangFile" type="file" accept=".xlsx,.xls"></div>
-              <div class="btn-row">
-                <button type="button" onclick="processGudangFile()">Proses Excel Gudang</button>
-              </div>
-              <div class="bulk-box">
-                <div class="menu-label">Hapus data per bulan</div>
-                <select id="gudangDeleteMonth" style="margin-bottom:8px"><option value="">Pilih bulan…</option></select>
-                <div class="btn-row">
-                  <button type="button" class="danger-btn" onclick="deleteGudangMonth()">Hapus Bulan Terpilih</button>
-                  <button type="button" class="danger-btn" onclick="clearGudangData()">Hapus SEMUA Data Gudang</button>
-                </div>
-              </div>
-              <div id="gudangStatus" class="hint" style="margin-top:8px">Belum ada data gudang.</div>
-            </div>
-          </div>
-        </div>
-        </div>
-      </div>
       <div class="card">
         <div class="tablebox">
           <table id="gudangTable">
@@ -914,32 +969,6 @@ body.dark .tabs.tabs-collapsible button.active{background:#3b82f6;color:#fff}
 
     <!-- Panel Rupa Rupa -->
     <div id="gudangRupaPanel" style="display:none">
-      <div class="gudang-toolbar">
-        <div id="gudangRupaKpis" class="gudang-kpis"></div>
-        <div class="gudang-toolbar-right">
-          <div class="dd" id="gudangRupaDd" style="flex:none">
-            <button type="button" class="dd-toggle" onclick="toggleGudangRupaDd()" title="Pengaturan Data Rupa Rupa"><span>⚙️</span></button>
-            <div class="dd-backdrop" onclick="closeGudangRupaDd()"></div>
-            <div class="dd-menu menu-main">
-              <div class="menu-title">📦 Data Stok Rupa Rupa</div>
-              <div class="menu-section">
-                <div class="hint">Upload file Excel stok Rupa Rupa. Parser mencari baris header berdasarkan nama kolom: <b>Kode</b>, <b>Nama Produk</b>, <b>Stok Awal</b>, <b>Masuk</b>, <b>Keluar</b>, <b>Stok Akhir</b>, dan <b>Sat</b>. Urutan kolom bebas — bisa berbeda-beda antar file. Upload ulang akan <b>meng-update</b> baris dengan Kode yang sama; Kode baru akan ditambahkan.</div>
-                <div class="file-row"><input id="gudangRupaFile" type="file" accept=".xlsx,.xls"></div>
-                <div class="btn-row">
-                  <button type="button" onclick="processGudangRupaFile()">Proses Excel Rupa Rupa</button>
-                </div>
-                <div class="bulk-box">
-                  <div class="menu-label">Hapus data</div>
-                  <div class="btn-row">
-                    <button type="button" class="danger-btn" onclick="clearGudangRupaData()">Hapus SEMUA Data Rupa Rupa</button>
-                  </div>
-                </div>
-                <div id="gudangRupaStatus" class="hint" style="margin-top:8px">Belum ada data.</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
       <div class="card">
         <div class="tablebox">
           <table id="gudangRupaTable" style="min-width:720px">
@@ -4306,6 +4335,21 @@ self.onmessage = function(e){
     refreshAnalisaIfVisible();
   }
   let _gudangSub = 'fitri';
+  let _gudangViewMode = 'bulan'; // default = Data / Bulan
+  (function initGudangViewMode(){
+    try {
+      const v = localStorage.getItem('gudang-view-mode');
+      if (v === 'tgl' || v === 'bulan') _gudangViewMode = v;
+    } catch(e){}
+  })();
+  function setGudangViewMode(mode){
+    _gudangViewMode = (mode === 'tgl') ? 'tgl' : 'bulan';
+    try { localStorage.setItem('gudang-view-mode', _gudangViewMode); } catch(e){}
+    const sel = document.getElementById('gudangViewMode');
+    if (sel) sel.value = _gudangViewMode;
+    if (_gudangSub === 'rupa') renderGudangRupaPage(gudangRupaData);
+    else renderGudangPage(gudangData);
+  }
   function switchGudangSub(which, btn){
     _gudangSub = (which === 'rupa') ? 'rupa' : 'fitri';
     document.querySelectorAll('#page-gudang > .gudang-subtabs .gudang-subtab').forEach(b => b.classList.remove('active'));
@@ -4316,8 +4360,12 @@ self.onmessage = function(e){
     }
     const fitriPanel = document.getElementById('gudangFitriPanel');
     const rupaPanel  = document.getElementById('gudangRupaPanel');
+    const fitriToolbar = document.getElementById('gudangToolbarFitri');
+    const rupaToolbar  = document.getElementById('gudangToolbarRupa');
     if (fitriPanel) fitriPanel.style.display = (_gudangSub === 'fitri') ? 'block' : 'none';
     if (rupaPanel)  rupaPanel.style.display  = (_gudangSub === 'rupa')  ? 'block' : 'none';
+    if (fitriToolbar) fitriToolbar.style.display = (_gudangSub === 'fitri') ? 'flex' : 'none';
+    if (rupaToolbar)  rupaToolbar.style.display  = (_gudangSub === 'rupa')  ? 'flex' : 'none';
     if (_gudangSub === 'rupa') renderGudangRupaPage(gudangRupaData);
     else renderGudangPage(gudangData);
   }
@@ -4365,10 +4413,82 @@ self.onmessage = function(e){
       const totKeluar = rowsFiltered.reduce((s,r) => s + N(r.values[p] && r.values[p].keluar), 0);
       return '<div class="gkpi" onclick="openGInputModal(\'' + escJsAttr(p) + '\')" title="Klik untuk input Masuk / Keluar"><span class="gk-label">' + escHtml(p) + '</span><span class="gk-stok">Stok: ' + nfQty(last) + '</span><span class="gk-meta">Masuk <b>' + nfQty(totMasuk) + '</b> &nbsp;•&nbsp; Keluar <b>' + nfQty(totKeluar) + '</b></span><span class="gk-hint">✏️ klik untuk input</span></div>';
     }).join('');
-    thead.innerHTML = '<tr><th rowspan="2">TANGGAL</th>' + products.map(p => '<th colspan="3">' + escHtml(p) + '</th>').join('') + '</tr><tr>' + products.map(() => '<th>MASUK</th><th>KELUAR</th><th>STOK SFA</th>').join('') + '</tr>';
-    let body = '<tr class="gudang-saldo-row"><td>Saldo Awal</td>' + products.map(p => '<td class="num">-</td><td class="num">-</td><td class="num">' + nfQty(displaySaldoAwal[p]) + '</td>').join('') + '</tr>';
-    body += rowsFiltered.map(r => { return '<tr><td>' + gudangFmtDate(r.tanggal) + '</td>' + products.map(p => { const v = r.values[p] || {}; return '<td class="num">' + nfQty(v.masuk) + '</td><td class="num">' + nfQty(v.keluar) + '</td><td class="num">' + nfQty(v.stok) + '</td>'; }).join('') + '</tr>'; }).join('');
-    tbody.innerHTML = body;
+    if (_gudangViewMode === 'bulan') {
+      // ===== Tampilan Data / Bulan =====
+      // Layout: BULAN | Produk (STOK AWAL, MASUK, KELUAR, STOK AKHIR) ...
+      // STOK AWAL = saldo awal bulan tsb (stok akhir bulan sebelumnya / saldo awal global)
+      const monthMap = new Map();
+      rowsFiltered.forEach(r => {
+        const mk = monthKeyUTC(r.tanggal);
+        if (!mk) return;
+        if (!monthMap.has(mk)) monthMap.set(mk, []);
+        monthMap.get(mk).push(r);
+      });
+      const mkList = [...monthMap.keys()].sort();
+
+      thead.innerHTML = '<tr><th rowspan="2">BULAN</th>' +
+        products.map(p => '<th colspan="4">' + escHtml(p) + '</th>').join('') +
+        '</tr><tr>' +
+        products.map(() => '<th>STOK AWAL</th><th>MASUK</th><th>KELUAR</th><th>STOK AKHIR</th>').join('') +
+        '</tr>';
+
+      // Hitung stok berjalan lintas bulan (mulai dari displaySaldoAwal)
+      const runningStok = {};
+      products.forEach(p => { runningStok[p] = N(displaySaldoAwal[p]); });
+      const monthAgg = [];
+      mkList.forEach(mk => {
+        const agg = {};
+        products.forEach(p => {
+          agg[p] = { stokAwal: runningStok[p], masuk: 0, keluar: 0, stok: runningStok[p] };
+        });
+        monthMap.get(mk).forEach(r => {
+          products.forEach(p => {
+            const v = r.values[p];
+            if (!v) return;
+            agg[p].masuk  += N(v.masuk);
+            agg[p].keluar += N(v.keluar);
+            if (v.stok != null) runningStok[p] = v.stok;
+          });
+        });
+        products.forEach(p => { agg[p].stok = runningStok[p]; });
+        monthAgg.push({ mk, agg });
+      });
+
+      let body = '';
+      monthAgg.forEach(({ mk, agg }) => {
+        body += '<tr><td>' + monthLabel(mk) + '</td>' +
+          products.map(p => {
+            const v = agg[p];
+            return '<td class="num">' + nfQty(v.stokAwal) + '</td>' +
+                   '<td class="num">' + nfQty(v.masuk) + '</td>' +
+                   '<td class="num">' + nfQty(v.keluar) + '</td>' +
+                   '<td class="num">' + nfQty(v.stok) + '</td>';
+          }).join('') +
+          '</tr>';
+      });
+      tbody.innerHTML = body || '<tr><td colspan="' + (1 + products.length * 4) + '" style="text-align:center;padding:24px;color:#64748b">Belum ada data bulan ini.</td></tr>';
+    } else {
+      // ===== Tampilan Data / Tgl (yang lama, tidak berubah) =====
+      thead.innerHTML = '<tr><th rowspan="2">TANGGAL</th>' +
+        products.map(p => '<th colspan="3">' + escHtml(p) + '</th>').join('') +
+        '</tr><tr>' +
+        products.map(() => '<th>MASUK</th><th>KELUAR</th><th>STOK SFA</th>').join('') +
+        '</tr>';
+      let body = '<tr class="gudang-saldo-row"><td>Saldo Awal</td>' +
+        products.map(p => '<td class="num">-</td><td class="num">-</td><td class="num">' + nfQty(displaySaldoAwal[p]) + '</td>').join('') +
+        '</tr>';
+      body += rowsFiltered.map(r => {
+        return '<tr><td>' + gudangFmtDate(r.tanggal) + '</td>' +
+          products.map(p => {
+            const v = r.values[p] || {};
+            return '<td class="num">' + nfQty(v.masuk) + '</td>' +
+                   '<td class="num">' + nfQty(v.keluar) + '</td>' +
+                   '<td class="num">' + nfQty(v.stok) + '</td>';
+          }).join('') +
+          '</tr>';
+      }).join('');
+      tbody.innerHTML = body;
+    }
     populateGudangDeleteMonth();
   }
 
@@ -4902,6 +5022,8 @@ self.onmessage = function(e){
 
   (async function init(){
     initTheme(); initMainTabs();
+    const _gvm = document.getElementById('gudangViewMode');
+    if (_gvm) _gvm.value = _gudangViewMode;
     await initDB(); initSupabase();
     if (sbClient){ await pullFromCloud({ silent: true }); subscribeRealtime(); }
     else { await restoreFromDB(); await loadGudangFromDB(); }
@@ -4914,5 +5036,6 @@ self.onmessage = function(e){
   document.getElementById('installBtn')?.addEventListener('click', async () => { if (!_deferredInstallPrompt) return; _deferredInstallPrompt.prompt(); await _deferredInstallPrompt.userChoice; _deferredInstallPrompt = null; document.getElementById('installBtn').style.display = 'none'; });
   window.addEventListener('appinstalled', () => { const btn = document.getElementById('installBtn'); if (btn) btn.style.display = 'none'; });
 </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 </body>
 </html>
