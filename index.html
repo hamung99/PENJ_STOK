@@ -3463,6 +3463,7 @@ self.onmessage = function(e){
     if (useIDB && db){ try { const metaM = ((await db.meta.get('months')) || {}).value || []; metaM.forEach(m => { if (m) months.add(m); }); } catch(e){} }
     else { rows.forEach(r => { const bl = r.bulan || rowBulan(r); if (bl) months.add(bl); }); }
     if (gudangData && gudangData.rows){ gudangData.rows.forEach(r => { const k = cekDateKeyUTC(r.tanggal); if (k) months.add(cekMonthKey(k)); }); }
+    if (Array.isArray(rrCategories)) rrCategories.forEach(c => { (c.rows || []).forEach(r => { const k = cekDateKeyUTC(r.tanggal); if (k) months.add(cekMonthKey(k)); }); });
     return [...months].filter(Boolean).sort().reverse();
   }
   let _cekFitriMonthInit = false;
@@ -3588,32 +3589,40 @@ self.onmessage = function(e){
       const dk = cekDateKey(x.tanggal ?? x.Tanggal) || '';
       if (dk) { if (!penjualanPD[pk]) penjualanPD[pk] = {}; penjualanPD[pk][dk] = (penjualanPD[pk][dk] || 0) + j; }
     }
+    const gudangSources = [];
+    if (gudangData && gudangData.products) gudangSources.push({ products: gudangData.products, rows: (gudangData.rows || []) });
+    if (mode === 'rupa' && Array.isArray(rrCategories)) {
+      rrCategories.forEach(c => { if (c && Array.isArray(c.products) && c.products.length) gudangSources.push({ products: c.products, rows: (c.rows || []) }); });
+    }
     const gudangProductByKey = {};
-    if (gudangData && gudangData.products) { gudangData.products.forEach(p => { if (!isTarget(p)) return; gudangProductByKey[productMatchKey(p)] = p; }); }
+    gudangSources.forEach(src => src.products.forEach(p => { if (!isTarget(p)) return; const kk = productMatchKey(p); if (!gudangProductByKey[kk]) gudangProductByKey[kk] = p; }));
     const gudangPD = {};
     const gudangKeys = Object.keys(gudangProductByKey);
-    if (gudangData && gudangData.rows && gudangKeys.length) {
-      for (let i = 0; i < gudangData.rows.length; i++) {
-        const r = gudangData.rows[i];
-        const dk = cekDateKeyUTC(r.tanggal);
-        if (!dk) continue;
-        if (month && cekMonthKey(dk) !== month) continue;
-        if (!dateKeyInRange(dk)) continue;
-        for (let k = 0; k < gudangKeys.length; k++) {
-          const key = gudangKeys[k];
-          const colName = gudangProductByKey[key];
-          const keluar = N((r.values[colName] || {}).keluar);
-          if (!keluar) continue;
-          if (!productMap.has(key)) productMap.set(key, colName);
-          if (!gudangPD[key]) gudangPD[key] = {};
-          gudangPD[key][dk] = (gudangPD[key][dk] || 0) + keluar;
+    if (gudangKeys.length) {
+      gudangSources.forEach(src => {
+        for (let i = 0; i < src.rows.length; i++) {
+          const r = src.rows[i];
+          const dk = cekDateKeyUTC(r.tanggal);
+          if (!dk) continue;
+          if (month && cekMonthKey(dk) !== month) continue;
+          if (!dateKeyInRange(dk)) continue;
+          for (let k = 0; k < gudangKeys.length; k++) {
+            const key = gudangKeys[k];
+            const colName = gudangProductByKey[key];
+            const keluar = N((r.values[colName] || {}).keluar);
+            if (!keluar) continue;
+            if (!productMap.has(key)) productMap.set(key, colName);
+            if (!gudangPD[key]) gudangPD[key] = {};
+            gudangPD[key][dk] = (gudangPD[key][dk] || 0) + keluar;
+          }
         }
-      }
+      });
     }
     const products = [...productMap.entries()].map(([key, name]) => ({key, name})).sort((a,b) => a.name.localeCompare(b.name, 'id'));
     products.forEach(p => { if (!penjualanPS[p.key]) penjualanPS[p.key] = {}; if (!penjualanPD[p.key]) penjualanPD[p.key] = {}; if (!gudangPD[p.key]) gudangPD[p.key] = {}; });
     const salesList = [...salesTotals.entries()].sort((a,b) => b[1]-a[1]).map(([name]) => name);
-    const hasGudang = !!(gudangData && gudangData.products && gudangData.products.length);
+    const hasRrGudang = (mode === 'rupa' && Array.isArray(rrCategories) && rrCategories.some(c => c && Array.isArray(c.products) && c.products.length));
+    const hasGudang = !!(gudangData && gudangData.products && gudangData.products.length) || hasRrGudang;
     return {products, salesList, penjualanPS, penjualanPD, gudangPD, hasGudang, mode, dateFrom, dateTo};
   }
   function collectCekFitriData(month, sourceRows, opts){ return collectCekData(month, 'fitri', sourceRows, opts); }
