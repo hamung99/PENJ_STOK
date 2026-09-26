@@ -3621,10 +3621,13 @@ self.onmessage = function(e){
     const map = getCekRupaNamaMap();
     return String(map[key] || fallback || '').trim() || fallback || '';
   }
-  function openCekRupaNamaFix(){
+  async function openCekRupaNamaFix(){
     const overlay=document.getElementById('cekRupaNamaFixOverlay');
     const wrap=document.getElementById('cekRupaNamaFixRows');
     if(!overlay || !wrap) return;
+    if(!_cekRupaLastData || !Array.isArray(_cekRupaLastData.products) || !_cekRupaLastData.products.length){
+      try { await renderCekRupa(); } catch(e) {}
+    }
     const data=_cekRupaLastData;
     if(!data || !Array.isArray(data.products) || !data.products.length){
       alert('Belum ada data Rupa Rupa.'); return;
