@@ -3595,10 +3595,21 @@ self.onmessage = function(e){
       const dk = cekDateKey(x.tanggal ?? x.Tanggal) || '';
       if (dk) { if (!penjualanPD[pk]) penjualanPD[pk] = {}; penjualanPD[pk][dk] = (penjualanPD[pk][dk] || 0) + j; }
     }
+    // Sumber OUTPUT GUDANG harus mengikuti tab Data Gudang yang sesuai:
+    // - FITRI  : Data Gudang utama (gudangData)
+    // - RUPA RUPA: HANYA data pada tab Data Gudang -> Rupa Rupa (rrCategories)
+    // Jangan mencampur gudangData ke Rupa Rupa karena dapat menggandakan OUTPUT GUDANG.
     const gudangSources = [];
-    if (gudangData && gudangData.products) gudangSources.push({ products: gudangData.products, rows: (gudangData.rows || []) });
-    if (mode === 'rupa' && Array.isArray(rrCategories)) {
-      rrCategories.forEach(c => { if (c && Array.isArray(c.products) && c.products.length) gudangSources.push({ products: c.products, rows: (c.rows || []) }); });
+    if (mode === 'fitri') {
+      if (gudangData && gudangData.products) {
+        gudangSources.push({ products: gudangData.products, rows: (gudangData.rows || []) });
+      }
+    } else if (mode === 'rupa' && Array.isArray(rrCategories)) {
+      rrCategories.forEach(c => {
+        if (c && Array.isArray(c.products) && c.products.length) {
+          gudangSources.push({ products: c.products, rows: (c.rows || []) });
+        }
+      });
     }
     const gudangProductByKey = {};
     gudangSources.forEach(src => src.products.forEach(p => { if (!isTarget(p)) return; const kk = productMatchKey(p); if (!gudangProductByKey[kk]) gudangProductByKey[kk] = p; }));
@@ -3628,7 +3639,9 @@ self.onmessage = function(e){
     products.forEach(p => { if (!penjualanPS[p.key]) penjualanPS[p.key] = {}; if (!penjualanPD[p.key]) penjualanPD[p.key] = {}; if (!gudangPD[p.key]) gudangPD[p.key] = {}; });
     const salesList = [...salesTotals.entries()].sort((a,b) => b[1]-a[1]).map(([name]) => name);
     const hasRrGudang = (mode === 'rupa' && Array.isArray(rrCategories) && rrCategories.some(c => c && Array.isArray(c.products) && c.products.length));
-    const hasGudang = !!(gudangData && gudangData.products && gudangData.products.length) || hasRrGudang;
+    const hasGudang = mode === 'rupa'
+      ? hasRrGudang
+      : !!(gudangData && gudangData.products && gudangData.products.length);
     return {products, salesList, penjualanPS, penjualanPD, gudangPD, hasGudang, mode, dateFrom, dateTo};
   }
   function collectCekFitriData(month, sourceRows, opts){ return collectCekData(month, 'fitri', sourceRows, opts); }
