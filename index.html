@@ -3621,6 +3621,12 @@ self.onmessage = function(e){
     const map = getCekRupaNamaMap();
     return String(map[key] || fallback || '').trim() || fallback || '';
   }
+  function cekRupaFinalKeyAndName(rawName){
+    const rawKey = productMatchKey(rawName);
+    const correctedName = cekRupaDisplayName(rawKey, rawName);
+    const finalKey = productMatchKey(correctedName) || rawKey;
+    return { key: finalKey, name: correctedName };
+  }
   async function openCekRupaNamaFix(){
     const overlay=document.getElementById('cekRupaNamaFixOverlay');
     const wrap=document.getElementById('cekRupaNamaFixRows');
@@ -3682,8 +3688,8 @@ self.onmessage = function(e){
         if (!dk0 && !rowInDateRange(x, dateStrToStartTs(dateFrom), dateStrToEndTs(dateTo))) continue;
       }
       const name = String(produk ?? '').trim();
-      const pk = productMatchKey(name);
-      if (!productMap.has(pk)) productMap.set(pk, cekRupaDisplayName(pk, name));
+      const { key: pk, name: displayName } = cekRupaFinalKeyAndName(name);
+      if (!productMap.has(pk)) productMap.set(pk, displayName);
       const j = N(x.jumlah ?? x.Jumlah);
       const s = String(x.sales ?? x.Sales ?? '').trim() || '(Tanpa Sales)';
       salesTotals.set(s, (salesTotals.get(s) || 0) + j);
@@ -3707,10 +3713,15 @@ self.onmessage = function(e){
         }
       });
     }
-    const gudangProductByKey = {};
-    gudangSources.forEach(src => src.products.forEach(p => { if (!isTarget(p)) return; const kk = productMatchKey(p); if (!gudangProductByKey[kk]) gudangProductByKey[kk] = p; }));
+    const gudangProductGroups = {};
+    gudangSources.forEach(src => src.products.forEach(p => {
+      if (!isTarget(p)) return;
+      const { key: kk, name: label } = cekRupaFinalKeyAndName(p);
+      if (!gudangProductGroups[kk]) gudangProductGroups[kk] = { label, names: [] };
+      if (!gudangProductGroups[kk].names.includes(p)) gudangProductGroups[kk].names.push(p);
+    }));
     const gudangPD = {};
-    const gudangKeys = Object.keys(gudangProductByKey);
+    const gudangKeys = Object.keys(gudangProductGroups);
     if (gudangKeys.length) {
       gudangSources.forEach(src => {
         for (let i = 0; i < src.rows.length; i++) {
@@ -3721,10 +3732,11 @@ self.onmessage = function(e){
           if (!dateKeyInRange(dk)) continue;
           for (let k = 0; k < gudangKeys.length; k++) {
             const key = gudangKeys[k];
-            const colName = gudangProductByKey[key];
-            const keluar = N((r.values[colName] || {}).keluar);
+            const names = gudangProductGroups[key].names;
+            let keluar = 0;
+            for (let ni = 0; ni < names.length; ni++) { const v = r.values[names[ni]]; if (v) keluar += N(v.keluar); }
             if (!keluar) continue;
-            if (!productMap.has(key)) productMap.set(key, cekRupaDisplayName(key, colName));
+            if (!productMap.has(key)) productMap.set(key, gudangProductGroups[key].label);
             if (!gudangPD[key]) gudangPD[key] = {};
             gudangPD[key][dk] = (gudangPD[key][dk] || 0) + keluar;
           }
