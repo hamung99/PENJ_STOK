@@ -2159,7 +2159,13 @@ self.onmessage = function(e){
     return months[0];
   }
   function isFitriProduct(p){ return U(p).includes('FITRI'); }
-  function productMatchKey(p){ return U(p).replace(/[^A-Z0-9]/g, ''); }
+  function productMatchKey(p){
+    let s = U(p).replace(/[^A-Z0-9]/g, '');
+    // Seragamkan suffix yang sering divariasikan saat input Excel
+    // (mis. REF, REFILL, REFFILL, REFFIL, REFIL, REFF, REFI, ISI, ISE di akhir nama)
+    s = s.replace(/(REFFILL|REFILL|REFFIL|REFIL|REFF|REFI|REF|ISI|ISE)$/, '');
+    return s;
+  }
 
   function populateFiltersFromMeta(m){
     if (!m) return;
