@@ -214,6 +214,18 @@ tfoot td{background:#ffe699;font-weight:bold}
 .nama-fix-actions .left{display:flex;gap:6px}
 .nama-fix-actions button{font-size:12px;padding:7px 11px}
 .nama-fix-ghost{background:#e2e8f0;color:#334155}
+.nama-fix-suggest{display:none;background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:10px 12px;margin-bottom:10px}
+.nama-fix-suggest-title{font-size:11.5px;font-weight:800;color:#92400e;text-transform:uppercase;letter-spacing:.03em;margin-bottom:8px}
+.nama-fix-suggest-item{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:6px 0;border-top:1px dashed #fcd34d}
+.nama-fix-suggest-item:first-of-type{border-top:0}
+.nama-fix-suggest-chips{display:flex;flex-wrap:wrap;gap:6px}
+.nama-fix-suggest-chip{background:#fff;border:1px solid #fcd34d;color:#92400e;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px}
+.nama-fix-suggest-btn{background:#d97706;color:#fff;font-size:11px;padding:6px 10px;border-radius:7px;white-space:nowrap}
+.nama-fix-suggest-btn:hover{background:#b45309}
+body.dark .nama-fix-suggest{background:#3a2c0f;border-color:#92400e}
+body.dark .nama-fix-suggest-title{color:#fbbf24}
+body.dark .nama-fix-suggest-chip{background:#1e293b;border-color:#92400e;color:#fbbf24}
+body.dark .nama-fix-suggest-item{border-color:#78350f}
 body.dark .nama-fix-box{background:#1e293b;color:#e2e8f0}
 body.dark .nama-fix-box h3{color:#93c5fd}
 body.dark .nama-fix-sub{color:#94a3b8}
@@ -1119,6 +1131,7 @@ body.dark .rr-app .dd-upload .field input[type=text]{background:#0f172a;color:#e
   <div class="nama-fix-box">
     <h3>✏️ Perbaiki Nama Produk — Cek Rupa Rupa</h3>
     <div class="nama-fix-sub">Perubahan ini hanya menjadi <b>nama baku untuk pencocokan dan tampilan Cek Rupa Rupa</b>. Data asli pada Data Penjualan dan Data Gudang tidak diubah. Contoh: <b>SAMBAL STIK 9 GR</b> → <b>SAMBAL STICK 9 GR</b>.</div>
+    <div class="nama-fix-suggest" id="cekRupaNamaFixSuggest"></div>
     <div class="nama-fix-list">
       <div class="nama-fix-row nama-fix-head"><div>Nama yang ditemukan</div><div>Nama Produk Baku</div></div>
       <div id="cekRupaNamaFixRows"></div>
@@ -3627,6 +3640,48 @@ self.onmessage = function(e){
     const finalKey = productMatchKey(correctedName) || rawKey;
     return { key: finalKey, name: correctedName };
   }
+  function cekRupaLooseKey(name){
+    let s = productMatchKey(name);
+    s = s.replace(/\d+(GR|GRAM|KG|KILOGRAM|ML|MILILITER|MILLILITER|L|LITER|LTR)$/,'');
+    s = s.replace(/\d+$/,'');
+    return s;
+  }
+  function renderCekRupaNamaFixSuggest(products){
+    const box = document.getElementById('cekRupaNamaFixSuggest');
+    if (!box) return;
+    const groups = {};
+    (products||[]).forEach(p => {
+      const lk = cekRupaLooseKey(p.name);
+      if (!lk) return;
+      if (!groups[lk]) groups[lk] = [];
+      groups[lk].push(p);
+    });
+    const dupGroups = Object.values(groups).filter(g => g.length > 1);
+    if (!dupGroups.length){ box.innerHTML=''; box.style.display='none'; return; }
+    box.innerHTML = '<div class="nama-fix-suggest-title">🔎 Kemungkinan nama produk yang sama (' + dupGroups.length + ')</div>' +
+      dupGroups.map((g, gi) => {
+        const canonical = g.slice().sort((a,b) => b.name.length - a.name.length)[0].name;
+        const keys = g.map(p => p.key).join(',');
+        const chips = g.map(p => '<span class="nama-fix-suggest-chip">' + escHtml(p.name) + '</span>').join('');
+        const itemId = 'cekRupaSuggest_' + gi;
+        return '<div class="nama-fix-suggest-item" id="' + itemId + '">' +
+          '<div class="nama-fix-suggest-chips">' + chips + '</div>' +
+          '<button type="button" class="nama-fix-suggest-btn" onclick="cekRupaApplySuggest(\'' + keys.replace(/'/g,"\\'") + '\',\'' + String(canonical).replace(/'/g,"\\'").replace(/"/g,'&quot;') + '\',\'' + itemId + '\')">🔗 Gabungkan → ' + escHtml(canonical) + '</button>' +
+        '</div>';
+      }).join('');
+    box.style.display = 'block';
+  }
+  function cekRupaApplySuggest(keysCsv, canonicalText, itemId){
+    const keys = String(keysCsv||'').split(',').filter(Boolean);
+    keys.forEach(k => {
+      const inp = document.querySelector('#cekRupaNamaFixRows input[data-key="' + CSS.escape(k) + '"]');
+      if (inp) inp.value = canonicalText;
+    });
+    const item = document.getElementById(itemId);
+    if (item) item.remove();
+    const box = document.getElementById('cekRupaNamaFixSuggest');
+    if (box && !box.querySelector('.nama-fix-suggest-item')) box.style.display = 'none';
+  }
   async function openCekRupaNamaFix(){
     const overlay=document.getElementById('cekRupaNamaFixOverlay');
     const wrap=document.getElementById('cekRupaNamaFixRows');
@@ -3644,6 +3699,7 @@ self.onmessage = function(e){
       const old=String(p.name||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
       return '<div class="nama-fix-row"><div class="nama-fix-old">'+old+'</div><div><input type="text" data-key="'+String(p.key).replace(/"/g,'&quot;')+'" value="'+safe+'" placeholder="Nama produk baku"></div></div>';
     }).join('');
+    renderCekRupaNamaFixSuggest(data.products);
     overlay.classList.add('show');
   }
   function closeCekRupaNamaFix(){ const el=document.getElementById('cekRupaNamaFixOverlay'); if(el) el.classList.remove('show'); }
