@@ -291,33 +291,6 @@ body.dark #cekRingkasanTable tfoot td,body.dark #cekRupaTable tfoot td{backgroun
 .cek-alert-flags .flag-icon.show{opacity:1;transform:scale(1) rotate(0)}
 #page-cek .cek-panel{display:none}
 #page-cek .cek-panel.active{display:block}
-#cekPanelCust .cs-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:2px 0 12px}
-#cekPanelCust .cs-kpi{background:#fff;border:1px solid #d6dde6;border-left:3px solid #1f4e78;border-radius:10px;padding:8px 12px;min-width:0;box-shadow:0 1px 4px rgba(31,78,120,.06)}
-#cekPanelCust .cs-kpi small{display:block;font-size:10px;color:#64748b;font-weight:600;letter-spacing:.03em}
-#cekPanelCust .cs-kpi b{display:block;font-size:17px;margin-top:2px;color:#0f172a;font-weight:800;line-height:1.25}
-#cekPanelCust .cs-kpi select{width:100%;min-width:0;border:0;background:transparent;font-size:17px;font-weight:800;color:#0f172a;padding:0;margin-top:2px;cursor:pointer;outline:none;font-family:inherit}
-#cekPanelCust .cs-kpi.cs-total{border-left-color:#d08a2e;background:linear-gradient(145deg,#fff 0%,#fff6e8 100%)}
-#cekCustMin{width:78px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12px;background:#fff;color:#172033;box-sizing:border-box}
-#cekCustTable{min-width:900px}
-#cekCustTable thead th{height:34px;box-sizing:border-box;padding:0 8px;text-align:center;font-size:11px;letter-spacing:.03em;z-index:4}
-#cekCustTable thead tr:first-child th[rowspan]{z-index:5}
-#cekCustTable thead tr:nth-child(2) th{top:34px;background:#3d6fa0;z-index:3}
-#cekCustTable tbody tr:nth-child(even){background:#eef2f7}
-#cekCustTable tbody tr:hover{background:#dde8f5}
-#cekCustTable td.c{text-align:center}
-#cekCustTable td.tot{text-align:center;font-weight:800;color:#1f4e78}
-#cekCustTable td.tgl{text-align:center;white-space:normal;min-width:170px}
-#cekCustTable tfoot td{background:#eef2fb;font-weight:800;text-align:center}
-#cekCustTable tfoot td.lbl{text-align:right}
-body.dark #cekPanelCust .cs-kpi{background:#1e293b;border-color:#334155;border-left-color:#5b9bd5}
-body.dark #cekPanelCust .cs-kpi small{color:#94a3b8}
-body.dark #cekPanelCust .cs-kpi b,body.dark #cekPanelCust .cs-kpi select{color:#f1f5f9}
-body.dark #cekPanelCust .cs-kpi.cs-total{border-left-color:#d08a2e;background:linear-gradient(145deg,#1e293b 0%,#2a2418 100%)}
-body.dark #cekCustTable thead tr:nth-child(2) th{background:#2d4a6f;color:#e2e8f0}
-body.dark #cekCustTable tbody tr:nth-child(even){background:#1a2536}
-body.dark #cekCustTable tbody tr:hover{background:#243447}
-body.dark #cekCustTable td.tot{color:#93c5fd}
-body.dark #cekCustTable tfoot td{background:#1e3a5f;color:#f1f5f9}
 #page-gudang .gudang-subtabs{display:flex;gap:6px;margin:0 0 12px;flex-wrap:wrap;align-items:center;padding:0;background:transparent;border:0;box-shadow:none;border-radius:0}
 #page-gudang .gudang-subtab{padding:6px 14px;border:1px solid #cbd5e1;background:#e2e8f0;border-radius:7px;font-size:12px;cursor:pointer;color:#334155;font-weight:700;transition:background .15s,color .15s,border-color .15s}
 #page-gudang .gudang-subtab:hover{background:#e2e8f0}
@@ -549,9 +522,7 @@ body.dark #page-salescust .cek-search{background:#0f172a;color:#e2e8f0;border-co
 #scsCustTable td.tgl{text-align:center;white-space:normal;min-width:170px}
 #scsCustTable tfoot td{background:#eef2fb;font-weight:800;text-align:center}
 #scsCustTable tfoot td.lbl{text-align:right}
-#cekCustTable td.tgl .tgl-multi-link,
 #scsCustTable td.tgl .tgl-multi-link{color:#1f4e78;font-weight:800;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
-#cekCustTable td.tgl .tgl-multi-link:hover,
 #scsCustTable td.tgl .tgl-multi-link:hover{color:#0c3a66}
 #custTglOverlay .gmodal-box{max-width:720px;width:100%;max-height:88vh;display:flex;flex-direction:column;padding:18px 20px 16px}
 #custTglOverlay .fk-modal-body{overflow:auto;flex:1;min-height:0;margin:8px 0 12px}
@@ -563,7 +534,6 @@ body.dark #page-salescust .cek-search{background:#0f172a;color:#e2e8f0;border-co
 #custTglOverlay td.num{text-align:right}
 #custTglOverlay .cust-tgl-day{margin:12px 0 6px;font-size:12px;font-weight:800;color:#1f4e78;letter-spacing:.02em}
 #custTglOverlay .cust-tgl-day span{font-weight:600;color:#64748b;margin-left:6px}
-body.dark #cekCustTable td.tgl .tgl-multi-link,
 body.dark #scsCustTable td.tgl .tgl-multi-link{color:#93c5fd}
 body.dark #custTglOverlay th{background:#1e3a5f}
 body.dark #custTglOverlay td{border-color:#334155}
@@ -620,6 +590,97 @@ body.dark #page-gudang .gudang-subtabs .gudang-view-toggle label{color:#94a3b8}
 body.dark #page-gudang .gudang-subtabs .gudang-view-toggle select{
   background:#0f172a;color:#e2e8f0;border-color:#475569;
 }
+
+/* ===== RUPA RUPA (integrasi dari RUPA RUPA.html, di-scope ke .rr-app) ===== */
+.rr-app{font-family:'Segoe UI',Arial,sans-serif;color:#172033}
+.rr-app .card{background:#fff;border:1px solid #d6dde6;border-radius:0;padding:0;box-shadow:none;margin:0}
+.rr-app .toolbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:10px 12px;margin:0;border-bottom:1px solid #eef1f5}
+.rr-app .toolbar label{font-size:10px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.04em}
+.rr-app .toolbar input[type=text],
+.rr-app .toolbar input[type=search],
+.rr-app .toolbar select{padding:4px 8px;border:1px solid #cbd5e1;border-radius:0;font-size:11.5px;background:#fff;color:#172033;height:28px;line-height:1.2}
+.rr-app .toolbar select{min-width:150px}
+.rr-app .toolbar input[type=search]{min-width:200px}
+.rr-app button{padding:5px 10px;border:0;border-radius:0;background:#1f4e78;color:#fff;font-weight:700;font-size:11.5px;cursor:pointer}
+.rr-app button:hover{background:#163c5c}
+.rr-app button:disabled{opacity:.5;cursor:not-allowed}
+.rr-app .mode-group{display:inline-flex;gap:4px}
+.rr-app .mode-btn{padding:5px 12px;border:1px solid #cbd5e1;border-radius:0;background:#fff;color:#334155;font-weight:700;font-size:11.5px;cursor:pointer;height:28px;line-height:1.2;display:inline-flex;align-items:center;gap:4px}
+.rr-app .mode-btn:hover{background:#f1f5f9}
+.rr-app .mode-btn.active{background:#1f4e78;border-color:#1f4e78;color:#fff}
+.rr-app .mode-btn.active:hover{background:#163c5c}
+.rr-app .tablebox{overflow:auto;max-height:70vh;border:0;border-radius:0}
+.rr-app table{border-collapse:collapse;width:100%;font-size:12px;min-width:0}
+.rr-app #rrRingkasanView table{min-width:900px}
+.rr-app #rrDetailView table{min-width:600px}
+.rr-app th{position:sticky;top:0;background:#1f4e78;color:#fff;padding:9px 8px;border:1px solid #b8c5d4;text-align:left;z-index:3}
+.rr-app #rrDetailView thead tr:nth-child(2) th{top:36px;background:#2d4a6f;color:#e2e8f0;font-weight:600;z-index:2}
+.rr-app td{padding:7px 8px;border-bottom:1px solid #eef1f5;white-space:nowrap}
+.rr-app td.num{text-align:right;font-variant-numeric:tabular-nums}
+.rr-app td.strong{font-weight:800;color:#0f172a}
+.rr-app tbody tr:hover{background:#f5f9ff}
+.rr-app tr.cat-header td{background:#eef4fb;color:#1f4e78;font-weight:800;font-size:12.5px;padding:9px 10px;letter-spacing:.02em}
+.rr-app tr.cat-header .cat-count{font-weight:600;color:#64748b;font-size:11px;margin-left:6px}
+.rr-app tr.subtotal td{background:#fff8e8;font-weight:800;color:#7a4a00;border-top:1px dashed #f1dfb2}
+.rr-app tfoot td{background:#1f4e78;color:#fff;font-weight:800;padding:9px 8px}
+.rr-app tfoot td.num{text-align:right;font-variant-numeric:tabular-nums}
+.rr-app .status{margin:8px 12px;font-size:11.5px;color:#475569;padding:6px 10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:0}
+.rr-app .status.ok{background:#eaf7ef;border-color:#cfe8d8;color:#166534}
+.rr-app .status.err{background:#fef2f2;border-color:#fecaca;color:#b42318}
+.rr-app .empty{padding:36px 20px;text-align:center;color:#64748b;font-size:13px}
+.rr-app .dd{position:relative;display:inline-block}
+.rr-app .dd-toggle{display:flex;align-items:center;justify-content:center;background:#e2e8f0;color:#334155;border:0;border-radius:0;padding:5px 10px;font-size:14px;cursor:pointer;font-weight:700;line-height:1;min-width:32px;height:28px}
+.rr-app .dd-toggle:hover{background:#cbd5e1}
+.rr-app .dd-menu{display:none;position:absolute;right:0;top:calc(100% + 6px);min-width:230px;background:#fff;border:1px solid #d6dde6;border-radius:0;box-shadow:0 8px 28px rgba(0,0,0,.18);padding:6px;z-index:100}
+.rr-app .dd.open .dd-menu{display:block}
+.rr-app .dd-menu button{display:block;width:100%;text-align:left;background:transparent;color:#334155;padding:9px 12px;font-size:12px;font-weight:600;border-radius:0;border:0;cursor:pointer}
+.rr-app .dd-menu button:hover{background:#f0f4fa}
+.rr-app .dd-menu button.danger{color:#b42318}
+.rr-app .dd-menu button.danger:hover{background:#fef2f2}
+.rr-app .dd-menu button:disabled{opacity:.45;cursor:not-allowed;background:transparent}
+.rr-app .dd-menu hr{border:0;border-top:1px solid #e8edf4;margin:4px 2px}
+.rr-app .dd-backdrop{display:none;position:fixed;inset:0;z-index:99}
+.rr-app .dd.open .dd-backdrop{display:block}
+.rr-app .dd-upload{min-width:340px;max-width:min(420px,94vw);padding:14px}
+.rr-app .dd-upload .title{font-size:12px;font-weight:800;color:#1f4e78;padding-bottom:8px;border-bottom:1px solid #e2e8f0;margin-bottom:10px;letter-spacing:.02em}
+.rr-app .dd-upload .field{margin-bottom:10px}
+.rr-app .dd-upload .field label{display:block;font-size:10.5px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.rr-app .dd-upload .field input[type=file]{font-size:12px;width:100%;padding:6px 4px;border:1px dashed #cbd5e1;border-radius:0;background:#f8fafc}
+.rr-app .dd-upload .field input[type=text]{width:100%;padding:8px 10px;border:1px solid #cbd5e1;border-radius:0;font-size:12px;background:#fff;color:#172033}
+.rr-app .dd-upload .hint{font-size:10.5px;color:#94a3b8;line-height:1.45;margin-top:-2px;margin-bottom:8px}
+.rr-app .dd-upload button.primary{width:100%;background:#1f4e78;color:#fff;padding:10px;font-size:12.5px;border-radius:0;font-weight:700}
+.rr-app .dd-upload button.primary:hover{background:#163c5c}
+body.dark .rr-app .card{background:#1e293b;border-color:#334155;color:#e2e8f0}
+body.dark .rr-app .toolbar{border-bottom-color:#334155}
+body.dark .rr-app .toolbar label{color:#94a3b8}
+body.dark .rr-app .toolbar input[type=text],
+body.dark .rr-app .toolbar input[type=search],
+body.dark .rr-app .toolbar select{background:#0f172a;color:#e2e8f0;border-color:#475569}
+body.dark .rr-app .mode-btn{background:#0f172a;color:#cbd5e1;border-color:#475569}
+body.dark .rr-app .mode-btn.active{background:#3b82f6;border-color:#3b82f6;color:#fff}
+body.dark .rr-app th{background:#1e3a5f;border-color:#334155}
+body.dark .rr-app #rrDetailView thead tr:nth-child(2) th{background:#2d4a6f;color:#e2e8f0}
+body.dark .rr-app td{border-bottom-color:#334155;color:#e2e8f0}
+body.dark .rr-app td.strong{color:#f1f5f9}
+body.dark .rr-app tbody tr:hover{background:#243447}
+body.dark .rr-app tr.cat-header td{background:#0f172a;color:#93c5fd}
+body.dark .rr-app tr.subtotal td{background:#422006;color:#fdba74;border-top-color:#92400e}
+body.dark .rr-app tfoot td{background:#1e3a5f;color:#f1f5f9}
+body.dark .rr-app .status{background:#0f172a;border-color:#334155;color:#94a3b8}
+body.dark .rr-app .status.ok{background:#14532d;border-color:#166534;color:#86efac}
+body.dark .rr-app .status.err{background:#7f1d1d;border-color:#991b1b;color:#fecaca}
+body.dark .rr-app .empty{color:#94a3b8}
+body.dark .rr-app .dd-toggle{background:#334155;color:#e2e8f0}
+body.dark .rr-app .dd-menu{background:#1e293b;border-color:#334155;box-shadow:0 8px 28px #0008}
+body.dark .rr-app .dd-menu button{color:#cbd5e1}
+body.dark .rr-app .dd-menu button:hover{background:#334155}
+body.dark .rr-app .dd-menu button.danger{color:#fca5a5}
+body.dark .rr-app .dd-menu button.danger:hover{background:#7f1d1d}
+body.dark .rr-app .dd-menu hr{border-top-color:#334155}
+body.dark .rr-app .dd-upload .title{color:#93c5fd;border-bottom-color:#334155}
+body.dark .rr-app .dd-upload .field label{color:#94a3b8}
+body.dark .rr-app .dd-upload .field input[type=file]{background:#0f172a;border-color:#475569;color:#e2e8f0}
+body.dark .rr-app .dd-upload .field input[type=text]{background:#0f172a;color:#e2e8f0;border-color:#475569}
 </style>
 </head>
 <body>
@@ -914,38 +975,12 @@ body.dark #page-gudang .gudang-subtabs .gudang-view-toggle select{
     </div>
   </div>
 
-  <!-- Toolbar Rupa Rupa (kartu stok + pengaturan) - tampil di atas saat sub-tab Rupa Rupa aktif -->
-  <div class="gudang-toolbar" id="gudangToolbarRupa" style="display:none">
-    <div id="gudangRupaKpis" class="gudang-kpis"></div>
-    <div class="gudang-toolbar-right">
-      <div class="dd" id="gudangRupaDd" style="flex:none">
-        <button type="button" class="dd-toggle" onclick="toggleGudangRupaDd()" title="Pengaturan Data Rupa Rupa"><span>⚙️</span></button>
-        <div class="dd-backdrop" onclick="closeGudangRupaDd()"></div>
-        <div class="dd-menu menu-main">
-          <div class="menu-title">📦 Data Stok Rupa Rupa</div>
-          <div class="menu-section">
-            <div class="hint">Upload file Excel stok Rupa Rupa. Parser mencari baris header berdasarkan nama kolom: <b>Kode</b>, <b>Nama Produk</b>, <b>Stok Awal</b>, <b>Masuk</b>, <b>Keluar</b>, <b>Stok Akhir</b>, dan <b>Sat</b>. Urutan kolom bebas — bisa berbeda-beda antar file. Upload ulang akan <b>meng-update</b> baris dengan Kode yang sama; Kode baru akan ditambahkan.</div>
-            <div class="file-row"><input id="gudangRupaFile" type="file" accept=".xlsx,.xls"></div>
-            <div class="btn-row">
-              <button type="button" onclick="processGudangRupaFile()">Proses Excel Rupa Rupa</button>
-            </div>
-            <div class="bulk-box">
-              <div class="menu-label">Hapus data</div>
-              <div class="btn-row">
-                <button type="button" class="danger-btn" onclick="clearGudangRupaData()">Hapus SEMUA Data Rupa Rupa</button>
-              </div>
-            </div>
-            <div id="gudangRupaStatus" class="hint" style="margin-top:8px">Belum ada data.</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- Toolbar Rupa Rupa - dihilangkan; UI Rupa Rupa baru ada di dalam panelnya sendiri -->
 
   <div class="gudang-subtabs" role="tablist">
     <button type="button" class="gudang-subtab active" data-gudang="fitri" onclick="switchGudangSub('fitri',this)">🧴 Fitri</button>
     <button type="button" class="gudang-subtab" data-gudang="rupa" onclick="switchGudangSub('rupa',this)">📦 Rupa Rupa</button>
-    <div class="gudang-view-toggle">
+    <div class="gudang-view-toggle" id="gudangViewToggleWrap">
       <label for="gudangViewMode">Mode</label>
       <select id="gudangViewMode" onchange="setGudangViewMode(this.value)">
         <option value="bulan">Data / Bulan</option>
@@ -967,17 +1002,88 @@ body.dark #page-gudang .gudang-subtabs .gudang-view-toggle select{
       </div>
     </div>
 
-    <!-- Panel Rupa Rupa -->
+    <!-- Panel Rupa Rupa (integrasi dari RUPA RUPA.html) -->
     <div id="gudangRupaPanel" style="display:none">
-      <div class="card">
-        <div class="tablebox">
-          <table id="gudangRupaTable" style="min-width:720px">
-            <thead id="gudangRupaThead"></thead>
-            <tbody id="gudangRupaTbody">
-              <tr><td colspan="8" style="text-align:center;padding:24px;color:#64748b">Belum ada data. Klik ⚙️ untuk upload Excel.</td></tr>
-            </tbody>
-            <tfoot id="gudangRupaTfoot"></tfoot>
-          </table>
+      <div class="rr-app">
+        <div class="card">
+          <div class="toolbar">
+            <label for="rrKategoriSel">Tampilkan</label>
+            <select id="rrKategoriSel"><option value="">Semua Kategori</option></select>
+
+            <label>Mode</label>
+            <div class="mode-group">
+              <button type="button" class="mode-btn active" id="rrModeBulan" onclick="rrSetViewMode('bulan')">📊 Data/Bulan</button>
+              <button type="button" class="mode-btn" id="rrModeTgl" onclick="rrSetViewMode('tgl')">📅 Data/Tgl</button>
+            </div>
+
+            <input type="search" id="rrSearchInput" placeholder="🔍 Cari nama produk...">
+            <span style="flex:1"></span>
+
+            <div class="dd" id="rrMenuDataDd">
+              <button type="button" class="dd-toggle" onclick="rrToggleDd(event,'rrMenuDataDd')" title="Menu Data">⚙️</button>
+              <div class="dd-backdrop" onclick="rrCloseAllDd()"></div>
+              <div class="dd-menu">
+                <button type="button" onclick="rrCloseAllDd();rrDownloadExcel()">⬇ Download Excel</button>
+                <hr>
+                <button type="button" id="rrBtnDeleteCat" onclick="rrCloseAllDd();rrDeleteCategory()" disabled>🗑 Hapus Kategori Ini</button>
+                <button type="button" class="danger" onclick="rrCloseAllDd();rrClearAll()">🗑 Hapus Semua</button>
+              </div>
+            </div>
+
+            <div class="dd" id="rrMenuUploadDd">
+              <button type="button" class="dd-toggle" onclick="rrToggleDd(event,'rrMenuUploadDd')" title="Upload Excel">☰</button>
+              <div class="dd-backdrop" onclick="rrCloseAllDd()"></div>
+              <div class="dd-menu dd-upload">
+                <div class="title">📁 Upload Excel Rupa Rupa</div>
+                <div class="field">
+                  <label for="rrFileInput">Pilih file Excel</label>
+                  <input type="file" id="rrFileInput" accept=".xlsx,.xls">
+                </div>
+                <div class="field">
+                  <label for="rrKategoriInput">Nama Kategori</label>
+                  <input type="text" id="rrKategoriInput" list="rrKategoriList" placeholder="mis: SARI SEDAP">
+                  <datalist id="rrKategoriList"></datalist>
+                </div>
+                <div class="hint">Satu file = satu kategori. Nama kategori otomatis terisi dari nama file — edit bila perlu.</div>
+                <button type="button" class="primary" id="rrBtnProcess">Proses Excel</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="status" id="rrStatusUpload" style="display:none"></div>
+
+          <div id="rrRingkasanView">
+            <div class="tablebox">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width:50px">NO</th>
+                    <th>NAMA PRODUK</th>
+                    <th style="width:120px;text-align:right">STOK AWAL</th>
+                    <th style="width:110px;text-align:right">MASUK</th>
+                    <th style="width:110px;text-align:right">KELUAR</th>
+                    <th style="width:120px;text-align:right">STOK AKHIR</th>
+                  </tr>
+                </thead>
+                <tbody id="rrTbody">
+                  <tr><td colspan="6" class="empty">Belum ada data. Klik ☰ untuk upload file Excel.</td></tr>
+                </tbody>
+                <tfoot id="rrTfoot"></tfoot>
+              </table>
+            </div>
+          </div>
+
+          <div id="rrDetailView" style="display:none">
+            <div class="tablebox">
+              <table id="rrDetailTable">
+                <thead id="rrDetailThead"></thead>
+                <tbody id="rrDetailTbody">
+                  <tr><td class="empty">Pilih satu kategori untuk melihat data per tanggal.</td></tr>
+                </tbody>
+                <tfoot id="rrDetailTfoot"></tfoot>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1060,7 +1166,6 @@ body.dark #page-gudang .gudang-subtabs .gudang-view-toggle select{
   <div class="cek-subtabs" role="tablist">
     <button type="button" class="cek-subtab active" data-cek="fitri" onclick="switchCekSub('fitri',this)">🧴 Fitri</button>
     <button type="button" class="cek-subtab" data-cek="rupa" onclick="switchCekSub('rupa',this)">📦 Rupa Rupa</button>
-    <button type="button" class="cek-subtab" data-cek="cust" onclick="switchCekSub('cust',this)">🏪 Fitri Sales/Customer</button>
     <span class="cek-alert-flags" id="cekAlertFlags" title="Ada selisih Gudang/Penjualan yang perlu dicek"></span>
   </div>
 
@@ -1147,44 +1252,6 @@ body.dark #page-gudang .gudang-subtabs .gudang-view-toggle select{
     </div>
   </div>
 
-  <div id="cekPanelCust" class="cek-panel">
-    <div class="card">
-      <div class="cs-kpis" id="cekCustKpis">
-        <div class="cs-kpi"><small>nama sales</small><b id="cekCustKpiSales">Semua Sales</b></div>
-        <div id="cekCustKpiDyn" style="display:contents">
-          <div class="cs-kpi"><small>jumlah Toko/Customer</small><b>0</b></div>
-          <div class="cs-kpi cs-total"><small>Total</small><b>0</b></div>
-        </div>
-      </div>
-      <div class="cek-card-head">
-        <div class="cek-card-title">🏪 FITRI — SALES / CUSTOMER</div>
-        <div class="cek-card-actions">
-          <label for="cekCustMonth">Bulan</label>
-          <select id="cekCustMonth" onchange="renderCekCust()">
-            <option value="">Semua bulan</option>
-          </select>
-          <label for="cekCustSales">Sales</label>
-          <select id="cekCustSales" onchange="renderCekCustView()">
-            <option value="">Semua Sales</option>
-          </select>
-          <label for="cekCustMin" title="Tampilkan toko dengan total qty Fitri sama dengan atau lebih dari angka ini">Ambang ≥</label>
-          <input type="number" id="cekCustMin" min="0" step="10" placeholder="0" oninput="renderCekCustView()" title="Kosong / 0 = tampilkan semua">
-          <input type="search" id="cekCustSearch" class="cek-search" placeholder="Cari toko / alamat..." oninput="renderCekCustView()">
-          <button type="button" class="cek-refresh-btn" onclick="renderCekCust()" title="Segarkan">↻</button>
-          <button type="button" onclick="downloadCekCust()">⬇ Download</button>
-        </div>
-      </div>
-      <div class="tablebox" id="cekCustBox">
-        <table id="cekCustTable">
-          <thead id="cekCustThead"></thead>
-          <tbody id="cekCustTbody">
-            <tr><td style="text-align:center;padding:24px;color:#64748b">Belum ada data.</td></tr>
-          </tbody>
-          <tfoot id="cekCustTfoot"></tfoot>
-        </table>
-      </div>
-    </div>
-  </div>
 </div>
 
 <!-- ===== PAGE ANALISA (TAB UTAMA BARU) ===== -->
@@ -1435,7 +1502,7 @@ body.dark #page-gudang .gudang-subtabs .gudang-view-toggle select{
   }
   async function pullFromCloud(opts){
     opts = opts || {};
-    if (!sbClient || !useIDB) { await restoreFromDB(); await loadGudangFromDB(); return; }
+    if (!sbClient || !useIDB) { await restoreFromDB(); await loadGudangFromDB(); await rrLoadAll(); return; }
     try {
       const { data, error } = await sbClient.from('app_sync').select('data,updated_at').eq('id', SYNC_ROW_ID).maybeSingle();
       if (error) throw error;
@@ -1459,6 +1526,7 @@ body.dark #page-gudang .gudang-subtabs .gudang-view-toggle select{
     } finally {
       await restoreFromDB();
       await loadGudangFromDB();
+      await rrLoadAll();
       if (!opts.silent) setStatus('Data tersinkron dari cloud.');
     }
   }
@@ -3266,7 +3334,7 @@ self.onmessage = function(e){
     isSyncingFromCloud=true;
     try{ await db.tx.clear(); if(backup.tx.length) await db.tx.bulkPut(backup.tx); await db.meta.clear(); if(Array.isArray(backup.meta) && backup.meta.length) await db.meta.bulkPut(backup.meta); }
     finally{isSyncingFromCloud=false;}
-    await restoreFromDB(); await loadGudangFromDB(); await refreshAfterDataChange();
+    await restoreFromDB(); await loadGudangFromDB(); await rrLoadAll(); await refreshAfterDataChange();
     if(sbClient) schedulePush();
     setStatus('Restore berhasil: '+backup.tx.length.toLocaleString('id-ID')+' transaksi.');
     return true;
@@ -3659,35 +3727,17 @@ self.onmessage = function(e){
     if (btn) btn.classList.add('active');
     const pf = document.getElementById('cekPanelFitri');
     const pr = document.getElementById('cekPanelRupa');
-    const pc = document.getElementById('cekPanelCust');
     if (pf) pf.classList.toggle('active', which === 'fitri');
     if (pr) pr.classList.toggle('active', which === 'rupa');
-    if (pc) pc.classList.toggle('active', which === 'cust');
-    if (which === 'cust') stopCekFlagAnimation();
     renderCekActive(which);
   }
   function renderCekActive(which){
     if (!which) { const a = document.querySelector('#page-cek .cek-subtab.active'); which = (a && a.dataset && a.dataset.cek) || 'fitri'; }
     if (which === 'rupa') return renderCekRupa();
-    if (which === 'cust') return renderCekCust();
     return renderCekFitri();
   }
 
   // ===== Cek > Fitri Sales/Customer =====
-  let _cekCustSrc = [];
-  let _cekCustLast = null;
-  let _cekCustMonthInit = false;
-  async function populateCekCustMonths(){
-    const sel = document.getElementById('cekCustMonth'); if (!sel) return;
-    const arr = await collectCekMonths('fitri');
-    const current = sel.value;
-    sel.innerHTML = '<option value="">Semua bulan</option>' + arr.map(m => '<option value="' + m + '">' + monthLabel(m) + '</option>').join('');
-    if (arr.includes(current)) sel.value = current;
-    else if (current === '' && _cekCustMonthInit) sel.value = '';
-    else if (arr.length) sel.value = pickLatestMonth(arr);
-    else sel.value = '';
-    _cekCustMonthInit = true;
-  }
   function fitriSizeInfo(name){
     const s = String(name ?? '').toUpperCase();
     let m = s.match(/(\d+(?:[.,]\d+)?)\s*(ML|LT|L)\b/);
@@ -3698,117 +3748,6 @@ self.onmessage = function(e){
     ml = Math.round(ml);
     return { key: 'ML' + ml, label: 'FITRI ' + ml + 'ML', ml };
   }
-  async function renderCekCust(){
-    await populateCekCustMonths();
-    const month = document.getElementById('cekCustMonth')?.value || '';
-    _cekCustSrc = await getCekSourceRows(month, { mode: 'fitri' });
-    const sel = document.getElementById('cekCustSales');
-    if (sel) {
-      const set = new Set();
-      _cekCustSrc.forEach(x => { const sl = normSales(x.sales ?? x.Sales); if (sl) set.add(sl); });
-      const list = [...set].sort((a, b) => { const ia = SO.indexOf(a), ib = SO.indexOf(b); return ((ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib)) || a.localeCompare(b, 'id'); });
-      const cur = sel.value;
-      sel.innerHTML = '<option value="">Semua Sales</option>' + list.map(v => '<option value="' + escHtml(v) + '">' + escHtml(v) + '</option>').join('');
-      sel.value = list.includes(cur) ? cur : '';
-    }
-    renderCekCustView();
-  }
-  function cekCustBuild(){
-    const month = document.getElementById('cekCustMonth')?.value || '';
-    const salesSel = document.getElementById('cekCustSales')?.value || '';
-    const q = U(document.getElementById('cekCustSearch')?.value || '');
-    const minRaw = document.getElementById('cekCustMin')?.value;
-    const minQty = (minRaw === '' || minRaw == null) ? 0 : (parseFloat(minRaw) || 0);
-    const sizeMap = new Map();
-    _cekCustSrc.forEach(x => { const sz = fitriSizeInfo(x.produk ?? x.Produk); if (!sizeMap.has(sz.key)) sizeMap.set(sz.key, sz); });
-    const sizes = [...sizeMap.values()].sort((a, b) => (a.ml === b.ml ? a.label.localeCompare(b.label, 'id') : (a.ml < b.ml ? -1 : 1)));
-    const groups = new Map();
-    for (let i = 0; i < _cekCustSrc.length; i++) {
-      const x = _cekCustSrc[i];
-      const sl = normSales(x.sales ?? x.Sales); if (!sl) continue;
-      if (salesSel && sl !== salesSel) continue;
-      const sz = fitriSizeInfo(x.produk ?? x.Produk);
-      const cust = String(x.customer ?? x.Customer ?? '').trim();
-      const kd = String(x.kdCustomer ?? x['Kd Customer'] ?? '').trim();
-      const alamat = String(x.alamat ?? x.Alamat ?? '').trim();
-      const gk = kd ? 'K|' + U(kd) : 'N|' + U(cust) + '|' + U(alamat);
-      let g = groups.get(gk);
-      if (!g) { g = { gk: gk, customer: cust, alamat: '', sales: new Set(), qty: {}, total: 0, dates: new Set() }; groups.set(gk, g); }
-      if (!g.customer && cust) g.customer = cust;
-      if (!g.alamat && alamat) g.alamat = alamat;
-      g.sales.add(sl);
-      const j = N(x.jumlah ?? x.Jumlah);
-      g.qty[sz.key] = (g.qty[sz.key] || 0) + j;
-      g.total += j;
-      const dk = cekDateKey(x.tanggal ?? x.Tanggal); if (dk) g.dates.add(dk);
-    }
-    const dl = (k) => { const p = k.split('-'); return p[2] + '/' + p[1] + (month ? '' : '/' + p[0].slice(2)); };
-    let list = [...groups.values()].map(g => {
-      g.customer = g.customer || '(Tanpa Customer)';
-      g.salesLabel = [...g.sales].sort((a, b) => a.localeCompare(b, 'id')).join(' & ');
-      g.dateKeys = [...g.dates].sort();
-      g.tglText = g.dateKeys.map(dl).join(' & ');
-      return g;
-    });
-    if (q) list = list.filter(g => U(g.customer).includes(q) || U(g.alamat).includes(q) || g.salesLabel.includes(q));
-    if (minQty > 0) list = list.filter(g => g.total >= minQty);
-    list.sort((a, b) => a.salesLabel.localeCompare(b.salesLabel, 'id') || a.customer.localeCompare(b.customer, 'id'));
-    const sizeTot = {}; let grand = 0;
-    list.forEach(g => { sizes.forEach(z => { sizeTot[z.key] = (sizeTot[z.key] || 0) + (g.qty[z.key] || 0); }); grand += g.total; });
-    const now = new Date(); const curMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-    const tglHead = !month ? 'TGL ORDER' : (month === curMonth ? 'TGL ORDER BULAN INI' : 'TGL ORDER ' + monthLabel(month).toUpperCase());
-    return { list, sizes, sizeTot, grand, tglHead, month, salesSel, minQty };
-  }
-  function renderCekCustView(){
-    const d = cekCustBuild();
-    _cekCustLast = d;
-    const { list, sizes, sizeTot, grand, tglHead } = d;
-    const nfx = v => v ? nfQty(v) : '-';
-    const ks = document.getElementById('cekCustKpiSales');
-    if (ks) ks.textContent = d.salesSel || 'Semua Sales';
-    const kd = document.getElementById('cekCustKpiDyn');
-    if (kd) {
-      kd.innerHTML = '<div class="cs-kpi"><small>jumlah Toko/Customer</small><b>' + list.length.toLocaleString('id-ID') + '</b></div>' +
-        sizes.map(z => '<div class="cs-kpi"><small>' + escHtml(z.label.replace(/^FITRI/, 'Fitri')) + '</small><b>' + nfQty(sizeTot[z.key] || 0) + '</b></div>').join('') +
-        '<div class="cs-kpi cs-total"><small>Total</small><b>' + nfQty(grand) + '</b></div>';
-    }
-    const thead = document.getElementById('cekCustThead');
-    const tbody = document.getElementById('cekCustTbody');
-    const tfoot = document.getElementById('cekCustTfoot');
-    if (sizes.length) {
-      thead.innerHTML = '<tr><th rowspan="2">NO</th><th rowspan="2">SALES</th><th rowspan="2">TOKO/CUSTOMER</th><th rowspan="2">ALAMAT</th><th colspan="' + sizes.length + '">TOTAL QTY/ ITEM</th><th rowspan="2">TOTAL</th><th rowspan="2">' + escHtml(tglHead) + '</th></tr><tr>' + sizes.map(z => '<th>' + escHtml(z.label) + '</th>').join('') + '</tr>';
-    } else {
-      thead.innerHTML = '<tr><th>NO</th><th>SALES</th><th>TOKO/CUSTOMER</th><th>ALAMAT</th><th>TOTAL</th><th>' + escHtml(tglHead) + '</th></tr>';
-    }
-    const ncol = 6 + sizes.length;
-    if (!list.length) {
-      tbody.innerHTML = '<tr><td colspan="' + ncol + '" style="text-align:center;padding:28px;color:#64748b">' + (_cekCustSrc.length ? 'Tidak ada customer yang cocok dengan filter (cek Sales / Ambang / pencarian).' : 'Belum ada data penjualan FITRI.') + '</td></tr>';
-      tfoot.innerHTML = '';
-      return;
-    }
-    let b = '';
-    list.forEach((g, i) => {
-      b += '<tr><td class="c">' + (i + 1) + '</td><td>' + escHtml(g.salesLabel) + '</td><td>' + escHtml(g.customer) + '</td><td>' + escHtml(g.alamat) + '</td>' +
-        sizes.map(z => '<td class="c">' + nfx(g.qty[z.key]) + '</td>').join('') +
-        '<td class="tot">' + nfQty(g.total) + '</td><td class="tgl">' + fmtCustTglCell('cek', g) + '</td></tr>';
-    });
-    tbody.innerHTML = b;
-    tfoot.innerHTML = '<tr><td colspan="4" class="lbl">TOTAL</td>' + sizes.map(z => '<td>' + nfx(sizeTot[z.key]) + '</td>').join('') + '<td>' + nfQty(grand) + '</td><td></td></tr>';
-  }
-  function downloadCekCust(){
-    if (!_cekCustLast || !_cekCustLast.list.length) return alert('Belum ada data untuk diunduh.');
-    const { list, sizes, sizeTot, grand, tglHead, month, salesSel, minQty } = _cekCustLast;
-    const head = ['NO', 'SALES', 'TOKO/CUSTOMER', 'ALAMAT', ...sizes.map(z => z.label), 'TOTAL', tglHead];
-    const rows = list.map((g, i) => [i + 1, g.salesLabel, g.customer, g.alamat, ...sizes.map(z => g.qty[z.key] || 0), g.total, g.tglText]);
-    const foot = ['', '', 'TOTAL', '', ...sizes.map(z => sizeTot[z.key] || 0), grand, ''];
-    const ws = XLSX.utils.aoa_to_sheet([head, ...rows, foot]);
-    ws['!cols'] = [{ wch: 5 }, { wch: 16 }, { wch: 28 }, { wch: 22 }, ...sizes.map(() => ({ wch: 13 })), { wch: 8 }, { wch: 34 }];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Fitri Sales-Customer');
-    XLSX.writeFile(wb, 'Fitri_Sales_Customer' + (month ? '_' + month : '') + (salesSel ? '_' + salesSel : '') + (minQty > 0 ? '_min' + minQty : '') + '.xlsx');
-  }
-
-
   function fmtCustTglCell(which, g){
     const keys = g.dateKeys || [];
     if (keys.length < 2) return escHtml(g.tglText || '');
@@ -3820,8 +3759,8 @@ self.onmessage = function(e){
     if (ov) ov.classList.remove('show');
   }
   function openCustTglModal(which, gk){
-    const last = which === 'scs' ? _scsCustLast : _cekCustLast;
-    const src = which === 'scs' ? _scsCustSrc : _cekCustSrc;
+    const last = _scsCustLast;
+    const src = _scsCustSrc;
     if (!last || !last.list) return alert('Data belum siap.');
     const g = last.list.find(x => x.gk === gk);
     if (!g) return alert('Customer tidak ditemukan.');
@@ -4267,7 +4206,7 @@ self.onmessage = function(e){
       const merged = mergeGudangData(gudangData, parsed);
       gudangData = merged;
       await saveGudangToDB(merged);
-      if (_gudangSub === 'rupa') renderGudangRupaPage(gudangRupaData);
+      if (_gudangSub === 'rupa') rrRenderAll();
       else renderGudangPage(merged);
       renderCekFitri();
       refreshAnalisaIfVisible();
@@ -4280,7 +4219,7 @@ self.onmessage = function(e){
     if (!confirm('Hapus SEMUA data gudang dari SEMUA bulan yang tersimpan? Tindakan ini tidak bisa dibatalkan.')) return;
     gudangData = null;
     if (useIDB){ try{ await db.meta.delete('gudangData'); } catch(e){} }
-    if (_gudangSub === 'rupa') renderGudangRupaPage(gudangRupaData);
+    if (_gudangSub === 'rupa') rrRenderAll();
     else renderGudangPage(null);
     renderCekFitri(); setGudangStatus('Data gudang sudah dihapus.');
     closeGudangDd(); schedulePush();
@@ -4309,7 +4248,7 @@ self.onmessage = function(e){
     recomputeGudangStok(gudangData);
     if (!gudangData.rows.length) gudangData = null;
     if (useIDB){ try{ if (gudangData) await db.meta.put({key:'gudangData', value:gudangData}); else await db.meta.delete('gudangData'); } catch(e){ console.warn('save gudang', e); } }
-    if (_gudangSub === 'rupa') renderGudangRupaPage(gudangRupaData);
+    if (_gudangSub === 'rupa') rrRenderAll();
     else renderGudangPage(gudangData);
     populateGudangDeleteMonth(); renderCekFitri();
     setGudangStatus('Data gudang bulan ' + monthLabel(month) + ' sudah dihapus.');
@@ -4329,7 +4268,7 @@ self.onmessage = function(e){
         if (recRupa && recRupa.value){ gudangRupaData = recRupa.value; }
       } catch(e){ console.warn('load gudang', e); }
     }
-    if (_gudangSub === 'rupa') renderGudangRupaPage(gudangRupaData);
+    if (_gudangSub === 'rupa') rrRenderAll();
     else renderGudangPage(gudangData);
     renderCekFitri();
     refreshAnalisaIfVisible();
@@ -4347,7 +4286,7 @@ self.onmessage = function(e){
     try { localStorage.setItem('gudang-view-mode', _gudangViewMode); } catch(e){}
     const sel = document.getElementById('gudangViewMode');
     if (sel) sel.value = _gudangViewMode;
-    if (_gudangSub === 'rupa') renderGudangRupaPage(gudangRupaData);
+    if (_gudangSub === 'rupa') rrRenderAll();
     else renderGudangPage(gudangData);
   }
   function switchGudangSub(which, btn){
@@ -4361,16 +4300,16 @@ self.onmessage = function(e){
     const fitriPanel = document.getElementById('gudangFitriPanel');
     const rupaPanel  = document.getElementById('gudangRupaPanel');
     const fitriToolbar = document.getElementById('gudangToolbarFitri');
-    const rupaToolbar  = document.getElementById('gudangToolbarRupa');
+    const vtg = document.getElementById('gudangViewToggleWrap');
     if (fitriPanel) fitriPanel.style.display = (_gudangSub === 'fitri') ? 'block' : 'none';
     if (rupaPanel)  rupaPanel.style.display  = (_gudangSub === 'rupa')  ? 'block' : 'none';
     if (fitriToolbar) fitriToolbar.style.display = (_gudangSub === 'fitri') ? 'flex' : 'none';
-    if (rupaToolbar)  rupaToolbar.style.display  = (_gudangSub === 'rupa')  ? 'flex' : 'none';
-    if (_gudangSub === 'rupa') renderGudangRupaPage(gudangRupaData);
+    if (vtg) vtg.style.display = (_gudangSub === 'fitri') ? 'flex' : 'none';
+    if (_gudangSub === 'rupa') rrRenderAll();
     else renderGudangPage(gudangData);
   }
   function renderGudangPage(data){
-    if (_gudangSub === 'rupa') { renderGudangRupaPage(gudangRupaData); return; }
+    if (_gudangSub === 'rupa') { rrRenderAll(); return; }
     const kpiBox = document.getElementById('gudangKpis');
     const thead  = document.getElementById('gudangThead');
     const tbody  = document.getElementById('gudangTbody');
@@ -4414,9 +4353,6 @@ self.onmessage = function(e){
       return '<div class="gkpi" onclick="openGInputModal(\'' + escJsAttr(p) + '\')" title="Klik untuk input Masuk / Keluar"><span class="gk-label">' + escHtml(p) + '</span><span class="gk-stok">Stok: ' + nfQty(last) + '</span><span class="gk-meta">Masuk <b>' + nfQty(totMasuk) + '</b> &nbsp;•&nbsp; Keluar <b>' + nfQty(totKeluar) + '</b></span><span class="gk-hint">✏️ klik untuk input</span></div>';
     }).join('');
     if (_gudangViewMode === 'bulan') {
-      // ===== Tampilan Data / Bulan =====
-      // Layout: BULAN | Produk (STOK AWAL, MASUK, KELUAR, STOK AKHIR) ...
-      // STOK AWAL = saldo awal bulan tsb (stok akhir bulan sebelumnya / saldo awal global)
       const monthMap = new Map();
       rowsFiltered.forEach(r => {
         const mk = monthKeyUTC(r.tanggal);
@@ -4432,7 +4368,6 @@ self.onmessage = function(e){
         products.map(() => '<th>STOK AWAL</th><th>MASUK</th><th>KELUAR</th><th>STOK AKHIR</th>').join('') +
         '</tr>';
 
-      // Hitung stok berjalan lintas bulan (mulai dari displaySaldoAwal)
       const runningStok = {};
       products.forEach(p => { runningStok[p] = N(displaySaldoAwal[p]); });
       const monthAgg = [];
@@ -4468,7 +4403,6 @@ self.onmessage = function(e){
       });
       tbody.innerHTML = body || '<tr><td colspan="' + (1 + products.length * 4) + '" style="text-align:center;padding:24px;color:#64748b">Belum ada data bulan ini.</td></tr>';
     } else {
-      // ===== Tampilan Data / Tgl (yang lama, tidak berubah) =====
       thead.innerHTML = '<tr><th rowspan="2">TANGGAL</th>' +
         products.map(p => '<th colspan="3">' + escHtml(p) + '</th>').join('') +
         '</tr><tr>' +
@@ -4492,133 +4426,580 @@ self.onmessage = function(e){
     populateGudangDeleteMonth();
   }
 
-  function toggleGudangRupaDd(){ document.getElementById('gudangRupaDd').classList.toggle('open') }
-  function closeGudangRupaDd(){ document.getElementById('gudangRupaDd').classList.remove('open') }
+  // ===== (Legacy Rupa Rupa functions - kept for compatibility, tidak dipakai lagi) =====
+  function toggleGudangRupaDd(){ const el = document.getElementById('gudangRupaDd'); if (el) el.classList.toggle('open'); }
+  function closeGudangRupaDd(){ const el = document.getElementById('gudangRupaDd'); if (el) el.classList.remove('open'); }
   function setGudangRupaStatus(msg){ const el = document.getElementById('gudangRupaStatus'); if (el) el.textContent = msg; }
+  async function processGudangRupaFile(){ alert('Fitur lama sudah diganti. Gunakan menu ☰ di panel Rupa Rupa.'); }
+  async function saveGudangRupaToDB(data){ if (useIDB){ try{ await db.meta.put({key:'gudangRupaData', value:data}); } catch(e){} } schedulePush(); }
+  async function clearGudangRupaData(){ if (!confirm('Hapus SEMUA data Rupa Rupa lama?')) return; gudangRupaData = null; if (useIDB){ try{ await db.meta.delete('gudangRupaData'); } catch(e){} } schedulePush(); }
+  function renderGudangRupaPage(data){ /* Legacy, no-op. Diganti oleh rrRenderAll(). */ }
 
-  function parseGudangRupaSheet(wb){
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const grid = XLSX.utils.sheet_to_json(ws, {header:1, defval:null, raw:true});
-    if (!grid || !grid.length) return null;
-    let headerRowIdx = -1; let colIdx = {};
+  /* ================= RUPA RUPA (integrasi dari RUPA RUPA.html) ================= */
+  const RR_META_KEY = 'rupaRupaCategories';
+  let rrCategories = [];
+  let rrCurrentKategori = '';
+  let rrCurrentSearch = '';
+  let rrViewMode = 'bulan';
+
+  const rrN  = x => { const n = Number(x); return isFinite(n) ? n : 0; };
+  const rrU  = x => String(x ?? '').trim().toUpperCase();
+  const rrEsc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const rrNf = x => Math.round(rrN(x)).toLocaleString('id-ID');
+
+  async function rrLoadAll(){
+    rrCategories = [];
+    try{
+      if (useIDB && db){
+        const rec = await db.meta.get(RR_META_KEY);
+        if (rec && Array.isArray(rec.value)) rrCategories = rec.value;
+      } else {
+        const raw = localStorage.getItem('rekap-rupa-categories');
+        if (raw) rrCategories = JSON.parse(raw) || [];
+      }
+    } catch(e){ console.warn('rrLoadAll', e); }
+    rrCategories.sort((a,b) => String(a.nama).localeCompare(String(b.nama), 'id'));
+    rrRenderAll();
+  }
+
+  async function rrSaveAll(){
+    try{
+      if (useIDB && db) await db.meta.put({ key: RR_META_KEY, value: rrCategories });
+      else localStorage.setItem('rekap-rupa-categories', JSON.stringify(rrCategories));
+    } catch(e){ console.warn('rrSaveAll', e); }
+    try { schedulePush(); } catch(e){}
+  }
+
+  function rrExcelSerialToUTCDate(serial){ return new Date(Math.round((Number(serial) - 25569) * 86400000)); }
+
+  function rrParseMatrixFormat(grid){
+    let headerRowIdx = -1, tglCol = -1;
+    const scanLimit = Math.min(grid.length, 8);
+    for (let r = 0; r < scanLimit; r++){
+      const row = grid[r] || [];
+      for (let c = 0; c < row.length; c++){
+        if (rrU(row[c]) === 'TANGGAL'){ headerRowIdx = r; tglCol = c; break; }
+      }
+      if (headerRowIdx >= 0) break;
+    }
+    if (headerRowIdx < 0 || tglCol < 0) return null;
+    const headerRow = grid[headerRowIdx] || [];
+    const products = [];
+    for (let c = tglCol + 1; c < headerRow.length; c += 3){
+      const name = String(headerRow[c] ?? '').trim();
+      if (name) products.push({ name, col: c });
+    }
+    if (!products.length) return null;
+    let saldoRowIdx = -1;
+    const saldoScan = Math.min(grid.length, headerRowIdx + 6);
+    for (let r = headerRowIdx + 1; r < saldoScan; r++){
+      const row = grid[r] || [];
+      if (rrU(row[tglCol]) === 'STOK AWAL'){ saldoRowIdx = r; break; }
+    }
+    if (saldoRowIdx < 0) return null;
+    const saldoRow = grid[saldoRowIdx] || [];
+    const saldoAwal = {};
+    products.forEach(p => { saldoAwal[p.name] = rrN(saldoRow[p.col + 2]); });
+    const rows = [];
+    for (let r = saldoRowIdx + 1; r < grid.length; r++){
+      const row = grid[r] || [];
+      const first = row[tglCol];
+      if (first == null || first === '') continue;
+      let dt = null;
+      if (typeof first === 'number') dt = rrExcelSerialToUTCDate(first);
+      else if (first instanceof Date) dt = new Date(Date.UTC(first.getFullYear(), first.getMonth(), first.getDate()));
+      else {
+        const s = String(first).trim();
+        const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+        if (m){ let y = +m[3]; if (y < 100) y += 2000; dt = new Date(Date.UTC(y, +m[2]-1, +m[1])); }
+        else { const d2 = new Date(s); if (!isNaN(d2.getTime())) dt = new Date(Date.UTC(d2.getFullYear(), d2.getMonth(), d2.getDate())); }
+      }
+      if (!dt || isNaN(dt.getTime())) continue;
+      const values = {};
+      products.forEach(p => {
+        const msk = row[p.col], klr = row[p.col+1], stk = row[p.col+2];
+        values[p.name] = {
+          masuk:  (msk == null || msk === '') ? 0 : rrN(msk),
+          keluar: (klr == null || klr === '') ? 0 : rrN(klr),
+          stok:   (stk == null || stk === '') ? null : rrN(stk)
+        };
+      });
+      rows.push({ ts: dt.getTime(), tanggal: dt, values });
+    }
+    rows.sort((a,b) => a.ts - b.ts);
+    return { products: products.map(p => p.name), saldoAwal, rows };
+  }
+
+  function rrParseFlatFormat(grid){
+    let headerRowIdx = -1, col = {};
     const maxScan = Math.min(grid.length, 15);
     for (let r = 0; r < maxScan; r++){
       const row = grid[r] || [];
-      const localIdx = {};
-      for (let c = 0; c < row.length; c++){
-        const h = String(row[c] ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+      const c = {};
+      for (let i = 0; i < row.length; i++){
+        const h = String(row[i] ?? '').trim().toLowerCase().replace(/\s+/g,' ');
         if (!h) continue;
-        if (localIdx.nama      === undefined && /^(nama produk|nama barang|produk)$/.test(h)) localIdx.nama = c;
-        else if (localIdx.kode      === undefined && /^(kode|kode produk|kode barang|kd|kd produk)$/.test(h)) localIdx.kode = c;
-        else if (localIdx.stokAwal  === undefined && /^(stok awal|saldo awal|stok awal qty)$/.test(h)) localIdx.stokAwal = c;
-        else if (localIdx.masuk     === undefined && /^(masuk|qty masuk|jumlah masuk)$/.test(h)) localIdx.masuk = c;
-        else if (localIdx.keluar    === undefined && /^(keluar|qty keluar|jumlah keluar)$/.test(h)) localIdx.keluar = c;
-        else if (localIdx.stokAkhir === undefined && /^(stok akhir|saldo akhir|stok akhir qty)$/.test(h)) localIdx.stokAkhir = c;
-        else if (localIdx.sat       === undefined && /^(sat|satuan|unit)$/.test(h)) localIdx.sat = c;
-        else if (localIdx.no        === undefined && /^(no|no\.|nomor)$/.test(h)) localIdx.no = c;
+        if (c.nama === undefined && /^(nama produk|nama barang|produk|nama)$/.test(h)) c.nama = i;
+        else if (c.stokAwal === undefined && /^(stok awal|saldo awal)$/.test(h)) c.stokAwal = i;
+        else if (c.masuk === undefined && /^(masuk|qty masuk|jumlah masuk)$/.test(h)) c.masuk = i;
+        else if (c.keluar === undefined && /^(keluar|qty keluar|jumlah keluar)$/.test(h)) c.keluar = i;
+        else if (c.stokAkhir === undefined && /^(stok akhir|saldo akhir)$/.test(h)) c.stokAkhir = i;
       }
-      if (localIdx.nama !== undefined && localIdx.stokAkhir !== undefined){ headerRowIdx = r; colIdx = localIdx; break; }
+      if (c.nama !== undefined && c.stokAkhir !== undefined){ headerRowIdx = r; col = c; break; }
     }
     if (headerRowIdx < 0) return null;
-    const out = [];
+    const products = [], saldoAwal = {}, values = {};
     for (let r = headerRowIdx + 1; r < grid.length; r++){
       const row = grid[r] || [];
-      const nama = String(row[colIdx.nama] ?? '').trim();
+      const nama = String(row[col.nama] ?? '').trim();
       if (!nama) continue;
-      if (/^(total|jumlah total|grand total|sub total|subtotal)\b/i.test(nama)) continue;
-      const kode = colIdx.kode !== undefined ? String(row[colIdx.kode] ?? '').trim() : '';
-      out.push({
-        kode, nama,
-        stokAwal:  colIdx.stokAwal  !== undefined ? N(row[colIdx.stokAwal])  : 0,
-        masuk:     colIdx.masuk     !== undefined ? N(row[colIdx.masuk])     : 0,
-        keluar:    colIdx.keluar    !== undefined ? N(row[colIdx.keluar])    : 0,
-        stokAkhir: colIdx.stokAkhir !== undefined ? N(row[colIdx.stokAkhir]) : 0,
-        sat:       colIdx.sat       !== undefined ? String(row[colIdx.sat] ?? '').trim() : ''
-      });
+      if (/^(total|jumlah|grand total|sub total|subtotal)\b/i.test(nama)) continue;
+      products.push(nama);
+      saldoAwal[nama] = col.stokAwal !== undefined ? rrN(row[col.stokAwal]) : 0;
+      values[nama] = {
+        masuk:  col.masuk     !== undefined ? rrN(row[col.masuk])     : 0,
+        keluar: col.keluar    !== undefined ? rrN(row[col.keluar])    : 0,
+        stok:   col.stokAkhir !== undefined ? rrN(row[col.stokAkhir]) : null
+      };
     }
+    if (!products.length) return null;
+    const now = new Date();
+    return { products, saldoAwal, rows: [{ ts: now.getTime(), tanggal: now, values }] };
+  }
+
+  function rrSuggestCategoryName(filename){
+    let s = String(filename || '').replace(/\.(xlsx?|xls)$/i, '');
+    s = s.replace(/^(stok|stock|data)[\s_\-]*/i, '');
+    s = s.replace(/[\s_\-]+/g, ' ').trim();
+    return s.toUpperCase();
+  }
+
+  async function rrProcessFile(){
+    const inp = document.getElementById('rrFileInput');
+    const f = inp && inp.files && inp.files[0];
+    if (!f) return alert('Pilih file Excel terlebih dahulu.');
+    const katInp = document.getElementById('rrKategoriInput');
+    let kategori = (katInp.value || '').trim();
+    if (!kategori){
+      kategori = rrSuggestCategoryName(f.name) || prompt('Nama kategori untuk file ini:', '') || '';
+      if (!kategori) return alert('Isi nama kategori terlebih dahulu.');
+      katInp.value = kategori;
+    }
+    kategori = kategori.toUpperCase();
+    const existing = rrCategories.find(c => rrU(c.nama) === kategori);
+    if (existing && !confirm('Kategori "' + kategori + '" sudah ada. Ganti dengan isi file baru?')) return;
+    rrSetStatusUpload('Memproses ' + f.name + '...');
+    try{
+      const buf = await f.arrayBuffer();
+      const wb = XLSX.read(buf, { type:'array', cellDates:true });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const grid = XLSX.utils.sheet_to_json(ws, { header:1, defval:null, raw:true });
+      let parsed = rrParseMatrixFormat(grid);
+      let formatUsed = 'matrix';
+      if (!parsed){ parsed = rrParseFlatFormat(grid); formatUsed = 'flat'; }
+      if (!parsed){
+        rrSetStatusUpload('Format file tidak dikenali.', 'err');
+        return alert('Format file tidak dikenali.\n\nFormat yang didukung:\n1) Matrix: baris pertama berisi TANGGAL + nama produk (tiap produk 3 kolom: msk/klr/stok), dengan baris "stok awal".\n2) Tabel datar: kolom Nama Produk + Stok Akhir.');
+      }
+      const record = {
+        nama: kategori, products: parsed.products, saldoAwal: parsed.saldoAwal,
+        rows: parsed.rows, uploadedAt: new Date().toISOString(),
+        sourceFile: f.name, format: formatUsed
+      };
+      const i = rrCategories.findIndex(c => rrU(c.nama) === kategori);
+      if (i >= 0) rrCategories[i] = record; else rrCategories.push(record);
+      await rrSaveAll();
+      rrRenderAll();
+      rrSetStatusUpload('✅ ' + f.name + ' → Kategori "' + kategori + '" · ' + parsed.products.length + ' produk · ' + parsed.rows.length.toLocaleString('id-ID') + ' baris tanggal (format: ' + formatUsed + ').', 'ok');
+      inp.value = ''; katInp.value = ''; rrCloseAllDd();
+    } catch(e){ console.error(e); rrSetStatusUpload('Gagal memproses: ' + (e.message || e), 'err'); }
+  }
+
+  async function rrClearAll(){
+    if (!rrCategories.length) return alert('Belum ada data.');
+    if (!confirm('Hapus SEMUA kategori yang tersimpan? Tindakan ini tidak bisa dibatalkan.')) return;
+    rrCategories = []; rrCurrentKategori = '';
+    const s = document.getElementById('rrSearchInput'); if (s) s.value = '';
+    await rrSaveAll(); rrRenderAll(); rrSetStatusUpload('Semua data sudah dihapus.');
+  }
+
+  async function rrDeleteCategory(){
+    if (!rrCurrentKategori) return;
+    const count = rrKategoriProdukCount(rrCurrentKategori);
+    if (!confirm('Hapus kategori "' + rrCurrentKategori + '" beserta ' + count + ' produk di dalamnya?')) return;
+    const namaHapus = rrCurrentKategori;
+    rrCategories = rrCategories.filter(c => rrU(c.nama) !== rrU(namaHapus));
+    rrCurrentKategori = '';
+    await rrSaveAll(); rrRenderAll(); rrSetStatusUpload('Kategori "' + namaHapus + '" dihapus.');
+  }
+
+  function rrKategoriProdukCount(nama){
+    const c = rrCategories.find(x => rrU(x.nama) === rrU(nama));
+    return c ? (c.products || []).length : 0;
+  }
+
+  function rrToggleDd(e, id){
+    if (e) e.stopPropagation();
+    const target = document.getElementById(id);
+    if (!target) return;
+    const isOpen = target.classList.contains('open');
+    rrCloseAllDd();
+    if (!isOpen) target.classList.add('open');
+  }
+  function rrCloseAllDd(){ document.querySelectorAll('.rr-app .dd.open').forEach(x => x.classList.remove('open')); }
+
+  function rrSetViewMode(mode){
+    rrViewMode = (mode === 'tgl') ? 'tgl' : 'bulan';
+    const b1 = document.getElementById('rrModeBulan'), b2 = document.getElementById('rrModeTgl');
+    if (b1) b1.classList.toggle('active', rrViewMode === 'bulan');
+    if (b2) b2.classList.toggle('active', rrViewMode === 'tgl');
+    rrRender();
+  }
+
+  function rrPopulateKategoriDropdown(){
+    const sel = document.getElementById('rrKategoriSel'); if (!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">Semua Kategori</option>' +
+      rrCategories.map(c => '<option value="' + rrEsc(c.nama) + '">' + rrEsc(c.nama) + ' (' + (c.products || []).length + ')</option>').join('');
+    sel.value = rrCategories.some(c => c.nama === cur) ? cur : '';
+    const dl = document.getElementById('rrKategoriList');
+    if (dl) dl.innerHTML = rrCategories.map(c => '<option value="' + rrEsc(c.nama) + '">').join('');
+    const btn = document.getElementById('rrBtnDeleteCat');
+    if (btn) btn.disabled = !sel.value;
+  }
+
+  function rrSummarizeCategory(cat){
+    const out = [];
+    (cat.products || []).forEach(p => {
+      const stokAwal = rrN((cat.saldoAwal || {})[p]);
+      let masuk = 0, keluar = 0, stokAkhir = stokAwal;
+      (cat.rows || []).forEach(r => {
+        const v = r.values[p]; if (!v) return;
+        masuk += rrN(v.masuk); keluar += rrN(v.keluar);
+        if (v.stok != null) stokAkhir = v.stok;
+      });
+      out.push({ nama: p, stokAwal, masuk, keluar, stokAkhir });
+    });
     return out;
   }
-  function mergeGudangRupaData(existing, incoming){
-    const keyOf = it => (it.kode || '') ? ('K|' + it.kode) : ('N|' + U(it.nama));
-    const map = new Map();
-    (existing || []).forEach(it => map.set(keyOf(it), {...it}));
-    (incoming || []).forEach(it => map.set(keyOf(it), {...it}));
-    return [...map.values()];
+
+  function rrFilteredCategories(){
+    let list = rrCategories.slice();
+    if (rrCurrentKategori) list = list.filter(c => rrU(c.nama) === rrU(rrCurrentKategori));
+    return list;
   }
-  async function processGudangRupaFile(){
-    const inp = document.getElementById('gudangRupaFile');
-    const file = inp && inp.files && inp.files[0];
-    if (!file) return alert('Pilih file Excel Rupa Rupa terlebih dahulu.');
-    setGudangRupaStatus('Memproses file...');
-    try{
-      const buf = await file.arrayBuffer();
-      const wb = XLSX.read(buf, {type:'array'});
-      const parsed = parseGudangRupaSheet(wb);
-      if (!parsed || !parsed.length){ setGudangRupaStatus('Format file tidak dikenali. Pastikan ada kolom "Nama Produk" dan "Stok Akhir".'); return; }
-      const merged = mergeGudangRupaData(gudangRupaData, parsed);
-      gudangRupaData = merged;
-      await saveGudangRupaToDB(merged);
-      renderGudangRupaPage(merged);
-      setGudangRupaStatus('Berhasil memproses ' + parsed.length.toLocaleString('id-ID') + ' baris (file: ' + file.name + '). Total tersimpan: ' + merged.length.toLocaleString('id-ID') + ' produk.');
-      inp.value = ''; closeGudangRupaDd();
-    } catch(e){ console.error(e); setGudangRupaStatus('Gagal memproses file: ' + (e.message || e)); }
+
+  function rrRenderAll(){ rrPopulateKategoriDropdown(); rrRender(); }
+
+  function rrRender(){
+    const rv = document.getElementById('rrRingkasanView');
+    const dv = document.getElementById('rrDetailView');
+    if (rv && dv){
+      rv.style.display = (rrViewMode === 'bulan') ? 'block' : 'none';
+      dv.style.display = (rrViewMode === 'tgl')   ? 'block' : 'none';
+    }
+    const cats = rrFilteredCategories();
+    if (rrViewMode === 'tgl'){ rrRenderDetailHarian(cats); return; }
+    const tbody = document.getElementById('rrTbody');
+    const tfoot = document.getElementById('rrTfoot');
+    if (!tbody || !tfoot) return;
+    const q = rrU(rrCurrentSearch);
+    if (!rrCategories.length){
+      tbody.innerHTML = '<tr><td colspan="6" class="empty">Belum ada data. Klik ☰ untuk upload file Excel.</td></tr>';
+      tfoot.innerHTML = ''; return;
+    }
+    if (!cats.length){
+      tbody.innerHTML = '<tr><td colspan="6" class="empty">Kategori tidak ditemukan.</td></tr>';
+      tfoot.innerHTML = ''; return;
+    }
+    const grand = { produk:0, stokAwal:0, masuk:0, keluar:0, stokAkhir:0 };
+    let body = '', anyShown = false;
+    cats.forEach(cat => {
+      const rows = rrSummarizeCategory(cat).filter(r => !q || rrU(r.nama).includes(q));
+      if (!rows.length) return;
+      anyShown = true;
+      if (!rrCurrentKategori){
+        body += '<tr class="cat-header"><td colspan="6">📂 ' + rrEsc(cat.nama) + '<span class="cat-count">(' + rows.length + ' produk)</span></td></tr>';
+      }
+      const sub = { stokAwal:0, masuk:0, keluar:0, stokAkhir:0 };
+      rows.forEach((r, i) => {
+        sub.stokAwal += r.stokAwal; sub.masuk += r.masuk; sub.keluar += r.keluar; sub.stokAkhir += r.stokAkhir;
+        body += '<tr><td class="num">' + (i+1) + '</td><td>' + rrEsc(r.nama) + '</td>' +
+          '<td class="num">' + rrNf(r.stokAwal) + '</td>' +
+          '<td class="num">' + rrNf(r.masuk) + '</td>' +
+          '<td class="num">' + rrNf(r.keluar) + '</td>' +
+          '<td class="num strong">' + rrNf(r.stokAkhir) + '</td></tr>';
+      });
+      body += '<tr class="subtotal"><td colspan="2">Subtotal ' + rrEsc(cat.nama) + '</td>' +
+        '<td class="num">' + rrNf(sub.stokAwal) + '</td>' +
+        '<td class="num">' + rrNf(sub.masuk) + '</td>' +
+        '<td class="num">' + rrNf(sub.keluar) + '</td>' +
+        '<td class="num">' + rrNf(sub.stokAkhir) + '</td></tr>';
+      grand.produk += rows.length;
+      grand.stokAwal += sub.stokAwal; grand.masuk += sub.masuk; grand.keluar += sub.keluar; grand.stokAkhir += sub.stokAkhir;
+    });
+    if (!anyShown){
+      tbody.innerHTML = '<tr><td colspan="6" class="empty">Tidak ada produk yang cocok dengan pencarian.</td></tr>';
+      tfoot.innerHTML = ''; return;
+    }
+    tbody.innerHTML = body;
+    if (cats.length > 1 || (rrCurrentKategori && cats.length === 1)){
+      tfoot.innerHTML = '<tr><td colspan="2">TOTAL (' + grand.produk + ' produk)</td>' +
+        '<td class="num">' + rrNf(grand.stokAwal) + '</td>' +
+        '<td class="num">' + rrNf(grand.masuk) + '</td>' +
+        '<td class="num">' + rrNf(grand.keluar) + '</td>' +
+        '<td class="num">' + rrNf(grand.stokAkhir) + '</td></tr>';
+    } else tfoot.innerHTML = '';
   }
-  async function saveGudangRupaToDB(data){
-    if (useIDB){ try{ await db.meta.put({key:'gudangRupaData', value:data}); } catch(e){ console.warn('save gudang rupa', e); } }
-    schedulePush();
-  }
-  async function clearGudangRupaData(){
-    if (!confirm('Hapus SEMUA data Rupa Rupa yang tersimpan? Tindakan ini tidak bisa dibatalkan.')) return;
-    gudangRupaData = null;
-    if (useIDB){ try{ await db.meta.delete('gudangRupaData'); } catch(e){} }
-    renderGudangRupaPage(null);
-    setGudangRupaStatus('Data Rupa Rupa sudah dihapus.');
-    closeGudangRupaDd(); schedulePush();
-  }
-  function renderGudangRupaPage(data){
-    const kpiBox = document.getElementById('gudangRupaKpis');
-    const thead  = document.getElementById('gudangRupaThead');
-    const tbody  = document.getElementById('gudangRupaTbody');
-    const tfoot  = document.getElementById('gudangRupaTfoot');
-    if (!thead || !tbody) return;
-    if (!data || !data.length){
-      if (kpiBox) kpiBox.innerHTML = '<div style="padding:10px 4px;color:#64748b;font-size:13px;align-self:center">Belum ada data Rupa Rupa. Klik ⚙️ di kanan untuk upload file Excel.</div>';
+
+  function rrRenderDetailHarian(cats){
+    const thead = document.getElementById('rrDetailThead');
+    const tbody = document.getElementById('rrDetailTbody');
+    const tfoot = document.getElementById('rrDetailTfoot');
+    if (!thead || !tbody || !tfoot) return;
+    if (!rrCategories.length){
+      thead.innerHTML = ''; tbody.innerHTML = '<tr><td class="empty">Belum ada data.</td></tr>'; tfoot.innerHTML = ''; return;
+    }
+    if (cats.length !== 1){
       thead.innerHTML = '';
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:#64748b">Belum ada data. Klik ⚙️ untuk upload file Excel.</td></tr>';
-      if (tfoot) tfoot.innerHTML = '';
-      return;
+      tbody.innerHTML = '<tr><td class="empty">Pilih <b>satu kategori</b> di dropdown "Tampilkan" untuk melihat data per tanggal.<br>Mode ini menampilkan matrix produk × tanggal.</td></tr>';
+      tfoot.innerHTML = ''; return;
     }
-    const totAwal   = data.reduce((a,x) => a + N(x.stokAwal), 0);
-    const totMasuk  = data.reduce((a,x) => a + N(x.masuk), 0);
-    const totKeluar = data.reduce((a,x) => a + N(x.keluar), 0);
-    const totAkhir  = data.reduce((a,x) => a + N(x.stokAkhir), 0);
-    if (kpiBox){
-      kpiBox.innerHTML =
-        '<div class="gkpi"><span class="gk-label">Jumlah Produk</span><span class="gk-stok">' + data.length.toLocaleString('id-ID') + '</span></div>' +
-        '<div class="gkpi"><span class="gk-label">Total Stok Awal</span><span class="gk-stok">' + nfQty(totAwal) + '</span></div>' +
-        '<div class="gkpi"><span class="gk-label">Total Masuk</span><span class="gk-stok">' + nfQty(totMasuk) + '</span></div>' +
-        '<div class="gkpi"><span class="gk-label">Total Keluar</span><span class="gk-stok">' + nfQty(totKeluar) + '</span></div>' +
-        '<div class="gkpi"><span class="gk-label">Total Stok Akhir</span><span class="gk-stok">' + nfQty(totAkhir) + '</span></div>';
+    const cat = cats[0];
+    const q = rrU(rrCurrentSearch);
+    let products = cat.products || [];
+    if (q) products = products.filter(p => rrU(p).includes(q));
+    if (!products.length){
+      thead.innerHTML = ''; tbody.innerHTML = '<tr><td class="empty">Tidak ada produk yang cocok dengan pencarian.</td></tr>'; tfoot.innerHTML = ''; return;
     }
-    thead.innerHTML = '<tr><th style="width:50px">NO</th><th style="width:110px">KODE</th><th>NAMA PRODUK</th><th style="width:100px">STOK AWAL</th><th style="width:100px">MASUK</th><th style="width:100px">KELUAR</th><th style="width:100px">STOK AKHIR</th><th style="width:70px">SAT</th></tr>';
-    let body = '';
-    data.forEach((x, i) => {
-      body += '<tr>' +
-        '<td class="num">' + (i+1) + '</td>' +
-        '<td>' + escHtml(x.kode || '') + '</td>' +
-        '<td>' + escHtml(x.nama || '') + '</td>' +
-        '<td class="num">' + nfQty(x.stokAwal) + '</td>' +
-        '<td class="num">' + nfQty(x.masuk) + '</td>' +
-        '<td class="num">' + nfQty(x.keluar) + '</td>' +
-        '<td class="num" style="font-weight:700">' + nfQty(x.stokAkhir) + '</td>' +
-        '<td>' + escHtml(x.sat || '') + '</td>' +
-      '</tr>';
+    let h1 = '<tr><th rowspan="2" style="min-width:100px">TANGGAL</th>';
+    let h2 = '<tr>';
+    products.forEach(p => {
+      h1 += '<th colspan="3" style="text-align:center">' + rrEsc(p) + '</th>';
+      h2 += '<th style="width:70px;text-align:right">msk</th><th style="width:70px;text-align:right">klr</th><th style="width:80px;text-align:right">stok</th>';
+    });
+    h1 += '</tr>'; h2 += '</tr>';
+    thead.innerHTML = h1 + h2;
+    let body = '<tr class="subtotal"><td><b>stok awal</b></td>';
+    products.forEach(p => { body += '<td class="num"></td><td class="num"></td><td class="num strong">' + rrNf(rrN((cat.saldoAwal || {})[p])) + '</td>'; });
+    body += '</tr>';
+    const rowsSorted = (cat.rows || []).slice().sort((a,b) => a.ts - b.ts);
+    const totMsk = {}, totKlr = {};
+    products.forEach(p => { totMsk[p] = 0; totKlr[p] = 0; });
+    rowsSorted.forEach(r => {
+      const d = r.tanggal instanceof Date ? r.tanggal : new Date(r.ts);
+      const dd = String(d.getUTCDate()).padStart(2,'0');
+      const mm = String(d.getUTCMonth()+1).padStart(2,'0');
+      const yy = String(d.getUTCFullYear()).slice(-2);
+      body += '<tr><td>' + dd + '/' + mm + '/' + yy + '</td>';
+      products.forEach(p => {
+        const v = r.values[p] || {};
+        const msk = rrN(v.masuk), klr = rrN(v.keluar);
+        totMsk[p] += msk; totKlr[p] += klr;
+        body += '<td class="num">' + (msk ? rrNf(msk) : '-') + '</td>' +
+                '<td class="num">' + (klr ? rrNf(klr) : '-') + '</td>' +
+                '<td class="num strong">' + (v.stok != null ? rrNf(v.stok) : '-') + '</td>';
+      });
+      body += '</tr>';
     });
     tbody.innerHTML = body;
-    if (tfoot){
-      tfoot.innerHTML = '<tr><td colspan="3" style="text-align:right">TOTAL</td><td class="num">' + nfQty(totAwal) + '</td><td class="num">' + nfQty(totMasuk) + '</td><td class="num">' + nfQty(totKeluar) + '</td><td class="num">' + nfQty(totAkhir) + '</td><td></td></tr>';
-    }
+    let foot = '<tr><td><b>TOTAL</b></td>';
+    products.forEach(p => { foot += '<td class="num">' + rrNf(totMsk[p]) + '</td><td class="num">' + rrNf(totKlr[p]) + '</td><td class="num"></td>'; });
+    foot += '</tr>';
+    tfoot.innerHTML = foot;
   }
+
+  function rrDownloadExcel(){
+    if (!rrCategories.length) return alert('Belum ada data untuk diunduh.');
+    const cats = rrFilteredCategories();
+    if (!cats.length) return alert('Tidak ada data pada filter aktif.');
+    const q = rrU(rrCurrentSearch);
+    const wb = XLSX.utils.book_new();
+    if (rrViewMode === 'tgl'){
+      if (cats.length !== 1) return alert('Untuk Download mode Data/Tgl, pilih satu kategori dulu.');
+      const cat = cats[0];
+      let products = cat.products || [];
+      if (q) products = products.filter(p => rrU(p).includes(q));
+      if (!products.length) return alert('Tidak ada produk untuk diunduh.');
+      const head1 = ['TANGGAL'], head2 = [''];
+      products.forEach(p => { head1.push(p, '', ''); head2.push('msk', 'klr', 'stok'); });
+      const aoa = [head1, head2];
+      const saRow = ['stok awal'];
+      products.forEach(p => { saRow.push('', '', rrN((cat.saldoAwal || {})[p])); });
+      aoa.push(saRow);
+      const rowsSorted = (cat.rows || []).slice().sort((a,b) => a.ts - b.ts);
+      const totMsk = {}, totKlr = {};
+      products.forEach(p => { totMsk[p] = 0; totKlr[p] = 0; });
+      rowsSorted.forEach(r => {
+        const d = r.tanggal instanceof Date ? r.tanggal : new Date(r.ts);
+        const dd = String(d.getUTCDate()).padStart(2,'0');
+        const mm = String(d.getUTCMonth()+1).padStart(2,'0');
+        const yy = String(d.getUTCFullYear()).slice(-2);
+        const line = [dd + '/' + mm + '/' + yy];
+        products.forEach(p => {
+          const v = r.values[p] || {};
+          const msk = rrN(v.masuk), klr = rrN(v.keluar);
+          totMsk[p] += msk; totKlr[p] += klr;
+          line.push(msk, klr, v.stok != null ? rrN(v.stok) : '');
+        });
+        aoa.push(line);
+      });
+      const totRow = ['TOTAL'];
+      products.forEach(p => { totRow.push(totMsk[p], totKlr[p], ''); });
+      aoa.push(totRow);
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      ws['!cols'] = [{ wch: 12 }, ...products.flatMap(() => [{ wch: 7 }, { wch: 7 }, { wch: 8 }])];
+      ws['!freeze'] = { xSplit: 1, ySplit: 2 };
+      XLSX.utils.book_append_sheet(wb, ws, cat.nama.slice(0, 31));
+      XLSX.writeFile(wb, 'Stok_Rupa_Rupa_' + cat.nama.replace(/[^\w\-]+/g, '_') + '_PerTanggal.xlsx');
+      return;
+    }
+    const rows = [];
+    rows.push(['NO','KATEGORI','NAMA PRODUK','STOK AWAL','MASUK','KELUAR','STOK AKHIR']);
+    const grand = { produk:0, stokAwal:0, masuk:0, keluar:0, stokAkhir:0 };
+    let anyShown = false;
+    cats.forEach(cat => {
+      const items = rrSummarizeCategory(cat).filter(r => !q || rrU(r.nama).includes(q));
+      if (!items.length) return;
+      anyShown = true;
+      if (!rrCurrentKategori) rows.push(['', '📂 ' + cat.nama, '', '', '', '', '']);
+      const sub = { stokAwal:0, masuk:0, keluar:0, stokAkhir:0 };
+      items.forEach((r, i) => {
+        sub.stokAwal += r.stokAwal; sub.masuk += r.masuk; sub.keluar += r.keluar; sub.stokAkhir += r.stokAkhir;
+        rows.push([i+1, cat.nama, r.nama, r.stokAwal, r.masuk, r.keluar, r.stokAkhir]);
+      });
+      rows.push(['', '', 'Subtotal ' + cat.nama, sub.stokAwal, sub.masuk, sub.keluar, sub.stokAkhir]);
+      grand.produk += items.length;
+      grand.stokAwal += sub.stokAwal; grand.masuk += sub.masuk; grand.keluar += sub.keluar; grand.stokAkhir += sub.stokAkhir;
+    });
+    if (!anyShown) return alert('Tidak ada data untuk diunduh pada filter aktif.');
+    if (cats.length > 1 || rrCurrentKategori) rows.push(['', '', 'TOTAL (' + grand.produk + ' produk)', grand.stokAwal, grand.masuk, grand.keluar, grand.stokAkhir]);
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{ wch:5 }, { wch:20 }, { wch:32 }, { wch:12 }, { wch:12 }, { wch:12 }, { wch:12 }];
+    XLSX.utils.book_append_sheet(wb, ws, 'Stok Rupa Rupa');
+    const suffix = rrCurrentKategori ? '_' + rrCurrentKategori.replace(/[^\w\-]+/g, '_') : '_SemuaKategori';
+    XLSX.writeFile(wb, 'Stok_Rupa_Rupa' + suffix + '.xlsx');
+  }
+
+  function rrSetStatusUpload(msg, kind){
+    const el = document.getElementById('rrStatusUpload');
+    if (!el) return;
+    if (!msg){ el.style.display = 'none'; el.textContent = ''; el.className = 'status'; return; }
+    el.style.display = 'block';
+    el.textContent = msg;
+    el.className = 'status' + (kind ? ' ' + kind : '');
+  }
+
+  function rrBindEvents(){
+    const btnP = document.getElementById('rrBtnProcess');
+    if (btnP && !btnP._rrBound){ btnP._rrBound = true; btnP.addEventListener('click', rrProcessFile); }
+    const sel = document.getElementById('rrKategoriSel');
+    if (sel && !sel._rrBound){ sel._rrBound = true; sel.addEventListener('change', e => {
+      rrCurrentKategori = e.target.value;
+      const b = document.getElementById('rrBtnDeleteCat'); if (b) b.disabled = !rrCurrentKategori;
+      rrRender();
+    }); }
+    const si = document.getElementById('rrSearchInput');
+    if (si && !si._rrBound){ si._rrBound = true; si.addEventListener('input', e => { rrCurrentSearch = e.target.value; rrRender(); }); }
+    const fi = document.getElementById('rrFileInput');
+    if (fi && !fi._rrBound){ fi._rrBound = true; fi.addEventListener('change', e => {
+      const f = e.target.files && e.target.files[0]; if (!f) return;
+      const inp = document.getElementById('rrKategoriInput');
+      if (inp && !inp.value.trim()) inp.value = rrSuggestCategoryName(f.name);
+    }); }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', rrBindEvents);
+  else rrBindEvents();
+  setTimeout(rrBindEvents, 500);
+
+  document.addEventListener('click', function(e){ if (!e.target.closest('.rr-app .dd')) rrCloseAllDd(); });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') rrCloseAllDd(); });
+
+  let gInputState = null;
+  function dateInputToUTC(dateStr){ if (!dateStr) return null; const [y,m,d] = dateStr.split('-').map(Number); if (!y || !m || !d) return null; return new Date(Date.UTC(y, m-1, d)); }
+  function utcDateToInputStr(d){ if (!d || isNaN(d.getTime())) return ''; return d.getUTCFullYear() + '-' + String(d.getUTCMonth()+1).padStart(2,'0') + '-' + String(d.getUTCDate()).padStart(2,'0'); }
+  function todayInputStr(){ const n = new Date(); return n.getFullYear() + '-' + String(n.getMonth()+1).padStart(2,'0') + '-' + String(n.getDate()).padStart(2,'0'); }
+  function gStokSebelum(product, ts){
+    if (!gudangData) return 0;
+    let running = N((gudangData.saldoAwal || {})[product]);
+    (gudangData.rows || []).forEach(r => { if (r.ts < ts){ const v = r.values[product]; if (v) running += N(v.masuk) - N(v.keluar); } });
+    return running;
+  }
+  function openGInputModal(product){
+    if (!gudangData || !gudangData.products || !gudangData.products.length){ alert('Belum ada Data Gudang. Upload file Excel gudang terlebih dahulu lewat ⚙️.'); return; }
+    gInputState = {product};
+    document.getElementById('gInputProdName').textContent = product;
+    const monthSel = document.getElementById('gudangMonth');
+    const selMonth = monthSel ? monthSel.value : '';
+    let dateStr = todayInputStr();
+    if (selMonth && selMonth !== monthKey(new Date())){
+      const rowsInMonth = (gudangData.rows || []).filter(r => monthKeyUTC(r.tanggal) === selMonth);
+      if (rowsInMonth.length) dateStr = utcDateToInputStr(rowsInMonth[rowsInMonth.length - 1].tanggal);
+      else { const [y,m] = selMonth.split('-').map(Number); dateStr = y + '-' + String(m).padStart(2,'0') + '-01'; }
+    }
+    document.getElementById('gInputDate').value = dateStr;
+    fillGInputFromDate();
+    document.getElementById('gInputOverlay').classList.add('show');
+  }
+  function closeGInputModal(){ document.getElementById('gInputOverlay').classList.remove('show'); gInputState = null; }
+  function fillGInputFromDate(){
+    if (!gInputState) return;
+    const dateStr = document.getElementById('gInputDate').value;
+    if (!dateStr) return;
+    const utcDate = dateInputToUTC(dateStr);
+    const ts = utcDate.getTime();
+    const product = gInputState.product;
+    const row = (gudangData.rows || []).find(r => r.ts === ts);
+    const existing = (row && row.values[product]) || {};
+    document.getElementById('gInputMasuk').value  = (existing.masuk  != null) ? existing.masuk  : '';
+    document.getElementById('gInputKeluar').value = (existing.keluar != null) ? existing.keluar : '';
+    document.getElementById('gInputSub').textContent = 'Tanggal: ' + gudangFmtDate(utcDate) + (row && row.values[product] ? ' — data sudah ada, akan diperbarui' : ' — data baru');
+    updateGInputPreview();
+  }
+  function updateGInputPreview(){
+    if (!gInputState) return;
+    const dateStr = document.getElementById('gInputDate').value;
+    const el = document.getElementById('gInputPreview');
+    if (!dateStr){ el.textContent = 'Pilih tanggal dulu.'; return; }
+    const utcDate = dateInputToUTC(dateStr);
+    const ts = utcDate.getTime();
+    const product = gInputState.product;
+    const before = gStokSebelum(product, ts);
+    const masuk  = N(document.getElementById('gInputMasuk').value);
+    const keluar = N(document.getElementById('gInputKeluar').value);
+    const after  = before + masuk - keluar;
+    el.innerHTML = 'Stok sebelum: <b>' + nfQty(before) + '</b> &nbsp;→&nbsp; Stok sesudah: <b>' + nfQty(after) + '</b><br>(Masuk +' + nfQty(masuk) + ' &nbsp; Keluar -' + nfQty(keluar) + ')';
+  }
+  async function saveGInputModal(){
+    if (!gInputState) return;
+    const dateStr = document.getElementById('gInputDate').value;
+    if (!dateStr) return alert('Pilih tanggal terlebih dahulu.');
+    const product = gInputState.product;
+    const masukRaw  = document.getElementById('gInputMasuk').value;
+    const keluarRaw = document.getElementById('gInputKeluar').value;
+    const masuk  = masukRaw  === '' ? null : Math.max(0, N(masukRaw));
+    const keluar = keluarRaw === '' ? null : Math.max(0, N(keluarRaw));
+    const utcDate = dateInputToUTC(dateStr);
+    const ts = utcDate.getTime();
+    if (!gudangData) gudangData = {products:[], saldoAwal:{}, rows:[]};
+    if (!gudangData.products.includes(product)) gudangData.products.push(product);
+    if (gudangData.saldoAwal[product] == null) gudangData.saldoAwal[product] = 0;
+    let row = gudangData.rows.find(r => r.ts === ts);
+    if (!row){ row = {ts, tanggal: utcDate, values:{}}; gudangData.rows.push(row); gudangData.rows.sort((a,b) => a.ts - b.ts); }
+    row.values[product] = row.values[product] || {masuk:null, keluar:null, stok:null};
+    row.values[product].masuk  = masuk;
+    row.values[product].keluar = keluar;
+    gudangData.rows.forEach(r => { if (!r.values[product]) r.values[product] = {masuk:null, keluar:null, stok:null}; });
+    let running = N(gudangData.saldoAwal[product]);
+    gudangData.rows.forEach(r => { const v = r.values[product]; running = running + N(v.masuk) - N(v.keluar); v.stok = running; });
+    await saveGudangToDB(gudangData);
+    if (_gudangSub === 'rupa') rrRenderAll();
+    else renderGudangPage(gudangData);
+    renderCekFitri(); closeGInputModal();
+    setGudangStatus('Stok "' + product + '" pada ' + gudangFmtDate(utcDate) + ' disimpan — Masuk ' + nfQty(masuk) + ', Keluar ' + nfQty(keluar) + '.');
+    refreshAnalisaIfVisible();
+  }
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape'){ const ov = document.getElementById('gInputOverlay'); if (ov && ov.classList.contains('show')) closeGInputModal(); } });
 
   let _analisaLastData = null;
   let _analisaMonthInit = false;
@@ -4919,92 +5300,6 @@ self.onmessage = function(e){
     XLSX.writeFile(wb, 'Analisa_Rupa_Rupa.xlsx');
   }
 
-  let gInputState = null;
-  function dateInputToUTC(dateStr){ if (!dateStr) return null; const [y,m,d] = dateStr.split('-').map(Number); if (!y || !m || !d) return null; return new Date(Date.UTC(y, m-1, d)); }
-  function utcDateToInputStr(d){ if (!d || isNaN(d.getTime())) return ''; return d.getUTCFullYear() + '-' + String(d.getUTCMonth()+1).padStart(2,'0') + '-' + String(d.getUTCDate()).padStart(2,'0'); }
-  function todayInputStr(){ const n = new Date(); return n.getFullYear() + '-' + String(n.getMonth()+1).padStart(2,'0') + '-' + String(n.getDate()).padStart(2,'0'); }
-  function gStokSebelum(product, ts){
-    if (!gudangData) return 0;
-    let running = N((gudangData.saldoAwal || {})[product]);
-    (gudangData.rows || []).forEach(r => { if (r.ts < ts){ const v = r.values[product]; if (v) running += N(v.masuk) - N(v.keluar); } });
-    return running;
-  }
-  function openGInputModal(product){
-    if (!gudangData || !gudangData.products || !gudangData.products.length){ alert('Belum ada Data Gudang. Upload file Excel gudang terlebih dahulu lewat ⚙️.'); return; }
-    gInputState = {product};
-    document.getElementById('gInputProdName').textContent = product;
-    const monthSel = document.getElementById('gudangMonth');
-    const selMonth = monthSel ? monthSel.value : '';
-    let dateStr = todayInputStr();
-    if (selMonth && selMonth !== monthKey(new Date())){
-      const rowsInMonth = (gudangData.rows || []).filter(r => monthKeyUTC(r.tanggal) === selMonth);
-      if (rowsInMonth.length) dateStr = utcDateToInputStr(rowsInMonth[rowsInMonth.length - 1].tanggal);
-      else { const [y,m] = selMonth.split('-').map(Number); dateStr = y + '-' + String(m).padStart(2,'0') + '-01'; }
-    }
-    document.getElementById('gInputDate').value = dateStr;
-    fillGInputFromDate();
-    document.getElementById('gInputOverlay').classList.add('show');
-  }
-  function closeGInputModal(){ document.getElementById('gInputOverlay').classList.remove('show'); gInputState = null; }
-  function fillGInputFromDate(){
-    if (!gInputState) return;
-    const dateStr = document.getElementById('gInputDate').value;
-    if (!dateStr) return;
-    const utcDate = dateInputToUTC(dateStr);
-    const ts = utcDate.getTime();
-    const product = gInputState.product;
-    const row = (gudangData.rows || []).find(r => r.ts === ts);
-    const existing = (row && row.values[product]) || {};
-    document.getElementById('gInputMasuk').value  = (existing.masuk  != null) ? existing.masuk  : '';
-    document.getElementById('gInputKeluar').value = (existing.keluar != null) ? existing.keluar : '';
-    document.getElementById('gInputSub').textContent = 'Tanggal: ' + gudangFmtDate(utcDate) + (row && row.values[product] ? ' — data sudah ada, akan diperbarui' : ' — data baru');
-    updateGInputPreview();
-  }
-  function updateGInputPreview(){
-    if (!gInputState) return;
-    const dateStr = document.getElementById('gInputDate').value;
-    const el = document.getElementById('gInputPreview');
-    if (!dateStr){ el.textContent = 'Pilih tanggal dulu.'; return; }
-    const utcDate = dateInputToUTC(dateStr);
-    const ts = utcDate.getTime();
-    const product = gInputState.product;
-    const before = gStokSebelum(product, ts);
-    const masuk  = N(document.getElementById('gInputMasuk').value);
-    const keluar = N(document.getElementById('gInputKeluar').value);
-    const after  = before + masuk - keluar;
-    el.innerHTML = 'Stok sebelum: <b>' + nfQty(before) + '</b> &nbsp;→&nbsp; Stok sesudah: <b>' + nfQty(after) + '</b><br>(Masuk +' + nfQty(masuk) + ' &nbsp; Keluar -' + nfQty(keluar) + ')';
-  }
-  async function saveGInputModal(){
-    if (!gInputState) return;
-    const dateStr = document.getElementById('gInputDate').value;
-    if (!dateStr) return alert('Pilih tanggal terlebih dahulu.');
-    const product = gInputState.product;
-    const masukRaw  = document.getElementById('gInputMasuk').value;
-    const keluarRaw = document.getElementById('gInputKeluar').value;
-    const masuk  = masukRaw  === '' ? null : Math.max(0, N(masukRaw));
-    const keluar = keluarRaw === '' ? null : Math.max(0, N(keluarRaw));
-    const utcDate = dateInputToUTC(dateStr);
-    const ts = utcDate.getTime();
-    if (!gudangData) gudangData = {products:[], saldoAwal:{}, rows:[]};
-    if (!gudangData.products.includes(product)) gudangData.products.push(product);
-    if (gudangData.saldoAwal[product] == null) gudangData.saldoAwal[product] = 0;
-    let row = gudangData.rows.find(r => r.ts === ts);
-    if (!row){ row = {ts, tanggal: utcDate, values:{}}; gudangData.rows.push(row); gudangData.rows.sort((a,b) => a.ts - b.ts); }
-    row.values[product] = row.values[product] || {masuk:null, keluar:null, stok:null};
-    row.values[product].masuk  = masuk;
-    row.values[product].keluar = keluar;
-    gudangData.rows.forEach(r => { if (!r.values[product]) r.values[product] = {masuk:null, keluar:null, stok:null}; });
-    let running = N(gudangData.saldoAwal[product]);
-    gudangData.rows.forEach(r => { const v = r.values[product]; running = running + N(v.masuk) - N(v.keluar); v.stok = running; });
-    await saveGudangToDB(gudangData);
-    if (_gudangSub === 'rupa') renderGudangRupaPage(gudangRupaData);
-    else renderGudangPage(gudangData);
-    renderCekFitri(); closeGInputModal();
-    setGudangStatus('Stok "' + product + '" pada ' + gudangFmtDate(utcDate) + ' disimpan — Masuk ' + nfQty(masuk) + ', Keluar ' + nfQty(keluar) + '.');
-    refreshAnalisaIfVisible();
-  }
-  document.addEventListener('keydown', function(e){ if (e.key === 'Escape'){ const ov = document.getElementById('gInputOverlay'); if (ov && ov.classList.contains('show')) closeGInputModal(); } });
-
   window.addEventListener('resize', () => { const b = document.getElementById('s0box'); if (b && document.getElementById('panel_s0').offsetParent !== null) requestAnimationFrame(s0Render); });
   function applyTheme(mode){
     const dark = mode === 'dark';
@@ -5024,9 +5319,11 @@ self.onmessage = function(e){
     initTheme(); initMainTabs();
     const _gvm = document.getElementById('gudangViewMode');
     if (_gvm) _gvm.value = _gudangViewMode;
+    const vtg = document.getElementById('gudangViewToggleWrap');
+    if (vtg) vtg.style.display = (_gudangSub === 'fitri') ? 'flex' : 'none';
     await initDB(); initSupabase();
     if (sbClient){ await pullFromCloud({ silent: true }); subscribeRealtime(); }
-    else { await restoreFromDB(); await loadGudangFromDB(); }
+    else { await restoreFromDB(); await loadGudangFromDB(); await rrLoadAll(); }
   })();
 
   window.addEventListener('beforeunload', function(e){ if (pushTimer || pushInFlight || isSyncingFromCloud) { e.preventDefault(); e.returnValue = ''; return ''; } });
@@ -5036,6 +5333,7 @@ self.onmessage = function(e){
   document.getElementById('installBtn')?.addEventListener('click', async () => { if (!_deferredInstallPrompt) return; _deferredInstallPrompt.prompt(); await _deferredInstallPrompt.userChoice; _deferredInstallPrompt = null; document.getElementById('installBtn').style.display = 'none'; });
   window.addEventListener('appinstalled', () => { const btn = document.getElementById('installBtn'); if (btn) btn.style.display = 'none'; });
 </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 </body>
 </html>
