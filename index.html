@@ -3648,12 +3648,14 @@ self.onmessage = function(e){
     saveCekRupaNamaMap(map);
     closeCekRupaNamaFix();
     renderCekRupa();
+    try { if (typeof rrRender === 'function') rrRender(); } catch(e) {}
   }
   function resetCekRupaNamaFix(){
     if(!confirm('Hapus semua nama produk yang sudah diperbaiki untuk Cek Rupa Rupa?')) return;
     saveCekRupaNamaMap({});
     openCekRupaNamaFix();
     renderCekRupa();
+    try { if (typeof rrRender === 'function') rrRender(); } catch(e) {}
   }
 
   function collectCekData(month, mode, sourceRows, opts){
@@ -4788,6 +4790,10 @@ self.onmessage = function(e){
     if (btn) btn.disabled = !sel.value;
   }
 
+  function rrDisplayName(nama){
+    try { return cekRupaDisplayName(productMatchKey(nama), nama); } catch(e) { return nama; }
+  }
+
   function rrSummarizeCategory(cat){
     const out = [];
     (cat.products || []).forEach(p => {
@@ -4798,7 +4804,7 @@ self.onmessage = function(e){
         masuk += rrN(v.masuk); keluar += rrN(v.keluar);
         if (v.stok != null) stokAkhir = v.stok;
       });
-      out.push({ nama: p, stokAwal, masuk, keluar, stokAkhir });
+      out.push({ nama: p, namaTampil: rrDisplayName(p), stokAwal, masuk, keluar, stokAkhir });
     });
     return out;
   }
@@ -4835,7 +4841,7 @@ self.onmessage = function(e){
     const grand = { produk:0, stokAwal:0, masuk:0, keluar:0, stokAkhir:0 };
     let body = '', anyShown = false;
     cats.forEach(cat => {
-      const rows = rrSummarizeCategory(cat).filter(r => !q || rrU(r.nama).includes(q));
+      const rows = rrSummarizeCategory(cat).filter(r => !q || rrU(r.nama).includes(q) || rrU(r.namaTampil).includes(q));
       if (!rows.length) return;
       anyShown = true;
       if (!rrCurrentKategori){
@@ -4844,7 +4850,7 @@ self.onmessage = function(e){
       const sub = { stokAwal:0, masuk:0, keluar:0, stokAkhir:0 };
       rows.forEach((r, i) => {
         sub.stokAwal += r.stokAwal; sub.masuk += r.masuk; sub.keluar += r.keluar; sub.stokAkhir += r.stokAkhir;
-        body += '<tr><td class="num">' + (i+1) + '</td><td>' + rrEsc(r.nama) + '</td>' +
+        body += '<tr><td class="num">' + (i+1) + '</td><td>' + rrEsc(r.namaTampil) + '</td>' +
           '<td class="num">' + rrNf(r.stokAwal) + '</td>' +
           '<td class="num">' + rrNf(r.masuk) + '</td>' +
           '<td class="num">' + rrNf(r.keluar) + '</td>' +
@@ -4888,14 +4894,14 @@ self.onmessage = function(e){
     const cat = cats[0];
     const q = rrU(rrCurrentSearch);
     let products = cat.products || [];
-    if (q) products = products.filter(p => rrU(p).includes(q));
+    if (q) products = products.filter(p => rrU(p).includes(q) || rrU(rrDisplayName(p)).includes(q));
     if (!products.length){
       thead.innerHTML = ''; tbody.innerHTML = '<tr><td class="empty">Tidak ada produk yang cocok dengan pencarian.</td></tr>'; tfoot.innerHTML = ''; return;
     }
     let h1 = '<tr><th rowspan="2" style="min-width:100px">TANGGAL</th>';
     let h2 = '<tr>';
     products.forEach(p => {
-      h1 += '<th colspan="3" style="text-align:center">' + rrEsc(p) + '</th>';
+      h1 += '<th colspan="3" style="text-align:center">' + rrEsc(rrDisplayName(p)) + '</th>';
       h2 += '<th style="width:70px;text-align:right">msk</th><th style="width:70px;text-align:right">klr</th><th style="width:80px;text-align:right">stok</th>';
     });
     h1 += '</tr>'; h2 += '</tr>';
@@ -4939,10 +4945,10 @@ self.onmessage = function(e){
       if (cats.length !== 1) return alert('Untuk Download mode Data/Tgl, pilih satu kategori dulu.');
       const cat = cats[0];
       let products = cat.products || [];
-      if (q) products = products.filter(p => rrU(p).includes(q));
+      if (q) products = products.filter(p => rrU(p).includes(q) || rrU(rrDisplayName(p)).includes(q));
       if (!products.length) return alert('Tidak ada produk untuk diunduh.');
       const head1 = ['TANGGAL'], head2 = [''];
-      products.forEach(p => { head1.push(p, '', ''); head2.push('msk', 'klr', 'stok'); });
+      products.forEach(p => { head1.push(rrDisplayName(p), '', ''); head2.push('msk', 'klr', 'stok'); });
       const aoa = [head1, head2];
       const saRow = ['stok awal'];
       products.forEach(p => { saRow.push('', '', rrN((cat.saldoAwal || {})[p])); });
@@ -4979,14 +4985,14 @@ self.onmessage = function(e){
     const grand = { produk:0, stokAwal:0, masuk:0, keluar:0, stokAkhir:0 };
     let anyShown = false;
     cats.forEach(cat => {
-      const items = rrSummarizeCategory(cat).filter(r => !q || rrU(r.nama).includes(q));
+      const items = rrSummarizeCategory(cat).filter(r => !q || rrU(r.nama).includes(q) || rrU(r.namaTampil).includes(q));
       if (!items.length) return;
       anyShown = true;
       if (!rrCurrentKategori) rows.push(['', '📂 ' + cat.nama, '', '', '', '', '']);
       const sub = { stokAwal:0, masuk:0, keluar:0, stokAkhir:0 };
       items.forEach((r, i) => {
         sub.stokAwal += r.stokAwal; sub.masuk += r.masuk; sub.keluar += r.keluar; sub.stokAkhir += r.stokAkhir;
-        rows.push([i+1, cat.nama, r.nama, r.stokAwal, r.masuk, r.keluar, r.stokAkhir]);
+        rows.push([i+1, cat.nama, r.namaTampil, r.stokAwal, r.masuk, r.keluar, r.stokAkhir]);
       });
       rows.push(['', '', 'Subtotal ' + cat.nama, sub.stokAwal, sub.masuk, sub.keluar, sub.stokAkhir]);
       grand.produk += items.length;
