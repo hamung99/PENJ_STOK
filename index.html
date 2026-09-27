@@ -834,25 +834,25 @@ body.dark .rr-app .dd-upload .field input[type=text]{background:#0f172a;color:#e
     </div>
   </div>
   <div id="result" class="card" style="display:none">
-    <div class="tabs-wrap" id="tabsWrap">
-      <button type="button" class="tabs-toggle" id="tabsToggleBtn" onclick="toggleTabsMenu(event)">
-        <span id="tabsToggleLabel">📑 Faktur</span><span class="chev">▼</span>
-      </button>
-      <div class="tabs tabs-collapsible" id="tabsMenu">
-        <button onclick="show('s0',this)">Transaksi</button>
-        <button onclick="show('s7',this)">Sales per Produk</button>
-        <button class="active" onclick="show('s6',this)">Faktur</button>
-        <button onclick="show('s1',this)">Produk</button>
-        <button onclick="show('s8',this)">Profit/Faktur</button>
-        <button onclick="show('s2',this)">Profit Per Pembayaran</button>
-        <button onclick="show('s3',this)">Profit Penjualan per Produk</button>
-        <button onclick="show('s4',this)">Rekap per Sales</button>
-        <button onclick="show('s5',this)">Margin % per Produk</button>
-        <button onclick="show('s9',this)">Data Harga</button>
-        <button onclick="show('s10',this)">Data Bulanan</button>
-      </div>
-    </div>
     <div class="toolbar-row">
+      <div class="tabs-wrap" id="tabsWrap">
+        <button type="button" class="tabs-toggle" id="tabsToggleBtn" onclick="toggleTabsMenu(event)">
+          <span id="tabsToggleLabel">📑 Faktur</span><span class="chev">▼</span>
+        </button>
+        <div class="tabs tabs-collapsible" id="tabsMenu">
+          <button onclick="show('s0',this)">Transaksi</button>
+          <button onclick="show('s7',this)">Sales per Produk</button>
+          <button class="active" onclick="show('s6',this)">Faktur</button>
+          <button onclick="show('s1',this)">Produk</button>
+          <button onclick="show('s8',this)">Profit/Faktur</button>
+          <button onclick="show('s2',this)">Profit Per Pembayaran</button>
+          <button onclick="show('s3',this)">Profit Penjualan per Produk</button>
+          <button onclick="show('s4',this)">Rekap per Sales</button>
+          <button onclick="show('s5',this)">Margin % per Produk</button>
+          <button onclick="show('s9',this)">Data Harga</button>
+          <button onclick="show('s10',this)">Data Bulanan</button>
+        </div>
+      </div>
       <div class="toolbar-left">
       <div class="quick-search-wrap">
         <input type="search" id="quickSearch" placeholder="🔍 Cari produk / customer / no faktur..." title="Cari berdasarkan nama produk, customer, kode customer, atau nomor faktur" oninput="onQuickSearchInput()">
@@ -918,8 +918,8 @@ body.dark .rr-app .dd-upload .field input[type=text]{background:#0f172a;color:#e
         <button type="button" class="fm-btn active" id="fmCardBtn" onclick="setFakturViewMode('card')">MODE KARTU</button>
       </div>
       </div>
-      <button type="button" id="autoBatalToolbarBtn" onclick="openAutoBatalDetectModal()" title="Cari otomatis pasangan qty +/- (produk & faktur sama) yang kemungkinan transaksi batal" style="padding:7px 12px;border:1px solid #b8c4d1;border-radius:6px;background:#f1f5f9;color:#1f2937;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">🔁 Cek Batal Otomatis<span id="autoBatalBadge"></span></button>
-      <button type="button" id="toolbarSaveExcel" onclick="saveExcelTab(_activeTab||'s0')" style="padding:7px 12px;border:1px solid #b8c4d1;border-radius:6px;background:#f1f5f9;color:#1f2937;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">💾 Simpan Excel</button>
+      <button type="button" id="autoBatalToolbarBtn" onclick="openAutoBatalDetectModal()" title="Cari otomatis pasangan qty +/- (produk & faktur sama) yang kemungkinan transaksi batal" style="padding:7px 12px;border:1px solid #cbd5e1;border-radius:6px;background:#f1f5f9;color:#1f2937;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">🔁 Cek Batal Otomatis<span id="autoBatalBadge"></span></button>
+      <button type="button" id="toolbarSaveExcel" onclick="saveExcelTab(_activeTab||'s0')" style="padding:7px 12px;border:1px solid #cbd5e1;border-radius:6px;background:#f1f5f9;color:#1f2937;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">💾 Simpan Excel</button>
     </div>
     <div id="table">
       <div id="panel_s0" class="view">
