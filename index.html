@@ -13,7 +13,7 @@
 <link rel="icon" href="./icons/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="icon" href="./icons/icon-192.png" type="image/png" sizes="192x192">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<!-- XLSX.js TIDAK dimuat di awal — akan di-load otomatis saat dibutuhkan (lazy-load) -->
 <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
@@ -1419,6 +1419,31 @@ body.dark .rr-app .dd-upload .field input[type=text]{background:#0f172a;color:#e
   const SO = ['RAJU','HAFID','JOSSY','GC','PARIMIN'];
   const SO_S7 = ['RAJU','JOSSY','HAFID','GC','PARIMIN'];
   const N  = x => Number(x) || 0;
+
+  /* ===== Lazy-load XLSX (hanya saat dibutuhkan) ===== */
+  let _xlsxLoadPromise = null;
+  function loadXLSX(){
+    if (typeof XLSX !== 'undefined') return Promise.resolve(XLSX);
+    if (_xlsxLoadPromise) return _xlsxLoadPromise;
+    try { setStatus('Memuat pustaka Excel (sekali saja)…'); } catch(e){}
+    _xlsxLoadPromise = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+      s.async = true;
+      s.onload = () => {
+        try { setStatus('Pustaka Excel siap.'); } catch(e){}
+        resolve(window.XLSX);
+      };
+      s.onerror = () => {
+        _xlsxLoadPromise = null;
+        try { setStatus('Gagal memuat pustaka Excel. Periksa koneksi internet.'); } catch(e){}
+        reject(new Error('Gagal memuat library XLSX. Periksa koneksi internet lalu coba lagi.'));
+      };
+      document.head.appendChild(s);
+    });
+    return _xlsxLoadPromise;
+  }
+
   function escHtml(s){
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
@@ -1900,6 +1925,7 @@ self.onmessage = function(e){
   }
   async function fallbackSyncParse(buf){
     try {
+      await loadXLSX();
       const wb = XLSX.read(buf, {type:'array', cellDates:true});
       const sn = wb.Sheets['Sheet1'] || wb.Sheets[wb.SheetNames[0]];
       const raw = XLSX.utils.sheet_to_json(sn, {defval:''});
@@ -2555,8 +2581,9 @@ self.onmessage = function(e){
     styleReportSheet(ws,data,headerRow);
     XLSX.utils.book_append_sheet(wb,ws,sheetName.slice(0,31));
   }
-  function saveExcelTab(tab){
+  async function saveExcelTab(tab){
     if (!R || !R.s1) return alert('Belum ada data untuk disimpan.');
+    try { await loadXLSX(); } catch(e){ alert(e.message); return; }
     const wb=XLSX.utils.book_new();
     const r=R, SO2=r.SO2||SO, n=SO2.length;
     if(tab==='s0'){
@@ -3464,8 +3491,9 @@ self.onmessage = function(e){
     if (!totalLines){ return '<div class="tablebox"><table><thead><tr>' + head.map(h => '<th>'+h+'</th>').join('') + '</tr></thead><tbody><tr><td colspan="14" style="text-align:center;padding:28px;color:#64748b">Belum ada data.</td></tr></tbody></table></div>'; }
     return rekapPagerHtml('s6', totalLines) + '<div class="tablebox"><table><thead><tr>' + head.map(h => '<th>'+h+'</th>').join('') + '</tr></thead><tbody>' + body + '</tbody><tfoot>' + foot + '</tfoot></table></div>';
   }
-  function saveExcel(){
+  async function saveExcel(){
     if (!R.s1) return;
+    try { await loadXLSX(); } catch(e){ alert(e.message); return; }
     const w = XLSX.utils.book_new();
     const add = (n,h,d,t) => { const ws = XLSX.utils.aoa_to_sheet([h, ...d, t]); XLSX.utils.book_append_sheet(w, ws, n) };
     const r = R, SO2 = r.SO2 || SO, n = SO2.length;
@@ -4021,8 +4049,9 @@ self.onmessage = function(e){
     }
     updateCekAlertFlags();
   }
-  function downloadCekRingkasan(){
+  async function downloadCekRingkasan(){
     if (!_cekLastData || !_cekLastData.products.length) return alert('Belum ada data untuk diunduh.');
+    try { await loadXLSX(); } catch(e){ alert(e.message); return; }
     const {products, salesList, penjualanPS, penjualanPD, gudangPD, hasGudang} = _cekLastData;
     const head = ['PRODUK', ...salesList, 'TOTAL', 'OUTPUT GUDANG', 'SELISIH', 'KET'];
     const salesGrand = salesList.map(() => 0);
@@ -4043,8 +4072,9 @@ self.onmessage = function(e){
     XLSX.utils.book_append_sheet(wb, ws, 'Penjualan Fitri');
     XLSX.writeFile(wb, 'Penjualan_Fitri.xlsx');
   }
-  function downloadCekDetail(){
+  async function downloadCekDetail(){
     if (!_cekLastData || !_cekLastData.products.length) return alert('Belum ada data untuk diunduh.');
+    try { await loadXLSX(); } catch(e){ alert(e.message); return; }
     const {products, penjualanPD, gudangPD, hasGudang} = _cekLastData;
     const allKeys = new Set();
     products.forEach(p => { Object.keys(penjualanPD[p.key] || {}).forEach(k => allKeys.add(k)); Object.keys(gudangPD[p.key] || {}).forEach(k => allKeys.add(k)); });
@@ -4301,8 +4331,9 @@ self.onmessage = function(e){
     tfoot.innerHTML = '<tr><td colspan="4" class="lbl">TOTAL</td>' + sizes.map(z => '<td>' + nfx(sizeTot[z.key]) + '</td>').join('') + '<td>' + nfQty(grand) + '</td><td></td></tr>';
   }
 
-  function downloadScsCust(){
+  async function downloadScsCust(){
     if (!_scsCustLast || !_scsCustLast.list.length) return alert('Belum ada data untuk diunduh.');
+    try { await loadXLSX(); } catch(e){ alert(e.message); return; }
     const { list, sizes, sizeTot, grand, tglHead, month, salesSel, minQty } = _scsCustLast;
     const head = ['NO', 'SALES', 'TOKO/CUSTOMER', 'ALAMAT', ...sizes.map(z => z.label), 'TOTAL', tglHead];
     const rows = list.map((g, i) => [i + 1, g.salesLabel, g.customer, g.alamat, ...sizes.map(z => g.qty[z.key] || 0), g.total, g.tglText]);
@@ -4413,8 +4444,9 @@ self.onmessage = function(e){
     tfoot.innerHTML = '<tr><td>TOTAL</td>' + salesGrand.map(v => '<td class="num">' + nfQty(v) + '</td>').join('') + '<td class="num">' + nfQty(grandTotal) + '</td><td class="num">' + (anyGudang ? nfQty(grandGudang) : '—') + '</td><td class="num" style="color:' + (net === 0 ? '#166534' : '#b42318') + '">' + (anyGudang ? ((net > 0 ? '+' : '') + nfQty(net)) : '—') + '</td><td>—</td></tr>';
     updateCekAlertFlags();
   }
-  function downloadCekRupa(){
+  async function downloadCekRupa(){
     if (!_cekRupaLastData || !_cekRupaLastData.products.length) return alert('Belum ada data untuk diunduh.');
+    try { await loadXLSX(); } catch(e){ alert(e.message); return; }
     const {products, salesList, penjualanPS, penjualanPD, gudangPD, hasGudang} = _cekRupaLastData;
     const q = (document.getElementById('cekRupaSearch')?.value || '').trim().toUpperCase();
     let list = products;
@@ -4539,6 +4571,7 @@ self.onmessage = function(e){
     if (!file) return alert('Pilih file Excel gudang terlebih dahulu.');
     setGudangStatus('Memproses file...');
     try{
+      await loadXLSX();
       const buf = await file.arrayBuffer();
       const wb = XLSX.read(buf, {type:'array'});
       const parsed = parseGudangSheet(wb);
@@ -4930,6 +4963,7 @@ self.onmessage = function(e){
     if (existing && !confirm('Kategori "' + kategori + '" sudah ada. Ganti dengan isi file baru?')) return;
     rrSetStatusUpload('Memproses ' + f.name + '...');
     try{
+      await loadXLSX();
       const buf = await f.arrayBuffer();
       const wb = XLSX.read(buf, { type:'array', cellDates:true });
       const ws = wb.Sheets[wb.SheetNames[0]];
@@ -5153,8 +5187,9 @@ self.onmessage = function(e){
     tfoot.innerHTML = foot;
   }
 
-  function rrDownloadExcel(){
+  async function rrDownloadExcel(){
     if (!rrCategories.length) return alert('Belum ada data untuk diunduh.');
+    try { await loadXLSX(); } catch(e){ alert(e.message); return; }
     const cats = rrFilteredCategories();
     if (!cats.length) return alert('Tidak ada data pada filter aktif.');
     const q = rrU(rrCurrentSearch);
@@ -5501,8 +5536,9 @@ self.onmessage = function(e){
     if (wrap) wrap.innerHTML = tableHtml;
     _analisaLastData = { month, list, tot, head };
   }
-  function downloadAnalisaFitri(){
+  async function downloadAnalisaFitri(){
     if (!_analisaLastData || !_analisaLastData.list.length) return alert('Belum ada data untuk diunduh.');
+    try { await loadXLSX(); } catch(e){ alert(e.message); return; }
     const { list, tot } = _analisaLastData;
     const head = ['PRODUK FITRI','OUTPUT PENJUALAN','OUTPUT GUDANG','KET','TOTAL PENJUALAN','HPP','PROFIT PENJUALAN','STOK AKHIR','HARGA BELI TERBARU','NOMINAL STOK AKHIR'];
     const rows = list.map(r => [r.name, r.outputPenjualan, r.outputGudang, r.ket, r.totalPenjualan, r.hpp, r.profit, r.stokAkhir, r.hargaBeliTerbaru, r.nominalStokAkhir]);
@@ -5632,8 +5668,9 @@ self.onmessage = function(e){
     if (wrap) wrap.innerHTML = tableHtml;
     _analisaRupaLastData = { month, list, tot, head };
   }
-  function downloadAnalisaRupa(){
+  async function downloadAnalisaRupa(){
     if (!_analisaRupaLastData || !_analisaRupaLastData.list.length) return alert('Belum ada data untuk diunduh.');
+    try { await loadXLSX(); } catch(e){ alert(e.message); return; }
     const { list, tot } = _analisaRupaLastData;
     const head = ['KODE','PRODUK RUPA RUPA','OUTPUT PENJUALAN','OUTPUT GUDANG','KET','TOTAL PENJUALAN','HPP','PROFIT PENJUALAN','STOK AKHIR','HARGA BELI TERBARU','NOMINAL STOK AKHIR'];
     const rows = list.map(r => [r.kode, r.name, r.outputPenjualan, r.outputGudang, r.ket, r.totalPenjualan, r.hpp, r.profit, r.stokAkhir, r.hargaBeliTerbaru, r.nominalStokAkhir]);
