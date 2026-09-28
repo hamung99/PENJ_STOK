@@ -108,7 +108,8 @@ body.dark .s10table th.s10-h2{background:#2d4a6f;color:#e2e8f0}
 td{padding:7px;border:1px solid #d6dde6;white-space:nowrap}
 td.num{text-align:right}
 tfoot td{background:#ffe699;font-weight:bold}
-.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:12px 0}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}}
 .kpi{position:relative;background:linear-gradient(145deg,#ffffff 0%,#f0f6ff 100%);border:1px solid transparent;border-radius:12px;padding:10px 14px;box-shadow:0 0 0 1px rgba(47,110,180,.12),0 4px 16px rgba(31,78,120,.08),inset 0 1px 0 rgba(255,255,255,.9);overflow:hidden;transition:transform .2s,box-shadow .2s}
 .kpi::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(48,84,150,.06) 0%,transparent 50%,rgba(80,160,255,.05) 100%);pointer-events:none}
 .kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#305496,#5b9bd5,#305496);opacity:.7}
@@ -831,6 +832,13 @@ body.dark .rr-app .dd-upload .field input[type=text]{background:#0f172a;color:#e
         </div>
       </div>
       <div class="kpi"><small>TOTAL PENJUALAN</small><b id="s">Rp 0</b></div>
+      <div class="kpi kpi-inline">
+        <small>PROFIT</small>
+        <div class="kpi-inline-row">
+          <b id="profitTotal">Rp 0</b>
+        </div>
+        <span class="kpi-meta">Fitri <b id="profitFitri">Rp 0</b> · Rupa Rupa <b id="profitRupa">Rp 0</b></span>
+      </div>
     </div>
   </div>
   <div id="result" class="card" style="display:none">
@@ -858,8 +866,10 @@ body.dark .rr-app .dd-upload .field input[type=text]{background:#0f172a;color:#e
         <input type="search" id="quickSearch" placeholder="🔍 Cari produk / customer / no faktur..." title="Cari berdasarkan nama produk, customer, kode customer, atau nomor faktur" oninput="onQuickSearchInput()">
       </div>
       <div class="month-quick">
+        <span id="filterMonthWrap" style="display:contents">
         <label for="filterMonth">Bulan</label>
         <select id="filterMonth" onchange="applyFilters()"><option value="">Semua bulan</option></select>
+        </span>
         <label for="filterProductQuick">Produk</label>
         <select id="filterProductQuick" onchange="onProductQuickChange()">
           <option value="">Semua produk</option>
@@ -2462,7 +2472,7 @@ self.onmessage = function(e){
     s0Widths = computeColWidths(data);
     const byProd = new Map();
     let qty = 0, sales = 0, hpp = 0, profit = 0, cs = 0, ts = 0, cp = 0, tp = 0;
-    let fitriQty = 0, fitriSales = 0, rupaQty = 0, rupaSales = 0;
+    let fitriQty = 0, fitriSales = 0, fitriProfit = 0, rupaQty = 0, rupaSales = 0, rupaProfit = 0;
     const salesQty = {}; SO.forEach(s => salesQty[s] = 0);
     const salesAggFitri = {}, salesAggRupa = {};
     SO.forEach(s => { salesAggFitri[s] = { q:0, v:0, h:0, fk:new Set() }; salesAggRupa[s] = { q:0, v:0, h:0, fk:new Set() }; });
@@ -2480,7 +2490,7 @@ self.onmessage = function(e){
       const hLine = j * hb;
       const rp0 = t - hLine;
       qty += j; sales += t; hpp += hLine; profit += rp0;
-      if (isFitriProduct(produk)) { fitriQty += j; fitriSales += t; } else { rupaQty += j; rupaSales += t; }
+      if (isFitriProduct(produk)) { fitriQty += j; fitriSales += t; fitriProfit += rp0; } else { rupaQty += j; rupaSales += t; rupaProfit += rp0; }
       if (pay === 'CASH'){ cs += t; cp += rp0 }
       if (pay === 'TEMPO'){ ts += t; tp += rp0 }
       if (SO.includes(salesName)) salesQty[salesName] = (salesQty[salesName] || 0) + j;
@@ -2534,7 +2544,7 @@ self.onmessage = function(e){
     });
     s4fitri.sort((a,b) => SO.indexOf(a[0]) - SO.indexOf(b[0]));
     s4rupa.sort((a,b) => SO.indexOf(a[0]) - SO.indexOf(b[0]));
-    R = { s1, s2, s3, s4fitri, s4rupa, s5, s9, qty, sales, hpp, profit, cs, ts, cp, tp, SO2, faktur, fitriQty, fitriSales, rupaQty, rupaSales };
+    R = { s1, s2, s3, s4fitri, s4rupa, s5, s9, qty, sales, hpp, profit, cs, ts, cp, tp, SO2, faktur, fitriQty, fitriSales, fitriProfit, rupaQty, rupaSales, rupaProfit };
     rekapPage = { s1:0, s2:0, s3:0, s5:0, s6:0, s8:0, s9:0 };
   }
   function filterSignature(){ return JSON.stringify(filters); }
@@ -2556,6 +2566,10 @@ self.onmessage = function(e){
     if (fn) fn.textContent = rp(R.fitriSales || 0);
     if (rq) rq.textContent = 'Qty ' + (R.rupaQty||0).toLocaleString('id-ID');
     if (rn) rn.textContent = rp(R.rupaSales || 0);
+    const pt = document.getElementById('profitTotal'), pf = document.getElementById('profitFitri'), prp = document.getElementById('profitRupa');
+    if (pt) pt.textContent = rp(R.profit || 0);
+    if (pf) pf.textContent = rp(R.fitriProfit || 0);
+    if (prp) prp.textContent = rp(R.rupaProfit || 0);
     const cekPage = document.getElementById('page-cek');
     if (cekPage && cekPage.style.display !== 'none') {
       renderCekActive();
@@ -2682,6 +2696,17 @@ self.onmessage = function(e){
     if (fmt) {
       fmt.style.display = (t === 's6') ? 'flex' : 'none';
       if (t === 's6'){ const tb = document.getElementById('fmTableBtn'); const cb = document.getElementById('fmCardBtn'); if (tb) tb.classList.toggle('active', fakturViewMode === 'table'); if (cb) cb.classList.toggle('active', fakturViewMode === 'card'); }
+    }
+    const mWrap = document.getElementById('filterMonthWrap');
+    if (mWrap) mWrap.style.display = (t === 's10') ? 'none' : 'contents';
+    if (t === 's10') {
+      const fm = document.getElementById('filterMonth');
+      if (fm && fm.value) {
+        fm.value = '';
+        closeColPicker();
+        applyFilters();
+        return;
+      }
     }
     closeColPicker();
     document.querySelectorAll('#table .view').forEach(v => v.style.display = 'none');
@@ -3043,7 +3068,7 @@ self.onmessage = function(e){
     }
     const totNAll = totFitriN + totRupaN, totPAll = totFitriP + totRupaP;
     const foot = months.length ? '<tr><td>TOTAL</td><td class="num">' + totFitriQ.toLocaleString('id-ID') + '</td><td class="num">' + rp(totFitriN) + '</td><td class="num">' + rp(totFitriP) + '</td><td class="num">' + totRupaQ.toLocaleString('id-ID') + '</td><td class="num">' + rp(totRupaN) + '</td><td class="num">' + rp(totRupaP) + '</td><td class="num">' + rp(totNAll) + '</td><td class="num">' + rp(totPAll) + '</td></tr>' : '';
-    const caption = '<div style="font-weight:700;color:#1f4e78;margin-bottom:8px">Rekap Data Bulanan (mengikuti filter aktif)</div>';
+    const caption = '<div style="font-weight:700;color:#1f4e78;margin-bottom:8px">Rekap Data Bulanan (semua bulan — filter bulan dinonaktifkan di tab ini)</div>';
     const table = '<div class="tablebox"><table class="s10table"><thead><tr><th class="s10-h0" rowspan="2">Bulan</th><th class="s10-h1" colspan="3">Produk Fitri</th><th class="s10-h1" colspan="3">Produk Rupa rupa</th><th class="s10-h0" rowspan="2">Total<br>Nominal Penjualan</th><th class="s10-h0" rowspan="2">Total<br>Profit</th></tr><tr><th class="s10-h2">Qty</th><th class="s10-h2">Nominal Penjualan</th><th class="s10-h2">Profit</th><th class="s10-h2">Qty</th><th class="s10-h2">Nominal Penjualan</th><th class="s10-h2">Profit</th></tr></thead><tbody>' + body + '</tbody>' + (foot ? '<tfoot>' + foot + '</tfoot>' : '') + '</table></div>';
     return reportBar('s10','Data Bulanan') + caption + table;
   }
@@ -5702,8 +5727,8 @@ self.onmessage = function(e){
   }
   function toggleTheme(){ applyTheme(document.body.classList.contains('dark') ? 'light' : 'dark'); }
   function initTheme(){
-    let mode = 'light';
-    try { const saved = localStorage.getItem('rekap-theme'); if (saved === 'dark' || saved === 'light') mode = saved; else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) mode = 'dark'; } catch(e){}
+    let mode = 'dark';
+    try { const saved = localStorage.getItem('rekap-theme'); if (saved === 'dark' || saved === 'light') mode = saved; } catch(e){}
     applyTheme(mode);
   }
 
