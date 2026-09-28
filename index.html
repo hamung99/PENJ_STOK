@@ -734,11 +734,10 @@ body.dark .rr-app .dd-upload .field input[type=text]{background:#0f172a;color:#e
     <div style="display:flex;align-items:center;gap:10px">
     <nav class="main-tabs" role="tablist" id="mainTabs">
       <button type="button" class="main-tab active" data-tab="penjualan">Penjualan</button>
-      <button type="button" class="main-tab" data-tab="salescust">Sales/Customer</button>
+      <button type="button" class="main-tab" data-tab="um">UM</button>
+      <button type="button" class="main-tab" data-tab="ar">AR</button>
       <button type="button" class="main-tab" data-tab="gudang">Data Gudang</button>
       <button type="button" class="main-tab" data-tab="analisa">📊 Analisa</button>
-      <button type="button" class="main-tab" data-tab="ar">AR</button>
-      <button type="button" class="main-tab" data-tab="um">UM</button>
     </nav>
     <button type="button" class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Mode gelap / terang">🌙</button>
     <div class="dd" id="menuDd">
@@ -951,45 +950,6 @@ body.dark .rr-app .dd-upload .field input[type=text]{background:#0f172a;color:#e
 </div>
 
 <!-- ===== PAGE SALES/CUSTOMER (TAB BARU) ===== -->
-<div id="page-salescust" style="display:none">
-  <div class="card">
-    <div class="cs-kpis" id="scsCustKpis">
-      <div class="cs-kpi"><small>nama sales</small><b id="scsCustKpiSales">Semua Sales</b></div>
-      <div id="scsCustKpiDyn" style="display:contents">
-        <div class="cs-kpi"><small>jumlah Toko/Customer</small><b>0</b></div>
-        <div class="cs-kpi cs-total"><small>Total</small><b>0</b></div>
-      </div>
-    </div>
-    <div class="cek-card-head">
-      <div class="cek-card-title">🏪 FITRI — SALES / CUSTOMER</div>
-      <div class="cek-card-actions">
-        <label for="scsCustMonth">Bulan</label>
-        <select id="scsCustMonth" onchange="renderScsCust()">
-          <option value="">Semua bulan</option>
-        </select>
-        <label for="scsCustSales">Sales</label>
-        <select id="scsCustSales" onchange="renderScsCustView()">
-          <option value="">Semua Sales</option>
-        </select>
-        <label for="scsCustMin" title="Tampilkan toko dengan total qty Fitri sama dengan atau lebih dari angka ini">Ambang ≥</label>
-        <input type="number" id="scsCustMin" min="0" step="10" placeholder="0" oninput="renderScsCustView()" title="Kosong / 0 = tampilkan semua">
-        <input type="search" id="scsCustSearch" class="cek-search" placeholder="Cari toko / alamat..." oninput="renderScsCustView()">
-        <button type="button" class="cek-refresh-btn" onclick="renderScsCust()" title="Segarkan">↻</button>
-        <button type="button" onclick="downloadScsCust()">⬇ Download</button>
-      </div>
-    </div>
-    <div class="tablebox" id="scsCustBox">
-      <table id="scsCustTable">
-        <thead id="scsCustThead"></thead>
-        <tbody id="scsCustTbody">
-          <tr><td style="text-align:center;padding:24px;color:#64748b">Belum ada data.</td></tr>
-        </tbody>
-        <tfoot id="scsCustTfoot"></tfoot>
-      </table>
-    </div>
-  </div>
-</div>
-
 <div id="page-gudang" style="display:none">
   <!-- Toolbar Fitri (kartu stok + filter Bulan + pengaturan) - tampil di atas saat sub-tab Fitri aktif -->
   <div class="gudang-toolbar" id="gudangToolbarFitri">
@@ -1355,13 +1315,54 @@ body.dark .rr-app .dd-upload .field input[type=text]{background:#0f172a;color:#e
 <div id="page-analisa" style="display:none">
   <div class="gudang-subtabs" role="tablist">
     <div class="gudang-dd" id="analisaDD">
-      <button type="button" class="gudang-subtab active" id="analisaTabBtn" data-gudang="analisa" aria-haspopup="true" aria-expanded="false" onclick="toggleAnalisaMenu(event)">📊 Analisa<span id="analisaDDLabel"> · Fitri</span> <span class="gudang-dd-caret">▾</span></button>
+      <button type="button" class="gudang-subtab active" id="analisaTabBtn" data-gudang="analisa" aria-haspopup="true" aria-expanded="false" onclick="onAnalisaTabBtnClick(event)">📊 Analisa<span id="analisaDDLabel"> · Fitri</span> <span class="gudang-dd-caret">▾</span></button>
       <div class="gudang-dd-menu" id="analisaMenu" role="menu" hidden>
         <button type="button" role="menuitem" data-analisa="fitri" onclick="pickAnalisa('fitri')">🧴 Fitri</button>
         <button type="button" role="menuitem" data-analisa="rupa" onclick="pickAnalisa('rupa')">📦 Rupa Rupa</button>
       </div>
     </div>
+    <button type="button" class="gudang-subtab" id="analisaSalesCustBtn" data-analisa-main="salescust" onclick="switchAnalisaSub('salescust',this)">🏪 Sales/Customer</button>
   </div>
+
+<div id="page-salescust" style="display:none">
+  <div class="card">
+    <div class="cs-kpis" id="scsCustKpis">
+      <div class="cs-kpi"><small>nama sales</small><b id="scsCustKpiSales">Semua Sales</b></div>
+      <div id="scsCustKpiDyn" style="display:contents">
+        <div class="cs-kpi"><small>jumlah Toko/Customer</small><b>0</b></div>
+        <div class="cs-kpi cs-total"><small>Total</small><b>0</b></div>
+      </div>
+    </div>
+    <div class="cek-card-head">
+      <div class="cek-card-title">🏪 FITRI — SALES / CUSTOMER</div>
+      <div class="cek-card-actions">
+        <label for="scsCustMonth">Bulan</label>
+        <select id="scsCustMonth" onchange="renderScsCust()">
+          <option value="">Semua bulan</option>
+        </select>
+        <label for="scsCustSales">Sales</label>
+        <select id="scsCustSales" onchange="renderScsCustView()">
+          <option value="">Semua Sales</option>
+        </select>
+        <label for="scsCustMin" title="Tampilkan toko dengan total qty Fitri sama dengan atau lebih dari angka ini">Ambang ≥</label>
+        <input type="number" id="scsCustMin" min="0" step="10" placeholder="0" oninput="renderScsCustView()" title="Kosong / 0 = tampilkan semua">
+        <input type="search" id="scsCustSearch" class="cek-search" placeholder="Cari toko / alamat..." oninput="renderScsCustView()">
+        <button type="button" class="cek-refresh-btn" onclick="renderScsCust()" title="Segarkan">↻</button>
+        <button type="button" onclick="downloadScsCust()">⬇ Download</button>
+      </div>
+    </div>
+    <div class="tablebox" id="scsCustBox">
+      <table id="scsCustTable">
+        <thead id="scsCustThead"></thead>
+        <tbody id="scsCustTbody">
+          <tr><td style="text-align:center;padding:24px;color:#64748b">Belum ada data.</td></tr>
+        </tbody>
+        <tfoot id="scsCustTfoot"></tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
 
   <div id="gudangAnalisaPanel">
     <!-- ============ Analisa Fitri ============ -->
@@ -4523,19 +4524,17 @@ self.onmessage = function(e){
       const ar = document.getElementById('page-ar');
       const um = document.getElementById('page-um');
       if (pj) pj.style.display = (tab === 'penjualan') ? 'block' : 'none';
-      if (sc) sc.style.display = (tab === 'salescust') ? 'block' : 'none';
       if (gd) gd.style.display = (tab === 'gudang') ? 'block' : 'none';
       if (an) an.style.display = (tab === 'analisa') ? 'block' : 'none';
       if (ar) ar.style.display = (tab === 'ar') ? 'block' : 'none';
       if (um) um.style.display = (tab === 'um') ? 'block' : 'none';
-      // Cek is now a sub-tab of Data Gudang
+      // Cek = sub-tab Data Gudang; Sales/Customer = sub-tab Analisa
       if (ck) ck.style.display = (tab === 'gudang' && typeof _gudangSub !== 'undefined' && _gudangSub === 'cek') ? 'block' : 'none';
+      if (sc) sc.style.display = (tab === 'analisa' && typeof _analisaSub !== 'undefined' && _analisaSub === 'salescust') ? 'block' : 'none';
       if (tab === 'gudang') {
         switchGudangSub(_gudangSub || 'fitri');
-      } else if (tab === 'salescust') {
-        renderScsCust();
       } else if (tab === 'analisa') {
-        switchAnalisaSub(_analisaSub);
+        switchAnalisaSub(_analisaSub || 'fitri');
       }
     });
   }
@@ -5427,8 +5426,15 @@ self.onmessage = function(e){
   let _analisaSub = 'fitri';
   function updateAnalisaDDLabel(){
     const lb = document.getElementById('analisaDDLabel');
-    if (lb) lb.textContent = ' · ' + (_analisaSub === 'rupa' ? 'Rupa Rupa' : 'Fitri');
+    if (lb) {
+      if (_analisaSub === 'salescust') lb.textContent = '';
+      else lb.textContent = ' · ' + (_analisaSub === 'rupa' ? 'Rupa Rupa' : 'Fitri');
+    }
     document.querySelectorAll('#analisaMenu button').forEach(b => b.classList.toggle('active', b.dataset.analisa === _analisaSub));
+    const tabBtn = document.getElementById('analisaTabBtn');
+    const scBtn = document.getElementById('analisaSalesCustBtn');
+    if (tabBtn) tabBtn.classList.toggle('active', _analisaSub === 'fitri' || _analisaSub === 'rupa');
+    if (scBtn) scBtn.classList.toggle('active', _analisaSub === 'salescust');
   }
   function closeAnalisaMenu(){
     const m = document.getElementById('analisaMenu'); if (m) m.hidden = true;
@@ -5442,25 +5448,46 @@ self.onmessage = function(e){
     const b = document.getElementById('analisaTabBtn'); if (b) b.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
     if (willOpen) updateAnalisaDDLabel();
   }
+  function onAnalisaTabBtnClick(ev){
+    if (ev) ev.stopPropagation();
+    // If currently on Sales/Customer, switch back to last analisa (fitri/rupa) and open menu
+    if (_analisaSub === 'salescust') {
+      switchAnalisaSub(_analisaLastFitriRupa || 'fitri');
+      toggleAnalisaMenu(ev);
+      return;
+    }
+    toggleAnalisaMenu(ev);
+  }
   document.addEventListener('click', (e) => { const dd = document.getElementById('analisaDD'); if (dd && !dd.contains(e.target)) closeAnalisaMenu(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAnalisaMenu(); });
   function pickAnalisa(which){
     closeAnalisaMenu();
     switchAnalisaSub(which);
   }
-  function switchAnalisaSub(which){
-    _analisaSub = (which === 'rupa') ? 'rupa' : 'fitri';
+  let _analisaLastFitriRupa = 'fitri';
+  function switchAnalisaSub(which, btn){
+    if (which === 'salescust') _analisaSub = 'salescust';
+    else if (which === 'rupa') { _analisaSub = 'rupa'; _analisaLastFitriRupa = 'rupa'; }
+    else { _analisaSub = 'fitri'; _analisaLastFitriRupa = 'fitri'; }
     const fp = document.getElementById('analisaFitriPanel');
     const rp = document.getElementById('analisaRupaPanel');
+    const sc = document.getElementById('page-salescust');
+    const gap = document.getElementById('gudangAnalisaPanel');
+    const isSc = (_analisaSub === 'salescust');
     if (fp) fp.style.display = (_analisaSub === 'fitri') ? 'block' : 'none';
     if (rp) rp.style.display = (_analisaSub === 'rupa') ? 'block' : 'none';
+    if (gap) gap.style.display = isSc ? 'none' : 'block';
+    if (sc) sc.style.display = isSc ? 'block' : 'none';
     updateAnalisaDDLabel();
+    closeAnalisaMenu();
+    if (isSc) { renderScsCust(); return; }
     if (_analisaSub === 'fitri') renderGudangAnalisa();
     else renderGudangAnalisaRupa();
   }
   function refreshAnalisaIfVisible(){
     const an = document.getElementById('page-analisa');
     if (!an || an.style.display === 'none') return;
+    if (_analisaSub === 'salescust') return;
     if (_analisaSub === 'rupa') renderGudangAnalisaRupa();
     else renderGudangAnalisa();
   }
