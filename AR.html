@@ -221,21 +221,47 @@
 
   .upload-bar { display: none !important; }
 
-  /* ============ GLASS CARDS (BARU) ============ */
+  /* ============ SUMMARY CARDS (theme-aware) ============ */
   .glass {
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: var(--card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
   }
   .glass:hover {
-    transform: translateY(-4px) scale(1.01);
-    box-shadow: 0 15px 30px -5px rgba(59, 130, 246, 0.35);
-    border-color: rgba(59, 130, 246, 0.9);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--border-strong) !important;
   }
-  /* Paksa margin top dari totalsRow agar tidak pecah */
-  #totalsRow { margin-top: 8px; margin-bottom: 8px; }
+  .glass .ar-card-title { font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; font-size: 9px; }
+  .glass .ar-card-value { font-family: 'IBM Plex Mono', monospace; font-weight: 500; color: var(--text) !important; }
+  .glass .ar-card-value .rp-prefix { color: var(--text-muted) !important; }
+  .glass .ar-card-sub { color: var(--text-muted) !important; font-size: 9px; }
+  .glass .ar-card-divider { border-color: var(--border) !important; }
+  .glass .ar-badge {
+    font-size: 8px; font-weight: 600; padding: 2px 8px; border-radius: 999px;
+    border: 1px solid transparent;
+  }
+  .glass.card-belum { border-top: 3px solid var(--red) !important; }
+  .glass.card-belum .ar-card-title { color: var(--red); }
+  .glass.card-belum .ar-badge { background: var(--red-soft); color: var(--red); border-color: transparent; }
+  .glass.card-titip { border-top: 3px solid var(--amber) !important; }
+  .glass.card-titip .ar-card-title { color: var(--amber); }
+  .glass.card-titip .ar-badge { background: var(--amber-soft); color: var(--amber); border-color: transparent; }
+  .glass.card-lunas { border-top: 3px solid var(--green) !important; }
+  .glass.card-lunas .ar-card-title { color: var(--green); }
+  .glass.card-lunas .ar-badge { background: var(--green-soft); color: var(--green); border-color: transparent; }
+  .glass.card-diterima { border-top: 3px solid var(--primary-light) !important; }
+  .glass.card-diterima .ar-card-title { color: var(--primary-light); }
+  .glass.card-diterima .ar-card-value,
+  .glass.card-diterima .ar-card-value .rp-prefix { color: var(--primary-light) !important; }
+  .glass .bd-label { color: var(--text-soft) !important; }
+  .glass .bd-value { color: var(--text) !important; font-family: 'IBM Plex Mono', monospace; }
 
-  /* CSS lama .totals/.tcard tetap ada untuk jaga-jaga, tapi tidak dipakai */
+  #totalsRow { margin-top: 8px; margin-bottom: 8px; }
 
   .controls {
     display: flex; gap: 5px; flex-wrap: wrap; align-items: center; margin-bottom: 6px;
@@ -739,56 +765,52 @@
   <div id="totalsRow" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 w-full">
 
     <!-- Card 1: Belum Lunas -->
-    <div class="glass bg-white/80 border border-blue-500/50 rounded-lg p-2 relative overflow-hidden group shadow-[0_0_10px_rgba(59,130,246,0.1)]">
-      <div class="absolute -top-8 -right-8 w-20 h-20 bg-rose-500/10 rounded-full blur-2xl group-hover:bg-rose-500/30 transition-all"></div>
+    <div class="glass card-belum rounded-lg p-2.5 relative overflow-hidden group">
       <div class="flex justify-between items-center mb-1.5">
-        <span class="text-rose-600 font-medium tracking-wider text-[9px] uppercase">Belum Lunas</span>
-        <span class="text-[8px] bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded-full border border-rose-200" id="totBelumCount">0 Faktur</span>
+        <span class="ar-card-title">Belum Lunas</span>
+        <span class="ar-badge" id="totBelumCount">0 Faktur</span>
       </div>
-      <div class="text-xs font-mono font-light text-slate-900 mb-2 tracking-tight">
-        <span class="text-[9px] text-slate-500">Rp</span> <span id="totBelumNominal">0</span>
+      <div class="ar-card-value text-xs mb-2 tracking-tight">
+        <span class="rp-prefix text-[9px]">Rp</span> <span id="totBelumNominal">0</span>
       </div>
-      <div class="space-y-0.5 text-[10px] border-t border-slate-200 pt-1.5" id="totBelumBreakdown"></div>
+      <div class="space-y-0.5 text-[10px] border-t ar-card-divider pt-1.5" id="totBelumBreakdown"></div>
     </div>
 
     <!-- Card 2: Bayar Titip -->
-    <div class="glass bg-white/80 border border-blue-500/50 rounded-lg p-2 relative overflow-hidden group shadow-[0_0_10px_rgba(59,130,246,0.1)]">
-      <div class="absolute -top-8 -right-8 w-20 h-20 bg-amber-500/10 rounded-full blur-2xl group-hover:bg-amber-500/30 transition-all"></div>
+    <div class="glass card-titip rounded-lg p-2.5 relative overflow-hidden group">
       <div class="flex justify-between items-center mb-1.5">
-        <span class="text-amber-600 font-medium tracking-wider text-[9px] uppercase">Bayar Titip</span>
-        <span class="text-[8px] bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded-full border border-amber-200" id="totTitipCount">0 Faktur</span>
+        <span class="ar-card-title">Bayar Titip</span>
+        <span class="ar-badge" id="totTitipCount">0 Faktur</span>
       </div>
-      <div class="text-xs font-mono font-light text-slate-900 mb-1 tracking-tight">
-        <span class="text-[9px] text-slate-500">Rp</span> <span id="totTitipBayar">0</span>
+      <div class="ar-card-value text-xs mb-1 tracking-tight">
+        <span class="rp-prefix text-[9px]">Rp</span> <span id="totTitipBayar">0</span>
       </div>
-      <div class="text-[9px] text-slate-500 mb-2" id="totTitipSisa">Sisa Rp 0</div>
-      <div class="space-y-0.5 text-[10px] border-t border-slate-200 pt-1.5" id="totTitipBreakdown"></div>
+      <div class="ar-card-sub mb-2" id="totTitipSisa">Sisa Rp 0</div>
+      <div class="space-y-0.5 text-[10px] border-t ar-card-divider pt-1.5" id="totTitipBreakdown"></div>
     </div>
 
     <!-- Card 3: Sudah Lunas -->
-    <div class="glass bg-white/80 border border-blue-500/50 rounded-lg p-2 relative overflow-hidden group shadow-[0_0_10px_rgba(59,130,246,0.1)]">
-      <div class="absolute -top-8 -right-8 w-20 h-20 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/30 transition-all"></div>
+    <div class="glass card-lunas rounded-lg p-2.5 relative overflow-hidden group">
       <div class="flex justify-between items-center mb-1.5">
-        <span class="text-emerald-600 font-medium tracking-wider text-[9px] uppercase">Sudah Lunas</span>
-        <span class="text-[8px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded-full border border-emerald-200" id="totLunasCount">0 Faktur</span>
+        <span class="ar-card-title">Sudah Lunas</span>
+        <span class="ar-badge" id="totLunasCount">0 Faktur</span>
       </div>
-      <div class="text-xs font-mono font-light text-slate-900 mb-1 tracking-tight">
-        <span class="text-[9px] text-slate-500">Rp</span> <span id="totLunasNominal">0</span>
+      <div class="ar-card-value text-xs mb-1 tracking-tight">
+        <span class="rp-prefix text-[9px]">Rp</span> <span id="totLunasNominal">0</span>
       </div>
-      <div class="text-[9px] text-slate-500 mb-2" id="totLunasNominalFaktur">Nilai Faktur: Rp 0</div>
-      <div class="space-y-0.5 text-[10px] border-t border-slate-200 pt-1.5" id="totLunasBreakdown"></div>
+      <div class="ar-card-sub mb-2" id="totLunasNominalFaktur">Nilai Faktur: Rp 0</div>
+      <div class="space-y-0.5 text-[10px] border-t ar-card-divider pt-1.5" id="totLunasBreakdown"></div>
     </div>
 
-    <!-- Card 4: Total Diterima (Hero) -->
-    <div class="glass bg-white/80 border border-blue-500/80 rounded-lg p-2 relative overflow-hidden group shadow-[0_0_15px_rgba(59,130,246,0.2)]">
-      <div class="absolute -top-8 -right-8 w-28 h-28 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/30 transition-all"></div>
+    <!-- Card 4: Total Diterima -->
+    <div class="glass card-diterima rounded-lg p-2.5 relative overflow-hidden group">
       <div class="flex justify-between items-center mb-1.5">
-        <span class="text-blue-600 font-medium tracking-wider text-[9px] uppercase">Total Diterima</span>
+        <span class="ar-card-title">Total Diterima</span>
       </div>
-      <div class="text-sm font-mono font-light text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500 mb-3 tracking-tight">
-        <span class="text-[10px] text-blue-500">Rp</span> <span id="totDiterima">0</span>
+      <div class="ar-card-value text-sm mb-3 tracking-tight">
+        <span class="rp-prefix text-[10px]">Rp</span> <span id="totDiterima">0</span>
       </div>
-      <div class="space-y-0.5 text-[10px] border-t border-slate-200 pt-1.5" id="totDiterimaBreakdown"></div>
+      <div class="space-y-0.5 text-[10px] border-t ar-card-divider pt-1.5" id="totDiterimaBreakdown"></div>
     </div>
 
   </div>
@@ -2203,8 +2225,8 @@ function fmtBreakdown(map){
   });
   return keys.map(k =>
     `<div class="flex justify-between items-center">
-      <span class="text-slate-500 flex items-center gap-1">${sumberIcon(k)} ${escapeHtml(sumberLabel(k))}</span>
-      <span class="font-mono text-slate-800 font-light">${fmtNum(map[k])}</span>
+      <span class="bd-label flex items-center gap-1">${sumberIcon(k)} ${escapeHtml(sumberLabel(k))}</span>
+      <span class="bd-value font-light">${fmtNum(map[k])}</span>
     </div>`
   ).join('');
 }
