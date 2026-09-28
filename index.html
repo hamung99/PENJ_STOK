@@ -736,7 +736,6 @@ body.dark .rr-app .dd-upload .field input[type=text]{background:#0f172a;color:#e
       <button type="button" class="main-tab active" data-tab="penjualan">Penjualan</button>
       <button type="button" class="main-tab" data-tab="salescust">Sales/Customer</button>
       <button type="button" class="main-tab" data-tab="gudang">Data Gudang</button>
-      <button type="button" class="main-tab" data-tab="cek">Cek</button>
       <button type="button" class="main-tab" data-tab="analisa">📊 Analisa</button>
       <button type="button" class="main-tab" data-tab="ar">AR</button>
       <button type="button" class="main-tab" data-tab="um">UM</button>
@@ -1033,6 +1032,7 @@ body.dark .rr-app .dd-upload .field input[type=text]{background:#0f172a;color:#e
   <div class="gudang-subtabs" role="tablist">
     <button type="button" class="gudang-subtab active" data-gudang="fitri" onclick="switchGudangSub('fitri',this)">🧴 Fitri</button>
     <button type="button" class="gudang-subtab" data-gudang="rupa" onclick="switchGudangSub('rupa',this)">📦 Rupa Rupa</button>
+    <button type="button" class="gudang-subtab" data-gudang="cek" onclick="switchGudangSub('cek',this)">✅ Cek</button>
     <div class="gudang-view-toggle" id="gudangViewToggleWrap">
       <label for="gudangViewMode">Mode</label>
       <select id="gudangViewMode" onchange="setGudangViewMode(this.value)">
@@ -4525,12 +4525,13 @@ self.onmessage = function(e){
       if (pj) pj.style.display = (tab === 'penjualan') ? 'block' : 'none';
       if (sc) sc.style.display = (tab === 'salescust') ? 'block' : 'none';
       if (gd) gd.style.display = (tab === 'gudang') ? 'block' : 'none';
-      if (ck) ck.style.display = (tab === 'cek') ? 'block' : 'none';
       if (an) an.style.display = (tab === 'analisa') ? 'block' : 'none';
       if (ar) ar.style.display = (tab === 'ar') ? 'block' : 'none';
       if (um) um.style.display = (tab === 'um') ? 'block' : 'none';
-      if (tab === 'cek') {
-        renderCekActive();
+      // Cek is now a sub-tab of Data Gudang
+      if (ck) ck.style.display = (tab === 'gudang' && typeof _gudangSub !== 'undefined' && _gudangSub === 'cek') ? 'block' : 'none';
+      if (tab === 'gudang') {
+        switchGudangSub(_gudangSub || 'fitri');
       } else if (tab === 'salescust') {
         renderScsCust();
       } else if (tab === 'analisa') {
@@ -4699,7 +4700,7 @@ self.onmessage = function(e){
     else renderGudangPage(gudangData);
   }
   function switchGudangSub(which, btn){
-    _gudangSub = (which === 'rupa') ? 'rupa' : 'fitri';
+    _gudangSub = (which === 'rupa') ? 'rupa' : (which === 'cek') ? 'cek' : 'fitri';
     document.querySelectorAll('#page-gudang > .gudang-subtabs .gudang-subtab').forEach(b => b.classList.remove('active'));
     if (btn) btn.classList.add('active');
     else {
@@ -4710,14 +4711,19 @@ self.onmessage = function(e){
     const rupaPanel  = document.getElementById('gudangRupaPanel');
     const fitriToolbar = document.getElementById('gudangToolbarFitri');
     const vtg = document.getElementById('gudangViewToggleWrap');
+    const cekPage = document.getElementById('page-cek');
+    const isCek = (_gudangSub === 'cek');
     if (fitriPanel) fitriPanel.style.display = (_gudangSub === 'fitri') ? 'block' : 'none';
     if (rupaPanel)  rupaPanel.style.display  = (_gudangSub === 'rupa')  ? 'block' : 'none';
     if (fitriToolbar) fitriToolbar.style.display = (_gudangSub === 'fitri') ? 'flex' : 'none';
     if (vtg) vtg.style.display = (_gudangSub === 'fitri') ? 'flex' : 'none';
+    if (cekPage) cekPage.style.display = isCek ? 'block' : 'none';
+    if (isCek) { renderCekActive(); return; }
     if (_gudangSub === 'rupa') rrRenderAll();
     else renderGudangPage(gudangData);
   }
   function renderGudangPage(data){
+    if (_gudangSub === 'cek') { return; }
     if (_gudangSub === 'rupa') { rrRenderAll(); return; }
     const kpiBox = document.getElementById('gudangKpis');
     const thead  = document.getElementById('gudangThead');
