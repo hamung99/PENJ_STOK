@@ -1035,12 +1035,23 @@ function relocateMenuAndTheme(){
   var tb = document.getElementById('themeToggle');
   if (tb) { tb.disabled = true; tb.style.opacity = '0.35'; tb.title = 'Mode gelap/terang dikontrol dari bilah atas'; }
   try {
-    host.setAttribute('data-theme', parent && parent.document ? parent.document.documentElement.getAttribute('data-theme') : 'light');
+    var pt = 'light';
+    if (parent && parent.document) {
+      if (parent.document.body && parent.document.body.classList.contains('dark')) pt = 'dark';
+      else if (parent.document.documentElement.getAttribute('data-theme')) pt = parent.document.documentElement.getAttribute('data-theme');
+      else { try { var rt = parent.localStorage.getItem('rekap-theme'); if (rt) pt = rt; } catch(_){} }
+    }
+    host.setAttribute('data-theme', pt || 'light');
   } catch(e){}
   setInterval(function(){
     try {
-      var pt = parent.document.documentElement.getAttribute('data-theme');
-      if (pt && pt !== host.getAttribute('data-theme')) host.setAttribute('data-theme', pt);
+      var pt = 'light';
+      if (parent.document.body && parent.document.body.classList.contains('dark')) pt = 'dark';
+      else if (parent.document.documentElement.getAttribute('data-theme')) pt = parent.document.documentElement.getAttribute('data-theme') || 'light';
+      if (pt && pt !== host.getAttribute('data-theme')) {
+        host.setAttribute('data-theme', pt);
+        try { if (typeof applyTheme === 'function') applyTheme(pt); } catch(_){}
+      }
     } catch(e){}
   }, 800);
 }
@@ -2523,12 +2534,43 @@ function applyTheme(theme){
   if (meta) meta.content = isDark ? '#0f172a' : '#1e3a5f';
 }
 function initTheme(){
-  let saved = localStorage.getItem(THEME_KEY);
+  let saved = null;
+  // Prioritas: tema dari parent (index.html) jika di-iframe
+  try {
+    if (window.parent && window.parent !== window) {
+      const pd = window.parent.document;
+      if (pd.body && pd.body.classList.contains('dark')) saved = 'dark';
+      else if (pd.documentElement && pd.documentElement.getAttribute('data-theme') === 'dark') saved = 'dark';
+      else if (pd.body && pd.body.classList.contains('dark') === false) {
+        const pt = pd.documentElement.getAttribute('data-theme');
+        if (pt === 'light' || pt === 'dark') saved = pt;
+        else {
+          try { const rt = window.parent.localStorage.getItem('rekap-theme'); if (rt === 'dark' || rt === 'light') saved = rt; } catch(_){}
+        }
+      }
+    }
+  } catch(_){}
+  if (!saved) {
+    try { saved = localStorage.getItem(THEME_KEY); } catch(_){}
+  }
+  if (!saved) {
+    try { saved = localStorage.getItem('rekap-theme'); } catch(_){}
+  }
   if (!saved){
     saved = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   }
   applyTheme(saved);
 }
+// Terima tema dari parent index.html
+window.addEventListener('message', function(ev){
+  try {
+    const d = ev.data;
+    if (d && d.type === 'rekap-theme' && (d.theme === 'dark' || d.theme === 'light')) {
+      applyTheme(d.theme);
+      try { localStorage.setItem(THEME_KEY, d.theme); } catch(_){}
+    }
+  } catch(_){}
+});
 document.getElementById('btnArCloudPush')?.addEventListener('click', async () => {
   try { await pushArToCloud(); alert('Berhasil upload data AR ke cloud.'); }
   catch(e){ alert('Gagal upload ke cloud: ' + (e && e.message || e)); }
