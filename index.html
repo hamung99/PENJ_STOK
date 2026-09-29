@@ -717,6 +717,7 @@ body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#
     <div style="display:flex;align-items:center;gap:10px">
     <nav class="main-tabs" role="tablist" id="mainTabs">
       <button type="button" class="main-tab active" data-tab="penjualan">Penjualan</button>
+      <button type="button" class="main-tab" data-tab="salesproduk">📑 Sales/Produk</button>
       <button type="button" class="main-tab" data-tab="gudang">Data Gudang</button>
       <button type="button" class="main-tab" data-tab="analisa">📊 Analisa</button>
     </nav>
@@ -2671,9 +2672,14 @@ self.onmessage = function(e){
     _activeTab = t;
     document.querySelectorAll('.tabs button').forEach(x => x.classList.remove('active'));
     if (b) b.classList.add('active');
+    else {
+      const match = Array.from(document.querySelectorAll('.tabs button')).find(btn => (btn.getAttribute('onclick') || '').indexOf("'" + t + "'") >= 0);
+      if (match) match.classList.add('active');
+    }
     const lbl = document.getElementById('tabsToggleLabel');
     const act = document.querySelector('.tabs button.active') || b;
     if (lbl && act) lbl.textContent = '📑 ' + act.textContent.trim();
+    try { syncMainTabForPenjualanSub(t); } catch(e){}
     closeTabsMenu();
     document.getElementById('colPicker').style.display = (t === 's0') ? 'block' : 'none';
     const s7q = document.getElementById('s7DateQuick');
@@ -4522,17 +4528,40 @@ self.onmessage = function(e){
       const gd = document.getElementById('page-gudang');
       const ck = document.getElementById('page-cek');
       const an = document.getElementById('page-analisa');
-      if (pj) pj.style.display = (tab === 'penjualan') ? 'block' : 'none';
+      const isPenjualanFamily = (tab === 'penjualan' || tab === 'salesproduk');
+      if (pj) pj.style.display = isPenjualanFamily ? 'block' : 'none';
       if (gd) gd.style.display = (tab === 'gudang') ? 'block' : 'none';
       if (an) an.style.display = (tab === 'analisa') ? 'block' : 'none';
       // Cek = sub-tab Data Gudang; Sales/Customer = sub-tab Analisa
       if (ck) ck.style.display = (tab === 'gudang' && typeof _gudangSub !== 'undefined' && _gudangSub === 'cek') ? 'block' : 'none';
       if (sc) sc.style.display = (tab === 'analisa' && typeof _analisaSub !== 'undefined' && _analisaSub === 'salescust') ? 'block' : 'none';
-      if (tab === 'gudang') {
+      if (tab === 'salesproduk') {
+        // Buka langsung sub-tab Sales per Produk
+        const s7btn = document.querySelector('.tabs button[onclick*="s7"]');
+        show('s7', s7btn || null);
+      } else if (tab === 'penjualan') {
+        // Kembali ke tab Penjualan; pertahankan sub-tab aktif jika ada, default Faktur
+        const cur = (typeof _activeTab !== 'undefined' && _activeTab) ? _activeTab : 's6';
+        const target = (cur === 's7') ? 's6' : cur; // dari Sales/Produk masuk Penjualan → Faktur
+        const subBtn = document.querySelector('.tabs button[onclick*="' + target + '"]')
+          || document.querySelector('.tabs button.active')
+          || document.querySelector('.tabs button[onclick*="s6"]');
+        show(target, subBtn || null);
+      } else if (tab === 'gudang') {
         switchGudangSub(_gudangSub || 'fitri');
       } else if (tab === 'analisa') {
         switchAnalisaSub(_analisaSub || 'fitri');
       }
+    });
+  }
+  function syncMainTabForPenjualanSub(subTab){
+    const nav = document.getElementById('mainTabs'); if (!nav) return;
+    const want = (subTab === 's7') ? 'salesproduk' : 'penjualan';
+    // Hanya sync jika sedang di family penjualan (page terlihat)
+    const pj = document.getElementById('page-penjualan');
+    if (!pj || pj.style.display === 'none') return;
+    nav.querySelectorAll('.main-tab').forEach(b => {
+      b.classList.toggle('active', b.dataset.tab === want);
     });
   }
   function excelSerialToUTCDate(serial){ return new Date(Math.round((Number(serial) - 25569) * 86400000)); }
