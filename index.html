@@ -59,6 +59,13 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .faktur-card .fc-items .fc-line{font-weight:600;color:#0f172a;white-space:nowrap}
 .s7-date-quick label{font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.04em}
 .s7-date-quick select{width:auto;min-width:140px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:7px;font-size:12px;background:#fff;color:#172033}
+.s7table{table-layout:fixed;min-width:900px}
+.s7table th.s7-tgl,.s7table td.s7-tgl{width:72px;max-width:80px;text-align:center;vertical-align:top;font-weight:600;white-space:nowrap;font-size:11px;padding:6px 4px}
+.s7table th.s7-total,.s7table td.s7-total{width:72px;max-width:80px;text-align:right;padding:6px 6px}
+.s7table th.s7-prod,.s7table td.s7-prod{width:auto;min-width:140px;text-align:left}
+.s7table th.s7-sales,.s7table td.s7-sales{width:88px;text-align:right;padding:6px 6px;vertical-align:top}
+.s7table .s7-fk{font-size:10px;font-weight:600;color:#64748b;line-height:1.2;margin-top:1px;white-space:nowrap}
+body.dark .s7table .s7-fk{color:#94a3b8}
 .month-quick label{font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.04em}
 .month-quick select{width:auto;min-width:150px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:7px;font-size:12px;background:#fff;color:#172033}
 .month-quick .filter-btn{width:30px;height:30px;padding:0;display:inline-flex;align-items:center;justify-content:center;font-size:15px;border-radius:7px;position:relative}
@@ -2639,8 +2646,15 @@ self.onmessage = function(e){
     } else if(tab==='s7'){
       const pivot=buildS7Pivot(s7DateFilter);
       const head=['TGL','PRODUK',...SO_S7.map(s=>s==='PARIMIN'?'PRTIMIN':s),'TOTAL QTY'];
-      const rows=pivot.rows.map(r=>[r.isFirst?r.dateLabel:'',r.produk,...SO_S7.map(s=>r.q[s]||0),r.total]);
-      const total=['TOTAL','',...SO_S7.map(s=>pivot.grand[s]||0),pivot.grandTotal||0];
+      const rows=pivot.rows.map(r=>[r.isFirst?r.dateLabel:'',r.produk,...SO_S7.map(s=>{
+        const q=r.q[s]||0; const fk=(r.fk&&r.fk[s])?r.fk[s]:0;
+        if(!q) return '';
+        return fk ? (q + ' (' + fk + ' faktur)') : q;
+      }),r.total]);
+      const total=['TOTAL','',...SO_S7.map(s=>{
+        const q=pivot.grand[s]||0; const fk=(pivot.grandFk&&pivot.grandFk[s])?pivot.grandFk[s]:0;
+        return fk ? (q + ' (' + fk + ' faktur)') : q;
+      }),pivot.grandTotal||0];
       addReportSheet(wb,'Sales per Produk','Qty Penjualan Per Sales Per Tgl',head,rows,total);
     } else if(tab==='s9'){
       const head=['PRODUK','SATUAN','HARGA BELI TERENDAH','HARGA BELI TERTINGGI','HARGA JUAL TERENDAH','HARGA JUAL TERTINGGI','KET'];
@@ -2879,23 +2893,39 @@ self.onmessage = function(e){
       const produk = String(x.Produk ?? x.produk ?? '').trim() || '(Tanpa Produk)';
       const qty = N(x.Jumlah ?? x.jumlah);
       const salesName = normSales(x.Sales ?? x.sales);
+      const faktur = String(x['No. Faktur'] ?? x.faktur ?? '').trim();
       let g = byDate.get(key);
       if (!g){ g = { ts: new Date(y, m-1, day).getTime(), label: fmtTgl(d), products: new Map() }; byDate.set(key, g); }
       let p = g.products.get(produk);
-      if (!p){ p = { q: {}, total: 0 }; SO_S7.forEach(s => { p.q[s] = 0; }); g.products.set(produk, p); }
-      if (SO_S7.includes(salesName)) p.q[salesName] = (p.q[salesName] || 0) + qty;
+      if (!p){
+        p = { q: {}, fk: {}, total: 0 };
+        SO_S7.forEach(s => { p.q[s] = 0; p.fk[s] = new Set(); });
+        g.products.set(produk, p);
+      }
+      if (SO_S7.includes(salesName)) {
+        p.q[salesName] = (p.q[salesName] || 0) + qty;
+        if (faktur) p.fk[salesName].add(faktur);
+      }
       p.total += qty;
     }
     const dates = [...byDate.entries()].sort((a,b) => b[1].ts - a[1].ts);
     const rows = [];
     dates.forEach(([key, g]) => {
       const prods = [...g.products.entries()].sort((a,b) => a[0].localeCompare(b[0], 'id'));
-      prods.forEach(([produk, p], idx) => { rows.push({ dateKey: key, dateLabel: g.label, isFirst: idx === 0, span: prods.length, produk, q: p.q, total: p.total }); });
+      prods.forEach(([produk, p], idx) => {
+        const fkCount = {};
+        SO_S7.forEach(s => { fkCount[s] = (p.fk[s] && p.fk[s].size) ? p.fk[s].size : 0; });
+        rows.push({ dateKey: key, dateLabel: g.label, isFirst: idx === 0, span: prods.length, produk, q: p.q, fk: fkCount, total: p.total });
+      });
     });
-    const grand = {}; SO_S7.forEach(s => { grand[s] = 0; });
+    const grand = {}; const grandFk = {};
+    SO_S7.forEach(s => { grand[s] = 0; grandFk[s] = 0; });
     let grandTotal = 0;
-    rows.forEach(r => { SO_S7.forEach(s => { grand[s] += (r.q[s] || 0); }); grandTotal += r.total; });
-    return { rows, grand, grandTotal };
+    rows.forEach(r => {
+      SO_S7.forEach(s => { grand[s] += (r.q[s] || 0); grandFk[s] += (r.fk[s] || 0); });
+      grandTotal += r.total;
+    });
+    return { rows, grand, grandFk, grandTotal };
   }
   function s7DateOptionsHtml(){
     const set = new Set();
@@ -2948,18 +2978,31 @@ self.onmessage = function(e){
         dg.rows.forEach((r, idx) => {
           body += '<tr>';
           if (idx === 0){
-            body += '<td rowspan="' + dg.rows.length + '" style="vertical-align:top;font-weight:600;white-space:nowrap">' + dg.label + '</td>';
+            body += '<td class="s7-tgl" rowspan="' + dg.rows.length + '">' + dg.label + '</td>';
           }
-          body += '<td>' + r.produk + '</td>';
-          SO_S7.forEach(s => { const v = r.q[s] || 0; body += '<td class="num">' + (v ? v.toLocaleString('id-ID') : '') + '</td>'; });
-          body += '<td class="num" style="font-weight:700">' + (r.total ? r.total.toLocaleString('id-ID') : '') + '</td>';
+          body += '<td class="s7-prod">' + r.produk + '</td>';
+          SO_S7.forEach(s => {
+            const v = r.q[s] || 0;
+            const fk = (r.fk && r.fk[s]) ? r.fk[s] : 0;
+            if (!v) { body += '<td class="num s7-sales"></td>'; return; }
+            body += '<td class="num s7-sales">' + v.toLocaleString('id-ID')
+              + (fk ? '<div class="s7-fk">(' + fk + ' faktur)</div>' : '')
+              + '</td>';
+          });
+          body += '<td class="num s7-total" style="font-weight:700">' + (r.total ? r.total.toLocaleString('id-ID') : '') + '</td>';
           body += '</tr>';
         });
       });
     }
     const foot = '<tr><td class="num" colspan="2">TOTAL</td>' +
-      SO_S7.map(s => '<td class="num">' + (pivot.grand[s] ? pivot.grand[s].toLocaleString('id-ID') : '0') + '</td>').join('') +
-      '<td class="num">' + (pivot.grandTotal ? pivot.grandTotal.toLocaleString('id-ID') : '0') + '</td></tr>';
+      SO_S7.map(s => {
+        const q = pivot.grand[s] || 0;
+        const fk = (pivot.grandFk && pivot.grandFk[s]) ? pivot.grandFk[s] : 0;
+        return '<td class="num s7-sales">' + q.toLocaleString('id-ID')
+          + (fk ? '<div class="s7-fk">(' + fk + ' faktur)</div>' : '')
+          + '</td>';
+      }).join('') +
+      '<td class="num s7-total">' + (pivot.grandTotal ? pivot.grandTotal.toLocaleString('id-ID') : '0') + '</td></tr>';
     const pager = total > S7_PAGE_SIZE
       ? '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:8px 4px 10px;font-size:12px;color:#475569">' +
           '<span>Menampilkan <b>' + (startRow+1) + '–' + (startRow + rowsShown) + '</b> dari <b>' + total.toLocaleString('id-ID') + '</b> baris</span>' +
@@ -2969,7 +3012,13 @@ self.onmessage = function(e){
             '<button type="button" ' + (s7Page>=totalPages-1?'disabled ':'') + 'onclick="setS7Page(' + (s7Page+1) + ')" style="padding:5px 10px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;cursor:pointer">Next ›</button>' +
           '</span></div>'
       : '';
-    return pager + '<div class="tablebox"><table><thead><tr>' + head.map(h => '<th>' + h + '</th>').join('') + '</tr></thead><tbody>' + body + '</tbody><tfoot>' + foot + '</tfoot></table></div>';
+    const ths = head.map((h, i) => {
+      if (i === 0) return '<th class="s7-tgl">TGL</th>';
+      if (i === 1) return '<th class="s7-prod">PRODUK</th>';
+      if (i === head.length - 1) return '<th class="s7-total">TOTAL QTY</th>';
+      return '<th class="s7-sales">' + h + '</th>';
+    }).join('');
+    return pager + '<div class="tablebox"><table class="s7table"><thead><tr>' + ths + '</tr></thead><tbody>' + body + '</tbody><tfoot>' + foot + '</tfoot></table></div>';
   }
   function renderTab(t){
     const SO2 = R.SO2 || SO;
