@@ -316,11 +316,19 @@ body.dark .hbdiff-cancel{background:#334155;color:#e2e8f0}
 #page-cek .tablebox{max-height:68vh}
 #page-cek .cek-ok{font-weight:800}
 #page-cek .cek-beda{font-weight:800}
-.ket-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700}
+.ket-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;flex-wrap:wrap}
 .ket-badge.ok{background:#dcfce7;color:#166534}
 .ket-badge.bad{background:#fee2e2;color:#b42318}
 .ket-badge.warn{background:#dbeafe;color:#1d4ed8;white-space:normal}
 .ket-badge.alert{background:#dc2626;color:#fff;font-weight:800;white-space:normal;box-shadow:0 0 0 1px #fecaca;animation:ketAlertPulse 1.4s ease-in-out infinite}
+.ket-date-link{cursor:pointer;text-decoration:underline;text-underline-offset:2px;font-weight:800}
+.ket-badge.warn .ket-date-link{color:#1e3a8a}
+.ket-badge.warn .ket-date-link:hover{color:#1d4ed8;background:rgba(255,255,255,.45);border-radius:4px}
+.ket-badge.alert .ket-date-link{color:#fff;text-decoration-color:rgba(255,255,255,.85)}
+.ket-badge.alert .ket-date-link:hover{background:rgba(255,255,255,.22);border-radius:4px}
+tr.s7-row-highlight td{background:#fecaca !important;color:#7f1d1d}
+tr.s7-row-highlight td.s7-prod{font-weight:800}
+body.dark tr.s7-row-highlight td{background:#7f1d1d !important;color:#fecaca}
 @keyframes ketAlertPulse{0%,100%{box-shadow:0 0 0 1px #fecaca}50%{box-shadow:0 0 0 3px #fca5a5}}
 #cekRingkasanTable td, #cekRingkasanTable th{white-space:nowrap}
 #cekRingkasanTable tfoot td{background:#eef2fb;font-weight:800}
@@ -3947,37 +3955,167 @@ self.onmessage = function(e){
   }
   function fitriShortName(name){ const m = String(name ?? '').match(/(\d+)/); return m ? 'Fitri' + m[1] : String(name ?? '').trim(); }
   function cekDateLabelLong(key){ if (!key) return ''; const [y,m,d] = key.split('-').map(Number); const dt = new Date(y, m-1, d); const bulan = dt.toLocaleDateString('id-ID', {month:'long'}); return String(d).padStart(2,'0') + '-' + bulan + '-' + String(y).slice(-2); }
-  function ketBadge(selisih, dates){
-    if (selisih === 0) return '<span class="ket-badge ok">✅ Cocok</span>';
-    const dTxt = (dates && dates.length) ? (' (' + dates.join(', ') + ')') : '';
-    if (selisih > 0) return '<span class="ket-badge warn" title="Penjualan lebih banyak dari output gudang pada tanggal tersebut">🔷 Penjualan Lebih Banyak' + dTxt + '</span>';
-    return '<span class="ket-badge alert">🚨 GUDANG LEBIH BANYAK!!' + dTxt + '</span>';
-  }
-  function ketText(selisih, dates){
-    if (selisih === 0) return 'Cocok';
-    const dTxt = (dates && dates.length) ? (' (' + dates.join(', ') + ')') : '';
-    if (selisih > 0) return 'Penjualan Lebih Banyak' + dTxt;
-    return 'Gudang Lebih Banyak' + dTxt;
-  }
-  function ketGudangLebihDates(perDatePenjualan, perDateGudang){
+  function ketMismatchEntries(selisih, perDatePenjualan, perDateGudang){
+    // returns [{key:'YYYY-MM-DD', label:'26-September-26'}, ...]
     const pd = perDatePenjualan || {}; const gd = perDateGudang || {};
     const keys = Array.from(new Set([...Object.keys(pd), ...Object.keys(gd)])).sort();
     const out = [];
-    keys.forEach(k => { const p = N(pd[k]); const g = N(gd[k]); if (g > p) out.push(cekDateLabelLong(k)); });
-    return out;
-  }
-  function ketPenjualanLebihDates(perDatePenjualan, perDateGudang){
-    const pd = perDatePenjualan || {}; const gd = perDateGudang || {};
-    const keys = Array.from(new Set([...Object.keys(pd), ...Object.keys(gd)])).sort();
-    const out = [];
-    keys.forEach(k => { const p = N(pd[k]); const g = N(gd[k]); if (p > g) out.push(cekDateLabelLong(k)); });
+    keys.forEach(k => {
+      const p = N(pd[k]); const g = N(gd[k]);
+      if (selisih < 0 && g > p) out.push({ key: k, label: cekDateLabelLong(k) });
+      if (selisih > 0 && p > g) out.push({ key: k, label: cekDateLabelLong(k) });
+    });
     return out;
   }
   function ketSelisihDates(selisih, perDatePenjualan, perDateGudang){
-    if (selisih < 0) return ketGudangLebihDates(perDatePenjualan, perDateGudang);
-    if (selisih > 0) return ketPenjualanLebihDates(perDatePenjualan, perDateGudang);
-    return [];
+    // backward-compatible: array of labels
+    return ketMismatchEntries(selisih, perDatePenjualan, perDateGudang).map(x => x.label);
   }
+  function ketGudangLebihDates(perDatePenjualan, perDateGudang){
+    return ketMismatchEntries(-1, perDatePenjualan, perDateGudang).map(x => x.label);
+  }
+  function ketPenjualanLebihDates(perDatePenjualan, perDateGudang){
+    return ketMismatchEntries(1, perDatePenjualan, perDateGudang).map(x => x.label);
+  }
+  function ketBadge(selisih, datesOrEntries, produk){
+    if (selisih === 0) return '<span class="ket-badge ok">✅ Cocok</span>';
+    // datesOrEntries: string labels OR {key,label} entries
+    let entries = [];
+    if (Array.isArray(datesOrEntries) && datesOrEntries.length) {
+      if (typeof datesOrEntries[0] === 'object' && datesOrEntries[0] && datesOrEntries[0].key) {
+        entries = datesOrEntries;
+      } else {
+        entries = datesOrEntries.map(lbl => ({ key: '', label: String(lbl) }));
+      }
+    }
+    const prodAttr = produk ? (' data-produk="' + escHtml(produk) + '"') : '';
+    const dateLinks = entries.length
+      ? (' (' + entries.map(e => {
+          if (e.key) {
+            return '<span class="ket-date-link" role="button" tabindex="0" data-date="' + escHtml(e.key) + '"' + prodAttr
+              + ' title="Buka Sales/Produk tanggal ini">' + escHtml(e.label) + '</span>';
+          }
+          return escHtml(e.label);
+        }).join(', ') + ')')
+      : '';
+    if (selisih > 0) {
+      return '<span class="ket-badge warn ket-badge-nav" title="Klik tanggal untuk buka Sales/Produk">🔷 Penjualan Lebih Banyak' + dateLinks + '</span>';
+    }
+    return '<span class="ket-badge alert ket-badge-nav" title="Klik tanggal untuk buka Sales/Produk">🚨 GUDANG LEBIH BANYAK!!' + dateLinks + '</span>';
+  }
+  function ketText(selisih, dates){
+    if (selisih === 0) return 'Cocok';
+    const labels = Array.isArray(dates)
+      ? dates.map(d => (d && d.label) ? d.label : String(d))
+      : [];
+    const dTxt = labels.length ? (' (' + labels.join(', ') + ')') : '';
+    if (selisih > 0) return 'Penjualan Lebih Banyak' + dTxt;
+    return 'Gudang Lebih Banyak' + dTxt;
+  }
+  async function openSalesProdukFromCek(dateKey, produk){
+    const dk = String(dateKey || '').trim();
+    const prod = String(produk || '').trim();
+    if (!dk && !prod) return;
+    // Activate main tab Sales/Produk + show page penjualan
+    const nav = document.getElementById('mainTabs');
+    if (nav) {
+      nav.querySelectorAll('.main-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === 'salesproduk'));
+    }
+    const pj = document.getElementById('page-penjualan');
+    const gd = document.getElementById('page-gudang');
+    const an = document.getElementById('page-analisa');
+    const ck = document.getElementById('page-cek');
+    const sc = document.getElementById('page-salescust');
+    if (pj) pj.style.display = 'block';
+    if (gd) gd.style.display = 'none';
+    if (an) an.style.display = 'none';
+    if (ck) ck.style.display = 'none';
+    if (sc) sc.style.display = 'none';
+    // Month filter from date
+    if (dk && dk.length >= 7) {
+      const mk = dk.slice(0, 7); // YYYY-MM
+      const fm = document.getElementById('filterMonth');
+      if (fm) {
+        // ensure option exists
+        if (![...fm.options].some(o => o.value === mk)) {
+          const opt = document.createElement('option');
+          opt.value = mk;
+          try { opt.textContent = monthLabel(mk); } catch(e) { opt.textContent = mk; }
+          fm.appendChild(opt);
+        }
+        fm.value = mk;
+      }
+      filters.month = mk;
+    }
+    // Product type filter
+    if (prod) {
+      const isFitri = (typeof isFitriProduct === 'function') ? isFitriProduct(prod) : /FITRI/i.test(prod);
+      const pVal = isFitri ? 'FITRI' : 'RUPA_RUPA';
+      filters.product = pVal;
+      const fp = document.getElementById('filterProduct');
+      const fpq = document.getElementById('filterProductQuick');
+      if (fp) fp.value = pVal;
+      if (fpq) fpq.value = pVal;
+    }
+    // Quick search product name to help focus
+    const qs = document.getElementById('quickSearch');
+    if (qs) qs.value = prod || '';
+    filters.q = (prod || '').toUpperCase();
+    // S7 date filter
+    s7DateFilter = dk || '';
+    s7Page = 0;
+    viewCache['s7'] = null;
+    try { await applyFilters(); } catch(e) { console.warn(e); }
+    const s7btn = document.querySelector('.tabs button[onclick*="s7"]');
+    show('s7', s7btn || null);
+    // Update s7 date select UI
+    const sel = document.getElementById('s7DateFilter');
+    if (sel) {
+      try { sel.innerHTML = s7DateOptionsHtml(); sel.value = s7DateFilter; } catch(e){}
+    }
+    // Highlight product rows after render
+    window._s7HighlightProduk = prod;
+    setTimeout(() => {
+      try { highlightS7Produk(prod); } catch(e){}
+    }, 80);
+    setTimeout(() => {
+      try { highlightS7Produk(prod); } catch(e){}
+    }, 400);
+  }
+  function highlightS7Produk(produk){
+    const prod = String(produk || window._s7HighlightProduk || '').trim().toUpperCase();
+    if (!prod) return;
+    const panel = document.getElementById('panel_s7');
+    if (!panel) return;
+    panel.querySelectorAll('tr.s7-row-highlight').forEach(tr => tr.classList.remove('s7-row-highlight'));
+    let first = null;
+    panel.querySelectorAll('tbody tr').forEach(tr => {
+      const td = tr.querySelector('td.s7-prod');
+      if (!td) return;
+      const name = (td.textContent || '').trim().toUpperCase();
+      if (name === prod || name.includes(prod) || prod.includes(name)) {
+        tr.classList.add('s7-row-highlight');
+        if (!first) first = tr;
+      }
+    });
+    if (first && first.scrollIntoView) {
+      try { first.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(e) { first.scrollIntoView(); }
+    }
+  }
+  // Click handler for KET date links
+  if (!window._ketDateClickBound) {
+    window._ketDateClickBound = true;
+    document.addEventListener('click', function(ev) {
+      const el = ev.target && ev.target.closest ? ev.target.closest('.ket-date-link') : null;
+      if (!el) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      const dateKey = el.getAttribute('data-date') || '';
+      const produk = el.getAttribute('data-produk') || '';
+      openSalesProdukFromCek(dateKey, produk);
+    });
+  }
+  window.openSalesProdukFromCek = openSalesProdukFromCek;
   const CEK_FLAG_MAX = 7;
   const CEK_FLAG_INTERVAL_MS = 500;
   const CEK_FLAG_SVG_INNER = '<svg viewBox="0 0 64 64" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
@@ -4255,9 +4393,9 @@ self.onmessage = function(e){
         bedaAbsSum += Math.abs(selisih);
         if (selisih > 0) kurangSum += selisih;
         if (selisih < 0) lebihSum += Math.abs(selisih);
-        const ketDates = hasGudang ? ketSelisihDates(selisih, penjualanPD[prod.key], gudangPD[prod.key]) : [];
+        const ketEntries = hasGudang ? ketMismatchEntries(selisih, penjualanPD[prod.key], gudangPD[prod.key]) : [];
         const selColor = ok ? '#166534' : (selisih > 0 ? '#1d4ed8' : '#dc2626');
-        rBody += '<tr><td>' + prod.name + '</td>' + cells + '<td class="num" style="font-weight:800">' + nfQty(rowTotal) + '</td><td class="num">' + (hasGudang ? nfQty(gTotal) : '-') + '</td><td class="num" style="color:' + selColor + ';font-weight:700">' + (selisih > 0 ? '+' : '') + nfQty(selisih) + '</td><td>' + (hasGudang ? ketBadge(selisih, ketDates) : '-') + '</td></tr>';
+        rBody += '<tr><td>' + prod.name + '</td>' + cells + '<td class="num" style="font-weight:800">' + nfQty(rowTotal) + '</td><td class="num">' + (hasGudang ? nfQty(gTotal) : '-') + '</td><td class="num" style="color:' + selColor + ';font-weight:700">' + (selisih > 0 ? '+' : '') + nfQty(selisih) + '</td><td>' + (hasGudang ? ketBadge(selisih, ketEntries, prod.name) : '-') + '</td></tr>';
       });
       tbody.innerHTML = rBody;
       const net = grandTotal - grandGudang;
@@ -4669,9 +4807,9 @@ self.onmessage = function(e){
       const ok = selisih === 0;
       const hasGForProd = hasGudang && Object.keys(gudangPD[prod.key] || {}).length > 0;
       grandTotal += rowTotal; grandGudang += gTotal;
-      const ketDates = hasGForProd ? ketSelisihDates(selisih, penjualanPD[prod.key], gudangPD[prod.key]) : [];
+      const ketEntries = hasGForProd ? ketMismatchEntries(selisih, penjualanPD[prod.key], gudangPD[prod.key]) : [];
       const selColor = ok ? '#166534' : (selisih > 0 ? '#1d4ed8' : '#dc2626');
-      rBody += '<tr><td>' + prod.name + '</td>' + cells + '<td class="num" style="font-weight:800">' + nfQty(rowTotal) + '</td><td class="num">' + (hasGForProd ? nfQty(gTotal) : '—') + '</td><td class="num" style="color:' + selColor + ';font-weight:700">' + (hasGForProd ? ((selisih > 0 ? '+' : '') + nfQty(selisih)) : '—') + '</td><td>' + (hasGForProd ? ketBadge(selisih, ketDates) : '—') + '</td></tr>';
+      rBody += '<tr><td>' + prod.name + '</td>' + cells + '<td class="num" style="font-weight:800">' + nfQty(rowTotal) + '</td><td class="num">' + (hasGForProd ? nfQty(gTotal) : '—') + '</td><td class="num" style="color:' + selColor + ';font-weight:700">' + (hasGForProd ? ((selisih > 0 ? '+' : '') + nfQty(selisih)) : '—') + '</td><td>' + (hasGForProd ? ketBadge(selisih, ketEntries, prod.name) : '—') + '</td></tr>';
     });
     tbody.innerHTML = rBody;
     const anyGudang = list.some(p => hasGudang && Object.keys(gudangPD[p.key] || {}).length > 0);
