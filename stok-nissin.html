@@ -1,0 +1,1770 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rekap Stok - NISSIN</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+
+    <style>
+        .dropdown-enter { animation: fadeIn 0.2s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ===== Tabel mode Lengkap ===== */
+        #result-container table {
+            width: 100% !important;
+            min-width: 100% !important;
+            table-layout: auto !important;
+            border-collapse: separate; 
+            border-spacing: 0;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        #result-container table colgroup,
+        #result-container table col { display: none !important; }
+        
+        #result-container th {
+            background-color: #f8f9fa;
+            color: #5f6368;
+            font-weight: 600;
+            padding: 8px 12px;
+            border-bottom: 1px solid #e0e0e0;
+            border-right: 1px solid #f0f0f0;
+            font-size: 12px;
+            white-space: nowrap !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+        }
+        
+        #result-container td {
+            padding: 7px 12px;
+            border-bottom: 1px solid #f0f0f0;
+            border-right: 1px solid #f9fafb;
+            white-space: nowrap !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+            color: #202124;
+            font-variant-numeric: tabular-nums;
+        }
+
+        #result-container table th:first-child,
+        #result-container table td:first-child {
+            width: 90px !important;
+            min-width: 85px !important;
+            max-width: 95px !important;
+            white-space: nowrap;
+        }
+
+        #result-container tbody tr:nth-child(even) { background-color: #fafafa; }
+        #result-container tbody tr:hover { background-color: #f0f7ff; }
+
+        .table-scroll { width: 100% !important; overflow-x: auto; }
+
+        /* ===== Navigasi antar halaman produk ===== */
+        .page-nav { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+        .page-nav a {
+            padding: 4px 12px;
+            font-size: 12px;
+            color: #6b7280;
+            background: transparent;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            text-decoration: none;
+            white-space: nowrap;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+        }
+        .page-nav a:hover { background: #f3f4f6; color: #374151; border-color: #d1d5db; }
+        .page-nav a.active { background: #f3f4f6; color: #374151; border-color: #d1d5db; font-weight: 500; pointer-events: none; }
+
+        .sticky-left {
+            position: sticky;
+            left: 0;
+            width: var(--vw, 100%);
+        }
+
+        .header-bar {
+            position: sticky;
+            left: 0;
+            width: var(--vw, 100%);
+            z-index: 1000 !important;
+        }
+
+        #dropdownMenu { z-index: 9999 !important; }
+
+        #result-container thead {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+        }
+        #result-container thead th {
+            position: static;
+            background-color: #f8f9fa;
+        }
+
+        /* ===== Chip file (tipis) ===== */
+        .file-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            max-width: 300px;
+            padding: 3px 9px;
+            font-size: 11px;
+            line-height: 1.5;
+            color: #5f6368;
+            background: transparent;
+            border: 1px solid #e5e7eb;
+            border-radius: 9999px;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
+            cursor: pointer;
+        }
+        .file-chip:hover { background: #f8f9fa; border-color: #dfe1e5; }
+        .file-chip.active {
+            background: #f1f3f4;
+            border-color: #e0e2e6;
+            color: #3c4043;
+            font-weight: 500;
+        }
+        .file-chip .file-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .file-chip .file-x { opacity: 0.5; font-size: 9px; padding: 0 2px; }
+        .file-chip .file-x:hover { opacity: 1; }
+
+        /* ===== Sub tab sheet (tipis) ===== */
+        .sheet-btn {
+            padding: 3px 12px;
+            font-size: 11px;
+            color: #5f6368;
+            background: #f1f3f4;
+            border: 1px solid transparent;
+            border-radius: 6px;
+            transition: background 0.15s, color 0.15s;
+        }
+        .sheet-btn:hover { background: #e8eaed; }
+        .sheet-btn.active { background: #e8f0fe; color: #1a73e8; border-color: #c6dafc; font-weight: 500; }
+
+        /* ===== Tab mode tampilan ===== */
+        .tab-btn {
+            padding: 8px 16px;
+            font-size: 13px;
+            color: #5f6368;
+            border-bottom: 2px solid transparent;
+            transition: color 0.15s, border-color 0.15s;
+            white-space: nowrap;
+        }
+        .tab-btn:hover { color: #1a73e8; }
+        .tab-btn.active { color: #1a73e8; border-bottom-color: #1a73e8; font-weight: 500; }
+
+        /* ===== Tabel mode Ringkas ===== */
+        #ringkas-container table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        #ringkas-container th {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background-color: #8db4e2;
+            color: #000;
+            font-weight: 700;
+            padding: 8px 10px;
+            border: 1px solid #555;
+            text-align: center;
+            white-space: nowrap;
+        }
+        #ringkas-container td {
+            padding: 6px 10px;
+            border: 1px solid #555;
+            text-align: center;
+            white-space: nowrap;
+            color: #202124;
+        }
+        #ringkas-container td.produk { text-align: left; }
+        #ringkas-container td.ket { font-size: 11px; color: #c2410c; }
+        #ringkas-container tbody tr:hover { background-color: #f0f7ff; }
+
+        /* ===== Filter (tipis, pil penuh) ===== */
+        .filter-wrap {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 6px 2px 8px;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 9999px;
+            font-size: 11px;
+            line-height: 1.4;
+            color: #5f6368;
+            white-space: nowrap;
+        }
+        .filter-wrap .filter-sep {
+            color: #e5e7eb;
+            font-size: 11px;
+            margin: 0 1px;
+        }
+        .filter-wrap > i.fa-calendar-alt {
+            font-size: 10px;
+            color: #9ca3af;
+        }
+        .filter-input {
+            font-size: 11px;
+            line-height: 1.4;
+            border: 1px solid transparent;
+            border-radius: 6px;
+            padding: 2px 4px;
+            background: transparent;
+            color: #202124;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+        }
+        .filter-input:hover { background: #f8f9fa; }
+        .filter-input:focus {
+            background: #fff;
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 2px rgba(96,165,250,0.2);
+        }
+        .filter-reset-btn {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 6px;
+            background: #f1f3f4;
+            color: #5f6368;
+            transition: background 0.15s;
+            line-height: 1;
+        }
+        .filter-reset-btn:hover { background: #e8eaed; }
+        .filter-info { font-size: 10px; color: #9ca3af; padding-right: 4px; }
+        .filter-info.active { color: #1a73e8; font-weight: 500; }
+
+        /* ===== Baris tab + filter ===== */
+        .tab-filter-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 6px;
+        }
+        .tab-filter-row .tab-group {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        @media (max-width: 768px) {
+            #result-container table { font-size: 11px; }
+            #result-container th, #result-container td { padding: 5px 6px; }
+            .file-chip { max-width: 220px; }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800 font-sans p-6 min-h-screen">
+
+    <div id="page" style="width:max-content; min-width:100%;">
+        
+        <!-- HEADER -->
+        <div class="header-bar flex justify-between items-start mb-4">
+            <div>
+                <div class="flex items-center gap-4 flex-wrap">
+                    <h1 class="text-base font-normal text-gray-900">Rekapitulasi Stok</h1>
+                    <nav id="pageNav" class="page-nav"></nav>
+                </div>
+                <p class="text-red-500 text-xs mt-1 font-medium" id="statusText"></p>
+                <p class="text-gray-400 text-xs mt-1" id="saveText"></p>
+            </div>
+            
+            <div class="flex flex-col items-end gap-2">
+                <div class="flex items-center gap-3 flex-wrap justify-end">
+                    <div id="fileTabs" class="hidden flex flex-wrap gap-2 justify-end"></div>
+
+                    <div class="relative z-50">
+                        <button id="menuBtn" class="p-1 text-gray-500 hover:bg-gray-200 rounded-full transition focus:outline-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                            </svg>
+                        </button>
+
+                        <div id="dropdownMenu" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-2xl border border-gray-200 z-[9999] dropdown-enter">
+                            <div class="py-1">
+                                <div class="px-4 py-2 border-b border-gray-100">
+                                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Aksi</p>
+                                </div>
+                                <label for="excelFile" class="cursor-pointer flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition">
+                                    <i class="fas fa-file-excel text-green-500 w-5 mr-3 text-center"></i>
+                                    Upload File Excel
+                                </label>
+                                <input type="file" id="excelFile" class="hidden" accept=".xlsb,.xlsx,.xls" multiple>
+                                
+                                <a href="#" id="demoBtn" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition">
+                                    <i class="fas fa-magic text-purple-500 w-5 mr-3 text-center"></i>
+                                    Coba Contoh Data
+                                </a>
+                                <div class="border-t border-gray-100 my-1"></div>
+                                <a href="#" id="saveJsonBtn" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition">
+                                    <i class="fas fa-save text-blue-500 w-5 mr-3 text-center"></i>
+                                    Simpan Semua (JSON)
+                                </a>
+                                <label for="jsonFile" class="cursor-pointer flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition">
+                                    <i class="fas fa-folder-open text-amber-500 w-5 mr-3 text-center"></i>
+                                    Buka Backup JSON
+                                </label>
+                                <input type="file" id="jsonFile" class="hidden" accept=".json,application/json">
+                                <div class="border-t border-gray-100 my-1"></div>
+                                <a href="#" id="deleteBtn" class="flex items-center px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition">
+                                    <i class="fas fa-trash-alt w-5 mr-3 text-center"></i>
+                                    Hapus Pilihan Data...
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="sheetTabs" class="hidden flex flex-wrap gap-1 justify-end"></div>
+            </div>
+        </div>
+
+        <div id="loading" class="sticky-left hidden text-sm text-orange-600 font-medium mb-3">
+            <i class="fas fa-spinner fa-spin mr-2"></i> Memproses file Excel... Silakan tunggu.
+        </div>
+
+        <!-- ===== SEBARIS: Tab mode + Filter ===== -->
+        <div id="tabs" class="sticky-left hidden tab-filter-row">
+            <div class="tab-group">
+                <button type="button" class="tab-btn active" data-tab="lengkap">Lengkap (per tanggal)</button>
+                <button type="button" class="tab-btn" data-tab="ringkas">Ringkas</button>
+            </div>
+
+            <div id="filterBar" class="hidden filter-wrap">
+                <i class="fas fa-calendar-alt"></i>
+                <select id="filterBulan" class="filter-input" title="Filter bulan">
+                    <option value="">Semua bulan</option>
+                </select>
+                <span class="filter-sep">|</span>
+                <input type="date" id="filterTanggal" class="filter-input" title="Pilih satu tanggal">
+                <button type="button" id="filterReset" class="filter-reset-btn" title="Reset filter">
+                    <i class="fas fa-undo"></i>
+                </button>
+                <span id="filterInfo" class="filter-info"></span>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 w-full">
+            <div class="w-full hidden" id="ringkas-container"></div>
+            <div class="w-full" id="result-container"></div>
+        </div>
+
+    </div>
+
+    <!-- Modal hapus -->
+    <div id="deleteModal" class="hidden fixed inset-0 items-center justify-center bg-black/40 p-4" style="z-index:100;">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md">
+            <div class="px-5 pt-5 pb-3">
+                <h2 class="text-base font-medium text-gray-900">Hapus pilihan data</h2>
+                <p class="text-xs text-gray-500 mt-1">Centang file yang ingin dihapus. File asli di komputer Anda tidak ikut terhapus.</p>
+            </div>
+            <label class="flex items-center gap-3 px-5 py-2 border-y border-gray-100 bg-gray-50 text-sm text-gray-700 cursor-pointer">
+                <input type="checkbox" id="deleteAll" class="h-4 w-4">
+                <span>Pilih semua</span>
+            </label>
+            <div id="deleteList" class="max-h-64 overflow-y-auto"></div>
+            <div class="px-5 py-3 border-t border-gray-100 flex items-center justify-between gap-3">
+                <button type="button" id="deleteBackupBtn" class="text-xs text-blue-600 hover:underline">
+                    <i class="fas fa-save mr-1"></i>Simpan JSON dulu
+                </button>
+                <div class="flex gap-2">
+                    <button type="button" id="deleteCancelBtn" class="px-4 py-2 text-sm rounded-lg text-gray-700 hover:bg-gray-100">Batal</button>
+                    <button type="button" id="deleteConfirmBtn" class="px-4 py-2 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed" disabled>Hapus</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // ============================================================
+    // NAVIGASI ANTAR HALAMAN (tiap HTML tetap berdiri sendiri)
+    // Salin blok <nav id="pageNav"> + CSS .page-nav + script ini ke file lain.
+    // Ubah daftar di bawah bila ada halaman baru / nama file berubah.
+    // ============================================================
+    (function () {
+        const HALAMAN = [
+            { label: 'FITRI',     file: 'stok-fitri.html' },
+            { label: 'ETHOZ',     file: 'stok-ethoz.html' },
+            { label: 'MIE',       file: 'stok-mie.html' },
+            { label: 'NISSIN',    file: 'stok-nissin.html' },
+            { label: 'SABUN',     file: 'stok-sabun.html' },
+            { label: 'SARISEDAP', file: 'stok-sarisedap.html' }
+        ];
+        const TAMPILKAN_HALAMAN_AKTIF = false; // true = halaman ini ikut tampil sebagai tab aktif
+
+        const nav = document.getElementById('pageNav');
+        if (!nav) return;
+        let sekarang = '';
+        try { sekarang = decodeURIComponent(location.pathname.split('/').pop() || '').toLowerCase(); } catch (e) {}
+
+        HALAMAN.forEach(h => {
+            const aktif = h.file.toLowerCase() === sekarang;
+            if (aktif && !TAMPILKAN_HALAMAN_AKTIF) return;
+            const a = document.createElement('a');
+            a.textContent = h.label;
+            a.href = h.file;
+            if (aktif) a.className = 'active';
+            nav.appendChild(a);
+        });
+    })();
+    </script>
+
+    <script>
+    // ============================================================
+    // KONFIGURASI KATEGORI
+    // ============================================================
+    const KATEGORI = 'NISSIN';
+    const KATA_KUNCI = ['NISSIN'];
+    document.title = 'Rekap Stok - ' + KATEGORI;
+    const KATEGORI_ID = KATEGORI.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+    const MONTH_NAMES = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+
+    (function () {
+        const fileInput = document.getElementById('excelFile');
+        const loading = document.getElementById('loading');
+        const statusText = document.getElementById('statusText');
+        const result = document.getElementById('result-container');
+        const ringkasBox = document.getElementById('ringkas-container');
+        const fileTabs = document.getElementById('fileTabs');
+        const sheetTabs = document.getElementById('sheetTabs');
+        const tabs = document.getElementById('tabs');
+        const menuBtn = document.getElementById('menuBtn');
+        const dropdownMenu = document.getElementById('dropdownMenu');
+        const deleteBtn = document.getElementById('deleteBtn');
+        const saveJsonBtn = document.getElementById('saveJsonBtn');
+        const demoBtn = document.getElementById('demoBtn');
+        demoBtn.style.display = 'none';
+        const jsonFile = document.getElementById('jsonFile');
+        const deleteModal = document.getElementById('deleteModal');
+        const deleteList = document.getElementById('deleteList');
+        const deleteAll = document.getElementById('deleteAll');
+        const deleteConfirmBtn = document.getElementById('deleteConfirmBtn');
+        const deleteCancelBtn = document.getElementById('deleteCancelBtn');
+        const deleteBackupBtn = document.getElementById('deleteBackupBtn');
+
+        const filterBar = document.getElementById('filterBar');
+        const filterBulan = document.getElementById('filterBulan');
+        const filterTanggal = document.getElementById('filterTanggal');
+        const filterReset = document.getElementById('filterReset');
+        const filterInfo = document.getElementById('filterInfo');
+
+        const EMPTY_HTML =
+            '<div class="p-8 text-center text-gray-400 text-sm">' +
+            '<i class="fas fa-file-upload text-3xl mb-3 text-gray-300"></i>' +
+            '<p>Belum ada data. Silakan unggah satu atau beberapa file Excel melalui menu di pojok kanan atas.</p>' +
+            '</div>';
+
+        const files = [];
+        let activeFile = -1;
+        let activeTab = 'lengkap';
+
+        result.innerHTML = EMPTY_HTML;
+
+        function setViewportVar() {
+            const cs = getComputedStyle(document.body);
+            const pad = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+            const w = Math.max(document.documentElement.clientWidth - pad, 200);
+            document.documentElement.style.setProperty('--vw', w + 'px');
+        }
+        setViewportVar();
+        window.addEventListener('resize', setViewportVar);
+        if (window.ResizeObserver) new ResizeObserver(setViewportVar).observe(document.documentElement);
+
+        menuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdownMenu.classList.toggle('hidden');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!dropdownMenu.contains(e.target) && !menuBtn.contains(e.target)) {
+                dropdownMenu.classList.add('hidden');
+            }
+        });
+
+        function setStatus(msg) { statusText.textContent = msg || ''; }
+
+        function normalizeText(value) {
+            return String(value || '').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+        }
+
+        function fixStickyOffsets(table) {
+            if (!table) return;
+            table.querySelectorAll('thead th, thead td').forEach(c => { c.style.top = ''; });
+        }
+
+        function tableToGrid(table) {
+            const grid = [];
+            Array.from(table.querySelectorAll('tr')).forEach((tr, r) => {
+                grid[r] = grid[r] || [];
+                let c = 0;
+                Array.from(tr.cells).forEach(cell => {
+                    while (grid[r][c] !== undefined) c++;
+                    const cs = parseInt(cell.getAttribute('colspan') || '1', 10);
+                    const rs = parseInt(cell.getAttribute('rowspan') || '1', 10);
+                    const text = (cell.textContent || '').replace(/\u00a0/g, ' ').trim();
+                    for (let i = 0; i < rs; i++) {
+                        grid[r + i] = grid[r + i] || [];
+                        for (let j = 0; j < cs; j++) grid[r + i][c + j] = text;
+                    }
+                    c += cs;
+                });
+            });
+            return grid;
+        }
+
+        function toNum(v) {
+            const n = parseFloat(String(v || '').replace(/,/g, '').replace(/\s/g, ''));
+            return isNaN(n) ? 0 : n;
+        }
+
+        function fmt(n) { return String(Math.round(n * 100) / 100); }
+
+        function parseStruct(grid) {
+            const dateRe = /^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}/;
+            const isMsk = v => /^(msk|masuk)/.test(v);
+            const isOut = v => /^(klr|keluar|klar|terjual|jual|bonus)/.test(v);
+            const isStok = v => /^(stok|stk|stock)/.test(v);
+            const isTgl = v => /^(tanggal|tgl)/.test(v);
+            const norm = row => (row || []).map(v => (v || '').toLowerCase().replace(/[^a-z]/g, ''));
+
+            let subIdx = -1;
+            for (let i = 0; i < grid.length; i++) {
+                const low = norm(grid[i]);
+                if (low.some(isMsk) && low.some(isOut) && low.some(isStok)) { subIdx = i; break; }
+            }
+            if (subIdx === -1) return null;
+
+            const sub = norm(grid[subIdx]);
+            let dateCol = sub.findIndex(isTgl);
+            if (dateCol === -1) dateCol = 0;
+
+            const nameRow = grid[subIdx - 1] || [];
+            const products = [];
+            for (let c = 0; c < sub.length; c++) {
+                if (!isMsk(sub[c])) continue;
+                const outs = [];
+                let k = c + 1;
+                while (k < sub.length && isOut(sub[k])) { outs.push(k); k++; }
+                if (!outs.length || k >= sub.length || !isStok(sub[k])) continue;
+                const s = k;
+                let name = '';
+                const cand = outs.concat([s, c]);
+                for (const x of cand) {
+                    const t = (nameRow[x] || '').trim();
+                    if (t && !isTgl(t.toLowerCase())) { name = t; break; }
+                }
+                if (!name) {
+                    for (let x = c; x >= 0; x--) {
+                        const t = (nameRow[x] || '').trim();
+                        if (t && !isTgl(t.toLowerCase())) { name = t; break; }
+                    }
+                }
+                if (!name) name = 'Produk ' + (products.length + 1);
+                products.push({ name: name, c: c, outs: outs, s: s,
+                                cols: [c].concat(outs, [s]) });
+                c = s;
+            }
+            if (!products.length) return null;
+
+            const dateRows = [];
+            const pre = [];
+            for (let r = subIdx + 1; r < grid.length; r++) {
+                const row = grid[r] || [];
+                if (dateRe.test(row[dateCol] || '')) dateRows.push(row);
+                else if (dateRows.length === 0) pre.push(row);
+            }
+            const hasStok = row => products.some(p => (row[p.s] || '') !== '');
+            let initRow = pre.find(row => /^saldo/i.test(row[dateCol] || '') || /^saldo/i.test(row[0] || '')) || null;
+            if (!initRow) {
+                for (let i = pre.length - 1; i >= 0; i--) { if (hasStok(pre[i])) { initRow = pre[i]; break; } }
+            }
+
+            return { subIdx: subIdx, dateCol: dateCol, products: products, initRow: initRow, dateRows: dateRows };
+        }
+
+        function removeColumns(table, cols, fromRow) {
+            const occupied = [];
+            Array.from(table.querySelectorAll('tr')).forEach((tr, r) => {
+                occupied[r] = occupied[r] || new Set();
+                let c = 0;
+                Array.from(tr.cells).forEach(cell => {
+                    while (occupied[r].has(c)) c++;
+                    const cs = parseInt(cell.getAttribute('colspan') || '1', 10);
+                    const rs = parseInt(cell.getAttribute('rowspan') || '1', 10);
+                    for (let i = 1; i < rs; i++) {
+                        occupied[r + i] = occupied[r + i] || new Set();
+                        for (let j = 0; j < cs; j++) occupied[r + i].add(c + j);
+                    }
+                    if (r >= fromRow) {
+                        let removed = 0;
+                        for (let j = 0; j < cs; j++) if (cols.has(c + j)) removed++;
+                        if (removed === cs) cell.remove();
+                        else if (removed > 0) cell.setAttribute('colspan', String(cs - removed));
+                    }
+                    c += cs;
+                });
+            });
+        }
+
+        function isTotalSummaryHeader(text) {
+            const norm = (text || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (!norm) return false;
+            return (
+                norm.includes('totalperhari') ||
+                norm.includes('totalstok') ||
+                norm.includes('totalstoksfa') ||
+                norm.includes('totalsfa') ||
+                norm.includes('totalkeluar') ||
+                norm.includes('totalpenjualan') ||
+                norm === 'total' ||
+                norm === 'jumlah' ||
+                (norm.startsWith('total') && (norm.endsWith('hari') || norm.endsWith('stok') || norm.endsWith('sfa')))
+            );
+        }
+
+        function removeTotalSummaryColumns(table) {
+            const grid = tableToGrid(table);
+            const cols = new Set();
+            const maxHeaderRow = Math.min(grid.length, 6);
+            for (let r = 0; r < maxHeaderRow; r++) {
+                const row = grid[r] || [];
+                for (let c = 0; c < row.length; c++) {
+                    if (isTotalSummaryHeader(row[c])) {
+                        cols.add(c);
+                    }
+                }
+            }
+            if (cols.size > 0) {
+                removeColumns(table, cols, 0);
+            }
+            return cols.size;
+        }
+
+        function cleanTrailingSummaryRows(table) {
+            const rows = Array.from(table.querySelectorAll('tr'));
+            let cutIndex = -1;
+
+            for (let i = 0; i < rows.length; i++) {
+                const text0 = normalizeText(rows[i].cells[0]?.textContent || '');
+                const rowText = normalizeText(rows[i].textContent || '');
+                if (
+                    text0.startsWith('31/') || text0.startsWith('31-') || text0.startsWith('31.') ||
+                    rowText.includes('31/09') || rowText.includes('31-09') || rowText.includes('31.09') ||
+                    rowText.includes('31/08') || rowText.includes('31/10') || rowText.includes('31/12') ||
+                    rowText.includes('31/07') || rowText.includes('31/05') || rowText.includes('31/03') || rowText.includes('31/01')
+                ) {
+                    cutIndex = i;
+                    break;
+                }
+            }
+
+            if (cutIndex === -1) {
+                const dateRe = /^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}/;
+                for (let i = 0; i < rows.length; i++) {
+                    const text0 = (rows[i].cells[0]?.textContent || '').trim();
+                    const rowText = normalizeText(rows[i].textContent || '');
+                    if (rowText.includes('dalam liter') || rowText.includes('minggu ke') || rowText.includes('krt/liter') || rowText.includes('stock fitri')) {
+                        break;
+                    }
+                    if (dateRe.test(text0)) {
+                        cutIndex = i;
+                    }
+                }
+            }
+
+            let secondaryTableIndex = -1;
+            for (let i = 0; i < rows.length; i++) {
+                const rowText = normalizeText(rows[i].textContent || '');
+                if (rowText.includes('dalam liter') || rowText.includes('minggu ke') || rowText.includes('krt/liter') || rowText.includes('stock fitri(') || rowText.includes('penjualan fitri(')) {
+                    secondaryTableIndex = i;
+                    break;
+                }
+            }
+
+            let finalCut = -1;
+            if (cutIndex !== -1) {
+                finalCut = cutIndex;
+            } else if (secondaryTableIndex !== -1) {
+                finalCut = secondaryTableIndex - 1;
+            }
+
+            if (finalCut !== -1) {
+                for (let i = rows.length - 1; i > finalCut; i--) {
+                    rows[i].remove();
+                }
+            }
+        }
+
+        function removeCurahProduct(table) {
+            const st = parseStruct(tableToGrid(table));
+            if (!st) return 0;
+            const curahCols = new Set();
+            let count = 0;
+            const dateRows = st.dateRows || [];
+
+            st.products.forEach(p => {
+                const normName = (p.name || '').toLowerCase();
+                const isCurah = normName.includes('curah');
+                let zeroMovement = false;
+                if (dateRows.length > 0) {
+                    const totalMasuk = dateRows.reduce((sum, r) => sum + toNum(r[p.c]), 0);
+                    const totalKeluar = dateRows.reduce((sum, r) => {
+                        let outSum = 0;
+                        p.outs.forEach(x => { outSum += toNum(r[x]); });
+                        return sum + outSum;
+                    }, 0);
+                    if (totalMasuk === 0 && totalKeluar === 0) {
+                        zeroMovement = true;
+                    }
+                }
+                if (isCurah || zeroMovement) {
+                    count++;
+                    p.cols.forEach(x => curahCols.add(x));
+                }
+            });
+
+            if (curahCols.size > 0) {
+                removeColumns(table, curahCols, Math.max(st.subIdx - 1, 0));
+            }
+            return count;
+        }
+
+        function removeAllColumnsAfterLastProduct(table) {
+            let grid = tableToGrid(table);
+            if (!grid.length) return;
+            let numRows = grid.length;
+            let numCols = Math.max(...grid.map(r => r.length));
+            const emptyCols = new Set();
+            for (let c = 0; c < numCols; c++) {
+                let hasAnyText = false;
+                for (let r = 0; r < numRows; r++) {
+                    const val = (grid[r]?.[c] || '').replace(/\u00a0/g, '').trim();
+                    if (val !== '') {
+                        hasAnyText = true;
+                        break;
+                    }
+                }
+                if (!hasAnyText) {
+                    emptyCols.add(c);
+                }
+            }
+            if (emptyCols.size > 0) {
+                removeColumns(table, emptyCols, 0);
+            }
+
+            grid = tableToGrid(table);
+            const st = parseStruct(grid);
+            if (st && st.products.length > 0) {
+                let maxProdCol = -1;
+                st.products.forEach(p => {
+                    p.cols.forEach(c => {
+                        if (c > maxProdCol) maxProdCol = c;
+                    });
+                });
+
+                if (maxProdCol >= 0) {
+                    const currentCols = Math.max(...tableToGrid(table).map(r => r.length));
+                    const trailingCols = new Set();
+                    for (let c = maxProdCol + 1; c < currentCols; c++) {
+                        trailingCols.add(c);
+                    }
+                    if (trailingCols.size > 0) {
+                        removeColumns(table, trailingCols, 0);
+                    }
+                }
+            }
+        }
+
+        function hideZeroProducts(table) {
+            const st = parseStruct(tableToGrid(table));
+            if (!st) return 0;
+
+            const check = st.dateRows.concat(st.initRow ? [st.initRow] : []);
+            if (!check.length) return 0;
+
+            const cols = new Set();
+            let hidden = 0;
+            st.products.forEach(p => {
+                const allZero = check.every(row => p.cols.every(x => toNum(row[x]) === 0));
+                if (allZero) {
+                    hidden++;
+                    p.cols.forEach(x => cols.add(x));
+                }
+            });
+
+            if (hidden) removeColumns(table, cols, Math.max(st.subIdx - 1, 0));
+            return hidden;
+        }
+
+        function buildRingkas(table) {
+            const st = parseStruct(tableToGrid(table));
+            if (!st) return null;
+            const products = st.products, initRow = st.initRow, dateRows = st.dateRows;
+
+            const items = products.map(p => {
+                let masuk = 0, keluar = 0, lastStok = null, firstDelta = null;
+                dateRows.forEach(row => {
+                    const m = toNum(row[p.c]);
+                    let k = 0;
+                    p.outs.forEach(x => { k += toNum(row[x]); });
+                    masuk += m;
+                    keluar += k;
+                    const sv = row[p.s] || '';
+                    if (sv !== '') {
+                        lastStok = toNum(sv);
+                        if (firstDelta === null) firstDelta = { stok: lastStok, m: m, k: k };
+                    }
+                });
+                let awal = 0;
+                if (initRow && (initRow[p.s] || '') !== '') awal = toNum(initRow[p.s]);
+                else if (firstDelta) awal = firstDelta.stok - firstDelta.m + firstDelta.k;
+                const hitung = awal + masuk - keluar;
+                const akhir = lastStok !== null ? lastStok : hitung;
+                const selisih = Math.round((hitung - akhir) * 100) / 100;
+                return { name: p.name, awal: awal, masuk: masuk, keluar: keluar, akhir: akhir, selisih: selisih };
+            });
+
+            return {
+                items: items,
+                dari: dateRows.length ? dateRows[0][st.dateCol] : '',
+                sampai: dateRows.length ? dateRows[dateRows.length - 1][st.dateCol] : ''
+            };
+        }
+
+        function buildRingkasEl(table, hiddenCount) {
+            const box = document.createElement('div');
+            const data = buildRingkas(table);
+
+            if (!data) {
+                const msg = hiddenCount > 0
+                    ? 'Semua ' + hiddenCount + ' produk bernilai 0 (masuk, keluar, dan stok), jadi tidak ditampilkan.'
+                    : 'Mode Ringkas tidak dapat dibuat: kolom msk / klr / stok tidak ditemukan.';
+                box.innerHTML = '<div class="sticky-left p-6 text-sm text-gray-500"></div>';
+                box.firstChild.textContent = msg;
+                return box;
+            }
+
+            if (data.dari || hiddenCount > 0) {
+                const info = document.createElement('p');
+                info.className = 'px-4 pt-3 pb-2 text-xs text-gray-500';
+                const parts = [];
+                if (data.dari) parts.push('Periode: ' + data.dari + (data.sampai && data.sampai !== data.dari ? ' s/d ' + data.sampai : ''));
+                if (hiddenCount > 0) parts.push(hiddenCount + ' produk disembunyikan karena masuk, keluar, dan stok semuanya 0');
+                info.textContent = parts.join('  |  ');
+                box.appendChild(info);
+            }
+
+            const wrap = document.createElement('div');
+            wrap.className = 'table-scroll';
+            const t = document.createElement('table');
+
+            const thead = document.createElement('thead');
+            const hr = document.createElement('tr');
+            ['PRODUK', 'STOK AWAL', 'MASUK', 'KELUAR', 'STOK AKHIR', 'KET'].forEach(h => {
+                const th = document.createElement('th');
+                th.textContent = h;
+                hr.appendChild(th);
+            });
+            thead.appendChild(hr);
+            t.appendChild(thead);
+
+            const tbody = document.createElement('tbody');
+            data.items.forEach(it => {
+                const tr = document.createElement('tr');
+                const vals = [it.name, fmt(it.awal), fmt(it.masuk), fmt(it.keluar), fmt(it.akhir),
+                    it.selisih !== 0 ? 'Selisih ' + (it.selisih > 0 ? '+' : '') + fmt(it.selisih) : ''];
+                const cls = ['produk', '', '', '', '', 'ket'];
+                vals.forEach((v, i) => {
+                    const td = document.createElement('td');
+                    td.textContent = v;
+                    if (cls[i]) td.className = cls[i];
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+            t.appendChild(tbody);
+
+            wrap.appendChild(t);
+            box.appendChild(wrap);
+            return box;
+        }
+
+        const MULTI_SHEET_RULES = [];
+
+        function sheetsToRead(fileName, workbook) {
+            const upper = fileName.toUpperCase();
+            const rule = MULTI_SHEET_RULES.find(r => upper.includes(r.match.toUpperCase()));
+            const limit = rule ? rule.maxSheets : 1;
+            return workbook.SheetNames.slice(0, limit).map((sn, i) => ({
+                sn: sn,
+                label: (rule && rule.sheetLabels && rule.sheetLabels[i]) || sn
+            }));
+        }
+
+        // ===== FILTER HELPER =====
+        function parseDateText(text) {
+            const m = String(text || '').trim().match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/);
+            if (!m) return null;
+            const d = parseInt(m[1], 10);
+            const mo = parseInt(m[2], 10);
+            let y = parseInt(m[3], 10);
+            if (y < 100) y += 2000;
+            if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+            return { d, mo, y, iso: y + '-' + String(mo).padStart(2, '0') + '-' + String(d).padStart(2, '0') };
+        }
+
+        function getRowDateInfo(tr) {
+            for (let i = 0; i < Math.min(3, tr.cells.length); i++) {
+                const t = (tr.cells[i].textContent || '').trim();
+                const d = parseDateText(t);
+                if (d) return d;
+            }
+            return null;
+        }
+
+        function collectDates(table) {
+            const seen = new Set();
+            const out = [];
+            Array.from(table.querySelectorAll('tr')).forEach(tr => {
+                if (tr.closest('thead')) return;
+                const d = getRowDateInfo(tr);
+                if (d && !seen.has(d.iso)) { seen.add(d.iso); out.push(d); }
+            });
+            out.sort((a, b) => a.iso.localeCompare(b.iso));
+            return out;
+        }
+
+        function buildElements(table, hiddenCount) {
+            Array.from(table.querySelectorAll('colgroup, col')).forEach(el => el.remove());
+            Array.from(table.querySelectorAll('th, td')).forEach(cell => {
+                cell.removeAttribute('width');
+                cell.style.width = '';
+                cell.style.whiteSpace = 'nowrap';
+            });
+
+            table.style.width = '100%';
+            table.style.minWidth = '100%';
+            table.style.tableLayout = 'auto';
+
+            const lengkapEl = document.createElement('div');
+            const scroll = document.createElement('div');
+            scroll.className = 'table-scroll';
+            scroll.appendChild(table);
+            lengkapEl.appendChild(scroll);
+
+            const ringkasEl = buildRingkasEl(table, hiddenCount);
+
+            return { lengkapEl, ringkasEl };
+        }
+
+        function buildFilteredView(f, filter) {
+            const t = f.origTable.cloneNode(true);
+            const hasFilter = !!(filter.bulan || filter.tanggal);
+
+            const allRows = Array.from(t.querySelectorAll('tr'));
+            const bodyRows = allRows.filter(tr => !tr.closest('thead'));
+
+            const rowInfo = bodyRows.map(tr => {
+                const d = getRowDateInfo(tr);
+                if (!d) return { tr, isDate: false, match: true };
+                let match = true;
+                if (filter.bulan) {
+                    const ym = d.y + '-' + String(d.mo).padStart(2, '0');
+                    if (ym !== filter.bulan) match = false;
+                }
+                if (filter.tanggal && d.iso !== filter.tanggal) match = false;
+                return { tr, isDate: true, match };
+            });
+
+            let visibleDates = 0;
+            let firstVisibleDateIdx = -1;
+            rowInfo.forEach((info, i) => {
+                if (info.isDate && info.match) {
+                    visibleDates++;
+                    if (firstVisibleDateIdx === -1) firstVisibleDateIdx = i;
+                }
+            });
+
+            rowInfo.forEach((info, i) => {
+                if (info.isDate) {
+                    if (!info.match) info.tr.remove();
+                } else if (hasFilter) {
+                    if (firstVisibleDateIdx === -1 || i < firstVisibleDateIdx) {
+                        info.tr.remove();
+                    }
+                }
+            });
+
+            const { lengkapEl, ringkasEl } = buildElements(t, f.hiddenCount || 0);
+
+            if (visibleDates === 0 && hasFilter) {
+                const msg = document.createElement('div');
+                msg.className = 'p-8 text-center text-gray-400 text-sm';
+                msg.innerHTML = '<i class="fas fa-filter text-2xl mb-2 text-gray-300"></i><p>Tidak ada data pada filter yang dipilih.</p>';
+                lengkapEl.insertBefore(msg, lengkapEl.firstChild);
+            }
+
+            return { table: t, lengkapEl, ringkasEl, visibleDates };
+        }
+
+        function populateFilterUI(f) {
+            filterBulan.innerHTML = '<option value="">Semua bulan</option>';
+            if (!f || !f.dates || !f.dates.length) {
+                filterTanggal.value = '';
+                filterTanggal.removeAttribute('min');
+                filterTanggal.removeAttribute('max');
+                filterInfo.textContent = '';
+                filterInfo.classList.remove('active');
+                return;
+            }
+
+            const months = new Set();
+            f.dates.forEach(d => months.add(d.y + '-' + String(d.mo).padStart(2, '0')));
+            Array.from(months).sort().forEach(ym => {
+                const parts = ym.split('-');
+                const opt = document.createElement('option');
+                opt.value = ym;
+                opt.textContent = MONTH_NAMES[parseInt(parts[1], 10) - 1] + ' ' + parts[0];
+                filterBulan.appendChild(opt);
+            });
+
+            filterBulan.value = f.filter.bulan || '';
+            filterTanggal.value = f.filter.tanggal || '';
+
+            const minIso = f.dates[0].iso;
+            const maxIso = f.dates[f.dates.length - 1].iso;
+            filterTanggal.min = minIso;
+            filterTanggal.max = maxIso;
+
+            updateFilterInfo(f);
+        }
+
+        function updateFilterInfo(f) {
+            if (!f || !f.dates) { filterInfo.textContent = ''; return; }
+            const total = f.dates.length;
+            const shown = (f.visibleDates != null) ? f.visibleDates : total;
+            const active = !!(f.filter.bulan || f.filter.tanggal);
+            if (active) {
+                filterInfo.textContent = shown + '/' + total + ' tgl';
+                filterInfo.classList.add('active');
+            } else {
+                filterInfo.textContent = total + ' tgl';
+                filterInfo.classList.remove('active');
+            }
+        }
+
+        function applyFilter() {
+            const f = files[activeFile];
+            if (!f) return;
+
+            f.filter = {
+                bulan: filterBulan.value || '',
+                tanggal: filterTanggal.value || ''
+            };
+
+            const built = buildFilteredView(f, f.filter);
+            f.table = built.table;
+            f.lengkapEl = built.lengkapEl;
+            f.ringkasEl = built.ringkasEl;
+            f.visibleDates = built.visibleDates;
+
+            result.innerHTML = '';
+            result.appendChild(f.lengkapEl);
+            ringkasBox.innerHTML = '';
+            ringkasBox.appendChild(f.ringkasEl);
+
+            updateFilterInfo(f);
+            setTab(activeTab);
+        }
+
+        // ===== BUILD FILE =====
+        function buildFile(workbook, sheetName) {
+            if (!workbook || !workbook.SheetNames || !workbook.SheetNames.length) {
+                throw new Error('Workbook tidak mempunyai sheet.');
+            }
+
+            const worksheet = workbook.Sheets[sheetName];
+            if (!worksheet) throw new Error('Sheet "' + sheetName + '" tidak dapat dibaca.');
+
+            const htmlTable = XLSX.utils.sheet_to_html(worksheet, { editable: false });
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlTable;
+            
+            const table = tempDiv.querySelector('table');
+            if (!table) throw new Error('Tabel hasil Excel tidak berhasil dibuat.');
+
+            const topRows = Array.from(table.querySelectorAll('tr')).slice(0, 10);
+            topRows.forEach(r => {
+                const n = normalizeText(r.textContent);
+                if (n.includes('bulan') || n.includes('tahun') || n.includes('ethoz') || n.startsWith('stock product') || n.startsWith('stok product') || n === KATEGORI.toLowerCase() || (n.startsWith('stok ') && !n.includes('tanggal'))) {
+                    r.remove();
+                }
+            });
+
+            const allRows = Array.from(table.querySelectorAll('tr'));
+            let headerEndIndex = 0;
+
+            for (let i = 0; i < Math.min(allRows.length, 8); i++) {
+                const firstCell = (allRows[i].cells[0]?.textContent || '').trim();
+                const isDateRow = /^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}/.test(firstCell);
+                const isInitialStockRow = !isDateRow && firstCell === '' &&
+                    Array.from(allRows[i].cells).slice(1).some(c => /^\d+$/.test((c.textContent || '').trim()));
+
+                if (isDateRow || isInitialStockRow) {
+                    headerEndIndex = i;
+                    break;
+                }
+                headerEndIndex = i + 1;
+            }
+
+            if (headerEndIndex > 0) {
+                let thead = table.querySelector('thead');
+                if (!thead) {
+                    thead = document.createElement('thead');
+                    table.insertBefore(thead, table.firstChild);
+                }
+                let tbody = table.querySelector('tbody');
+                if (!tbody) {
+                    tbody = document.createElement('tbody');
+                    table.appendChild(tbody);
+                }
+
+                const headerRows = allRows.slice(0, headerEndIndex);
+                headerRows.forEach(row => {
+                    Array.from(row.cells).forEach(cell => {
+                        if (cell.tagName.toLowerCase() === 'td') {
+                            const th = document.createElement('th');
+                            th.innerHTML = cell.innerHTML;
+                            Array.from(cell.attributes).forEach(attr => {
+                                if (attr.name !== 'class') th.setAttribute(attr.name, attr.value);
+                            });
+                            cell.replaceWith(th);
+                        }
+                    });
+                    thead.appendChild(row);
+                });
+
+                const remaining = Array.from(table.querySelectorAll('tr')).filter(r => r.parentElement !== thead);
+                remaining.forEach(r => tbody.appendChild(r));
+            }
+
+            Array.from(table.querySelectorAll('thead tr')).forEach(tr => {
+                const empty = tr.cells.length > 0 && Array.from(tr.cells).every(c =>
+                    (c.textContent || '').replace(/\u00a0/g, '').trim() === '' &&
+                    parseInt(c.getAttribute('rowspan') || '1', 10) === 1);
+                if (empty) tr.remove();
+            });
+
+            cleanTrailingSummaryRows(table);
+            const removedTotalCount = removeTotalSummaryColumns(table);
+            const removedCurahCount = removeCurahProduct(table);
+            const hiddenCount = hideZeroProducts(table);
+            removeAllColumnsAfterLastProduct(table);
+
+            const origTable = table.cloneNode(true);
+            const dates = collectDates(table);
+
+            const { lengkapEl, ringkasEl } = buildElements(table, hiddenCount);
+
+            return {
+                table: table,
+                lengkapEl: lengkapEl,
+                ringkasEl: ringkasEl,
+                removedTotal: removedTotalCount,
+                origTable: origTable,
+                dates: dates,
+                hiddenCount: hiddenCount
+            };
+        }
+
+        function cleanName(fileName) {
+            return fileName.replace(/\.[^.]+$/, '').replace(/\s*\(\d+\)\s*$/, '').trim() || fileName;
+        }
+
+        function renderFileTabs() {
+            fileTabs.innerHTML = '';
+            const active = files[activeFile];
+            const seen = new Set();
+
+            files.forEach((f, i) => {
+                if (seen.has(f.fileKey)) return;
+                seen.add(f.fileKey);
+                const isActive = !!active && active.fileKey === f.fileKey;
+
+                const chip = document.createElement('div');
+                chip.className = 'file-chip' + (isActive ? ' active' : '');
+                chip.title = f.fileKey;
+                chip.setAttribute('role', 'button');
+                chip.tabIndex = 0;
+
+                const label = document.createElement('span');
+                label.className = 'file-name';
+                label.textContent = f.name;
+
+                const x = document.createElement('span');
+                x.className = 'file-x';
+                x.title = 'Hapus file ini';
+                x.innerHTML = '<i class="fas fa-times"></i>';
+                x.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const count = files.filter(o => o.fileKey === f.fileKey).length;
+                    const extra = count > 1 ? ' (termasuk ' + count + ' sub tab sheet-nya)' : '';
+                    if (confirm('Hapus file "' + f.name + '"' + extra + ' dari daftar?\n\nData file ini akan hilang dari tampilan (file asli di komputer Anda tidak terhapus).')) {
+                        removeFile(f.fileKey);
+                    }
+                });
+
+                chip.appendChild(label);
+                chip.appendChild(x);
+                const go = () => { if (!isActive) selectFile(i); };
+                chip.addEventListener('click', go);
+                chip.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); }
+                });
+                fileTabs.appendChild(chip);
+            });
+
+            fileTabs.classList.toggle('hidden', files.length === 0);
+            renderSheetTabs();
+        }
+
+        function renderSheetTabs() {
+            sheetTabs.innerHTML = '';
+            const active = files[activeFile];
+            const group = active
+                ? files.map((f, i) => ({ f: f, i: i })).filter(o => o.f.fileKey === active.fileKey)
+                : [];
+
+            if (group.length < 2) {
+                sheetTabs.classList.add('hidden');
+                return;
+            }
+
+            group.forEach(o => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'sheet-btn' + (o.i === activeFile ? ' active' : '');
+                btn.textContent = o.f.sheetLabel || ('Sheet ' + (o.i + 1));
+                btn.addEventListener('click', () => { if (o.i !== activeFile) selectFile(o.i); });
+                sheetTabs.appendChild(btn);
+            });
+            sheetTabs.classList.remove('hidden');
+        }
+
+        function setTab(name) {
+            activeTab = name;
+            document.querySelectorAll('.tab-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.tab === name);
+            });
+            result.classList.toggle('hidden', name !== 'lengkap');
+            ringkasBox.classList.toggle('hidden', name !== 'ringkas');
+            
+            const f = files[activeFile];
+            if (name === 'lengkap' && f) {
+                requestAnimationFrame(() => {
+                    fixStickyOffsets(f.table);
+                    setTimeout(() => fixStickyOffsets(f.table), 50);
+                    setTimeout(() => fixStickyOffsets(f.table), 200);
+                });
+            }
+        }
+
+        function selectFile(i) {
+            if (i < 0 || i >= files.length) return;
+            activeFile = i;
+            const f = files[i];
+
+            result.innerHTML = '';
+            result.appendChild(f.lengkapEl);
+            ringkasBox.innerHTML = '';
+            ringkasBox.appendChild(f.ringkasEl);
+
+            tabs.classList.remove('hidden');
+            filterBar.classList.remove('hidden');
+            populateFilterUI(f);
+
+            renderFileTabs();
+            setTab(activeTab);
+        }
+
+        function resetAll() {
+            files.length = 0;
+            activeFile = -1;
+            fileTabs.innerHTML = '';
+            fileTabs.classList.add('hidden');
+            sheetTabs.innerHTML = '';
+            sheetTabs.classList.add('hidden');
+            tabs.classList.add('hidden');
+            filterBar.classList.add('hidden');
+            ringkasBox.classList.add('hidden');
+            ringkasBox.innerHTML = '';
+            result.classList.remove('hidden');
+            result.innerHTML = EMPTY_HTML;
+            setStatus('');
+        }
+
+        function removeFile(keys) {
+            const set = new Set(Array.isArray(keys) ? keys : [keys]);
+            set.forEach(k => dbDelete(k).catch(err => console.error(err)));
+
+            const activeEntry = files[activeFile];
+            const firstIdx = files.findIndex(f => set.has(f.fileKey));
+            for (let i = files.length - 1; i >= 0; i--) {
+                if (set.has(files[i].fileKey)) files.splice(i, 1);
+            }
+            if (!files.length) { resetAll(); updateSaveText(); return; }
+            const keep = files.indexOf(activeEntry);
+            selectFile(keep >= 0 ? keep : Math.min(Math.max(firstIdx, 0), files.length - 1));
+            updateSaveText();
+        }
+
+        document.querySelectorAll('.tab-btn').forEach(b => {
+            b.addEventListener('click', () => setTab(b.dataset.tab));
+        });
+
+        window.addEventListener('resize', () => {
+            const f = files[activeFile];
+            if (f && activeTab === 'lengkap') {
+                requestAnimationFrame(() => fixStickyOffsets(f.table));
+            }
+        });
+
+        // ===== Event filter =====
+        filterBulan.addEventListener('change', applyFilter);
+        filterTanggal.addEventListener('change', applyFilter);
+        filterReset.addEventListener('click', (e) => {
+            e.preventDefault();
+            filterBulan.value = '';
+            filterTanggal.value = '';
+            applyFilter();
+        });
+
+        const DB_NAME = 'stok-rekap-db-' + KATEGORI_ID;
+        const DB_STORE = 'files';
+        let dbPromise = null;
+
+        function openDB() {
+            if (dbPromise) return dbPromise;
+            dbPromise = new Promise((resolve, reject) => {
+                if (!window.indexedDB) { reject(new Error('IndexedDB tidak didukung browser ini.')); return; }
+                const req = indexedDB.open(DB_NAME, 1);
+                req.onupgradeneeded = () => { req.result.createObjectStore(DB_STORE, { keyPath: 'fileKey' }); };
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            });
+            return dbPromise;
+        }
+
+        function dbTx(mode, fn) {
+            return openDB().then(db => new Promise((resolve, reject) => {
+                const tx = db.transaction(DB_STORE, mode);
+                const req = fn(tx.objectStore(DB_STORE));
+                tx.oncomplete = () => resolve(req ? req.result : undefined);
+                tx.onerror = () => reject(tx.error);
+                tx.onabort = () => reject(tx.error);
+            }));
+        }
+
+        function dbSave(record) { return dbTx('readwrite', s => s.put(record)); }
+        function dbDelete(key) { return dbTx('readwrite', s => s.delete(key)); }
+        function dbClear() { return dbTx('readwrite', s => s.clear()); }
+        function dbLoadAll() { return dbTx('readonly', s => s.getAll()); }
+
+        const saveText = document.getElementById('saveText');
+        function updateSaveText() { saveText.textContent = ''; }
+
+        function nextSeq() {
+            return files.reduce((m, f) => Math.max(m, f.seq || 0), 0) + 1;
+        }
+
+        function processFile(fileName, buffer, seq, errors) {
+            if (typeof XLSX === 'undefined') {
+                throw new Error('Library Excel belum berhasil dimuat.');
+            }
+            const workbook = XLSX.read(new Uint8Array(buffer), { type: 'array', cellDates: true });
+
+            const sheetList = sheetsToRead(fileName, workbook);
+            const multi = sheetList.length > 1;
+            const entries = [];
+
+            sheetList.forEach(({ sn, label }) => {
+                const ws = workbook.Sheets[sn];
+                if (multi && (!ws || !ws['!ref'])) return;
+                try {
+                    const built = buildFile(workbook, sn);
+                    entries.push({
+                        fileKey: fileName,
+                        seq: seq,
+                        buffer: buffer,
+                        name: cleanName(fileName),
+                        sheetLabel: multi ? label : null,
+                        table: built.table,
+                        lengkapEl: built.lengkapEl,
+                        ringkasEl: built.ringkasEl,
+                        removedTotal: built.removedTotal,
+                        origTable: built.origTable,
+                        dates: built.dates,
+                        hiddenCount: built.hiddenCount,
+                        filter: { bulan: '', tanggal: '' },
+                        visibleDates: built.dates.length
+                    });
+                } catch (sheetErr) {
+                    console.error(sheetErr);
+                    errors.push(fileName + ' / ' + sn + ' (' + sheetErr.message + ')');
+                }
+            });
+
+            if (!entries.length) throw new Error('Tidak ada sheet yang bisa dibaca.');
+            return entries;
+        }
+
+        async function ingestFile(fileName, buffer, errors) {
+            const existing = files.find(f => f.fileKey === fileName);
+            const seq = existing ? existing.seq : nextSeq();
+
+            const entries = processFile(fileName, buffer, seq, errors);
+
+            const firstOld = files.findIndex(f => f.fileKey === fileName);
+            let insertAt;
+            if (firstOld >= 0) {
+                for (let i = files.length - 1; i >= 0; i--) {
+                    if (files[i].fileKey === fileName) files.splice(i, 1);
+                }
+                insertAt = firstOld;
+            } else {
+                insertAt = files.length;
+            }
+            files.splice(insertAt, 0, ...entries);
+
+            let saveErr = null;
+            try {
+                await dbSave({ fileKey: fileName, seq: seq, buffer: buffer, savedAt: Date.now() });
+            } catch (dbErr) {
+                console.error(dbErr);
+                saveErr = dbErr;
+            }
+            return { insertAt: insertAt, saveErr: saveErr };
+        }
+
+        function beginBusy() {
+            setStatus('');
+            loading.classList.remove('hidden');
+            dropdownMenu.classList.add('hidden');
+        }
+
+        function finishBusy(errors, saveFailed, firstAdded) {
+            loading.classList.add('hidden');
+
+            const msgs = [];
+            if (errors.length) msgs.push('Gagal membaca: ' + errors.join('; '));
+            if (saveFailed) msgs.push('Data tidak bisa disimpan di browser (' + (saveFailed.message || saveFailed) + '), jadi akan hilang saat halaman ditutup');
+            if (msgs.length) setStatus(msgs.join(' | '));
+
+            if (files.length) {
+                selectFile(firstAdded >= 0 ? firstAdded : Math.max(activeFile, 0));
+            }
+            if (!saveFailed) updateSaveText();
+        }
+
+        fileInput.addEventListener('change', async function (event) {
+            const list = Array.from(event.target.files || []);
+            if (!list.length) return;
+
+            beginBusy();
+            const errors = [];
+            let saveFailed = null;
+            let firstAdded = -1;
+
+            const ditolak = [];
+            for (const file of list) {
+                const up = file.name.toUpperCase();
+                if (!KATA_KUNCI.some(k => up.includes(k))) { ditolak.push(file.name); continue; }
+                try {
+                    const buffer = await file.arrayBuffer();
+                    const r = await ingestFile(file.name, buffer, errors);
+                    if (firstAdded === -1) firstAdded = r.insertAt;
+                    if (r.saveErr) saveFailed = r.saveErr;
+                } catch (error) {
+                    console.error(error);
+                    errors.push(file.name + ' (' + error.message + ')');
+                }
+            }
+
+            fileInput.value = '';
+            if (ditolak.length) errors.push('Bukan file ' + KATEGORI + ' (nama file harus mengandung "' + KATA_KUNCI.join('/') + '"): ' + ditolak.join(', '));
+            finishBusy(errors, saveFailed, firstAdded);
+        });
+
+        // Contoh Data Generator (dibiarkan; tombol disembunyikan)
+        demoBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            dropdownMenu.classList.add('hidden');
+            beginBusy();
+
+            const dates = [];
+            for (let i = 1; i <= 30; i++) dates.push(String(i).padStart(2, '0') + '/09/2026');
+
+            const row1 = ['LAPORAN STOK HARIAN BULAN SEPTEMBER 2026'];
+            const row2 = ['DISTRIBUTOR ETHOZ FOOD'];
+            const row3 = ['TANGGAL', 'NISSIN A', '', '', 'NISSIN B', '', '', 'NISSIN C', '', '', 'TOTAL PER HARI', 'TOTAL STOK SFA'];
+            const row4 = ['', 'MSK', 'KLR', 'STOK SFA', 'MSK', 'KLR', 'STOK SFA', 'MSK', 'KLR', 'STOK SFA', '', ''];
+            const rowSaldo = ['SALDO AWAL', '', '', '500', '', '', '350', '', '', '2', '', '852'];
+
+            const dataRows = [];
+            let s1 = 500, s2 = 350, s3 = 2;
+            dates.forEach((d, i) => {
+                const m1 = i % 7 === 0 ? 100 : 0;
+                const k1 = Math.floor(Math.random() * 20) + 5;
+                s1 = s1 + m1 - k1;
+
+                const m2 = i % 10 === 0 ? 50 : 0;
+                const k2 = Math.floor(Math.random() * 15) + 3;
+                s2 = s2 + m2 - k2;
+
+                const m3 = 0, k3 = 0;
+                s3 = 2;
+
+                dataRows.push([d, m1, k1, s1, m2, k2, s2, m3, k3, s3, k1 + k2 + k3, s1 + s2 + s3]);
+            });
+
+            const ws = XLSX.utils.aoa_to_sheet([row1, row2, row3, row4, rowSaldo, ...dataRows]);
+            ws['!merges'] = [
+                { s: { r: 2, c: 1 }, e: { r: 2, c: 3 } },
+                { s: { r: 2, c: 4 }, e: { r: 2, c: 6 } },
+                { s: { r: 2, c: 7 }, e: { r: 2, c: 9 } },
+                { s: { r: 2, c: 0 }, e: { r: 3, c: 0 } },
+                { s: { r: 2, c: 10 }, e: { r: 3, c: 10 } },
+                { s: { r: 2, c: 11 }, e: { r: 3, c: 11 } }
+            ];
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Fitri');
+            const demoBuf = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+
+            const errors = [];
+            const r = await ingestFile('CONTOH_REKAP_NISSIN_SEPTEMBER.xlsx', demoBuf, errors);
+            finishBusy(errors, r.saveErr, r.insertAt);
+        });
+
+        function bufferToBase64(buf) {
+            const bytes = new Uint8Array(buf);
+            let bin = '';
+            const chunk = 0x8000;
+            for (let i = 0; i < bytes.length; i += chunk) {
+                bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+            }
+            return btoa(bin);
+        }
+
+        function base64ToBuffer(b64) {
+            const bin = atob(b64);
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            return bytes.buffer;
+        }
+
+        function exportJSON() {
+            const unique = new Map();
+            files.forEach(f => { if (!unique.has(f.fileKey)) unique.set(f.fileKey, f); });
+            if (!unique.size) {
+                alert('Belum ada data yang bisa disimpan.');
+                return;
+            }
+
+            const list = Array.from(unique.values())
+                .sort((a, b) => (a.seq || 0) - (b.seq || 0))
+                .map(f => ({ fileKey: f.fileKey, seq: f.seq, data: bufferToBase64(f.buffer) }));
+
+            const payload = {
+                app: 'stok-rekap-' + KATEGORI_ID,
+                version: 1,
+                exportedAt: new Date().toISOString(),
+                files: list
+            };
+
+            const d = new Date();
+            const pad = n => String(n).padStart(2, '0');
+            const stamp = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) +
+                '_' + pad(d.getHours()) + pad(d.getMinutes());
+
+            const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'backup-stok-' + KATEGORI_ID + '-' + stamp + '.json';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+            saveText.textContent = 'Backup JSON disimpan (' + list.length + ' file)';
+        }
+
+        saveJsonBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            dropdownMenu.classList.add('hidden');
+            exportJSON();
+        });
+
+        jsonFile.addEventListener('change', async function (event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+
+            beginBusy();
+            const errors = [];
+            let saveFailed = null;
+            let firstAdded = -1;
+
+            try {
+                const payload = JSON.parse(await file.text());
+                if (!payload || !Array.isArray(payload.files)) {
+                    throw new Error('Format backup tidak dikenali.');
+                }
+                const list = payload.files
+                    .filter(r => r && typeof r.fileKey === 'string' && typeof r.data === 'string')
+                    .sort((a, b) => (a.seq || 0) - (b.seq || 0));
+                if (!list.length) throw new Error('Backup tidak berisi file.');
+
+                for (const rec of list) {
+                    try {
+                        const r = await ingestFile(rec.fileKey, base64ToBuffer(rec.data), errors);
+                        if (firstAdded === -1) firstAdded = r.insertAt;
+                        if (r.saveErr) saveFailed = r.saveErr;
+                    } catch (err) {
+                        console.error(err);
+                        errors.push(rec.fileKey + ' (' + err.message + ')');
+                    }
+                }
+            } catch (error) {
+                console.error(error);
+                errors.push(file.name + ' (' + error.message + ')');
+            }
+
+            jsonFile.value = '';
+            finishBusy(errors, saveFailed, firstAdded);
+        });
+
+        function syncDeleteState() {
+            const cbs = Array.from(deleteList.querySelectorAll('input.del-cb'));
+            const n = cbs.filter(c => c.checked).length;
+            deleteAll.checked = n > 0 && n === cbs.length;
+            deleteConfirmBtn.disabled = n === 0;
+            deleteConfirmBtn.textContent = n ? 'Hapus (' + n + ')' : 'Hapus';
+        }
+
+        function closeDeleteModal() {
+            deleteModal.classList.add('hidden');
+            deleteModal.classList.remove('flex');
+        }
+
+        function openDeleteModal() {
+            const groups = new Map();
+            files.forEach(f => {
+                if (!groups.has(f.fileKey)) groups.set(f.fileKey, { name: f.name, sheets: 0 });
+                groups.get(f.fileKey).sheets++;
+            });
+            if (!groups.size) {
+                alert('Belum ada data yang bisa dihapus.');
+                return;
+            }
+
+            deleteList.innerHTML = '';
+            groups.forEach((g, key) => {
+                const row = document.createElement('label');
+                row.className = 'flex items-center gap-3 px-5 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer';
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.value = key;
+                cb.className = 'del-cb h-4 w-4';
+                cb.addEventListener('change', syncDeleteState);
+                const span = document.createElement('span');
+                span.textContent = g.name + (g.sheets > 1 ? '  (' + g.sheets + ' sheet)' : '');
+                row.appendChild(cb);
+                row.appendChild(span);
+                deleteList.appendChild(row);
+            });
+
+            deleteAll.checked = false;
+            syncDeleteState();
+            deleteModal.classList.remove('hidden');
+            deleteModal.classList.add('flex');
+        }
+
+        deleteBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            dropdownMenu.classList.add('hidden');
+            openDeleteModal();
+        });
+
+        deleteAll.addEventListener('change', () => {
+            deleteList.querySelectorAll('input.del-cb').forEach(c => { c.checked = deleteAll.checked; });
+            syncDeleteState();
+        });
+
+        deleteCancelBtn.addEventListener('click', closeDeleteModal);
+        deleteBackupBtn.addEventListener('click', exportJSON);
+        deleteModal.addEventListener('click', (e) => { if (e.target === deleteModal) closeDeleteModal(); });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !deleteModal.classList.contains('hidden')) closeDeleteModal();
+        });
+
+        deleteConfirmBtn.addEventListener('click', () => {
+            const keys = Array.from(deleteList.querySelectorAll('input.del-cb'))
+                .filter(c => c.checked).map(c => c.value);
+            if (!keys.length) return;
+
+            const names = keys.map(k => {
+                const f = files.find(o => o.fileKey === k);
+                return '- ' + (f ? f.name : k);
+            }).join('\n');
+
+            if (confirm('Hapus ' + keys.length + ' file terpilih?\n\n' + names +
+                '\n\nData akan hilang dari tampilan dan penyimpanan browser (file asli di komputer Anda tidak terhapus).')) {
+                removeFile(keys);
+                closeDeleteModal();
+            }
+        });
+
+        (async function restoreFromDB() {
+            try {
+                const records = await dbLoadAll();
+                if (!records || !records.length) return;
+
+                loading.classList.remove('hidden');
+                records.sort((a, b) => (a.seq || 0) - (b.seq || 0));
+
+                const errors = [];
+                for (const rec of records) {
+                    try {
+                        const entries = processFile(rec.fileKey, rec.buffer, rec.seq || 0, errors);
+                        files.push(...entries);
+                    } catch (err) {
+                        console.error(err);
+                        errors.push(rec.fileKey + ' (' + err.message + ')');
+                    }
+                }
+
+                if (files.length) {
+                    selectFile(0);
+                    updateSaveText();
+                }
+                if (errors.length) setStatus('Sebagian data tersimpan gagal dipulihkan: ' + errors.join('; '));
+            } catch (err) {
+                console.warn('IndexedDB tidak tersedia:', err);
+            } finally {
+                loading.classList.add('hidden');
+            }
+        })();
+    })();
+    </script>
+</body>
+</html>

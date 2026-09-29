@@ -1013,6 +1013,20 @@ body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#
         <button type="button" data-cek="rupa" onclick="pickCekSub('rupa')">📦 Rupa Rupa</button>
       </div>
     </div>
+    <div class="gudang-dd" id="stokDD" style="position:relative;display:inline-block">
+      <button type="button" class="gudang-subtab" id="stokTabBtn" data-gudang="stok" aria-expanded="false"
+        onclick="toggleStokMenu(event)" title="Pilih kategori stok gudang">
+        📊 Stok Gudang <span id="stokDDLabel"></span> <span class="gudang-dd-caret">▼</span>
+      </button>
+      <div class="gudang-dd-menu" id="stokMenu" hidden>
+        <button type="button" data-stok="fitri" onclick="pickStokKat('fitri')">🧴 Fitri</button>
+        <button type="button" data-stok="ethoz" onclick="pickStokKat('ethoz')">Ethoz</button>
+        <button type="button" data-stok="mie" onclick="pickStokKat('mie')">Mie</button>
+        <button type="button" data-stok="nissin" onclick="pickStokKat('nissin')">Nissin</button>
+        <button type="button" data-stok="sabun" onclick="pickStokKat('sabun')">Sabun</button>
+        <button type="button" data-stok="sarisedap" onclick="pickStokKat('sarisedap')">Sarisedap</button>
+      </div>
+    </div>
     <div class="gudang-view-toggle" id="gudangViewToggleWrap">
       <label for="gudangViewMode">Mode</label>
       <select id="gudangViewMode" onchange="setGudangViewMode(this.value)">
@@ -1075,6 +1089,11 @@ body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#
           </table>
         </div>
       </div>
+    </div>
+
+    <!-- Panel Stok Gudang: menampilkan halaman stok-*.html per kategori (iframe, file asli tidak diubah) -->
+    <div id="gudangStokPanel" style="display:none">
+      <iframe id="stokFrame" title="Stok Gudang" style="width:100%;height:calc(100vh - 150px);min-height:480px;border:1px solid #e2e8f0;border-radius:8px;background:#fff"></iframe>
     </div>
 
     <!-- Panel Rupa Rupa (integrasi dari RUPA RUPA.html) -->
@@ -4580,6 +4599,62 @@ self.onmessage = function(e){
       b.classList.toggle('active', b.dataset.cek === _cekSub);
     });
   }
+  // ===== Stok Gudang (embed halaman stok-*.html per kategori) =====
+  const STOK_KAT = {
+    fitri:     { label: 'Fitri',     file: 'stok-fitri.html' },
+    ethoz:     { label: 'Ethoz',     file: 'stok-ethoz.html' },
+    mie:       { label: 'Mie',       file: 'stok-mie.html' },
+    nissin:    { label: 'Nissin',    file: 'stok-nissin.html' },
+    sabun:     { label: 'Sabun',     file: 'stok-sabun.html' },
+    sarisedap: { label: 'Sarisedap', file: 'stok-sarisedap.html' }
+  };
+  let _stokKat = 'fitri';
+  try { const k = localStorage.getItem('gudang-stok-kat'); if (k && STOK_KAT[k]) _stokKat = k; } catch(e){}
+  function updateStokDDLabel(){
+    const lb = document.getElementById('stokDDLabel');
+    if (lb) lb.textContent = ' · ' + STOK_KAT[_stokKat].label;
+    document.querySelectorAll('#stokMenu button').forEach(b => b.classList.toggle('active', b.dataset.stok === _stokKat));
+  }
+  function closeStokMenu(){
+    const m = document.getElementById('stokMenu'); if (m) m.hidden = true;
+    const b = document.getElementById('stokTabBtn'); if (b) b.setAttribute('aria-expanded', 'false');
+  }
+  function toggleStokMenu(ev){
+    if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+    const m = document.getElementById('stokMenu'); if (!m) return;
+    const willOpen = m.hidden;
+    document.querySelectorAll('#page-gudang .gudang-dd-menu').forEach(x => { if (x !== m) x.hidden = true; });
+    m.hidden = !willOpen;
+    const b = document.getElementById('stokTabBtn'); if (b) b.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    if (willOpen) updateStokDDLabel();
+  }
+  function pickStokKat(which){
+    if (!STOK_KAT[which]) which = 'fitri';
+    closeStokMenu();
+    _stokKat = which;
+    try { localStorage.setItem('gudang-stok-kat', which); } catch(e){}
+    updateStokDDLabel();
+    switchGudangSub('stok', document.getElementById('stokTabBtn'));
+  }
+  function loadStokFrame(){
+    updateStokDDLabel();
+    const fr = document.getElementById('stokFrame'); if (!fr) return;
+    const file = STOK_KAT[_stokKat].file;
+    if (fr.dataset.loaded === file) return; // sudah termuat, jangan reload
+    fr.dataset.loaded = file;
+    fr.onload = function(){
+      try { // sembunyikan navigasi antar halaman di dalam iframe (diganti dropdown di sini)
+        const d = fr.contentDocument;
+        const st = d.createElement('style');
+        st.textContent = '#pageNav{display:none!important} body{padding:12px!important}';
+        d.head.appendChild(st);
+      } catch(e){}
+    };
+    fr.src = file;
+  }
+  document.addEventListener('click', function(e){
+    if (!e.target.closest || !e.target.closest('#stokDD')) closeStokMenu();
+  });
   function closeCekMenu(){
     const m = document.getElementById('cekMenu'); if (m) m.hidden = true;
     const b = document.getElementById('cekTabBtn'); if (b) b.setAttribute('aria-expanded', 'false');
@@ -5205,7 +5280,7 @@ self.onmessage = function(e){
     else renderGudangPage(gudangData);
   }
   function switchGudangSub(which, btn){
-    _gudangSub = (which === 'rupa') ? 'rupa' : (which === 'cek') ? 'cek' : 'fitri';
+    _gudangSub = (which === 'rupa') ? 'rupa' : (which === 'cek') ? 'cek' : (which === 'stok') ? 'stok' : 'fitri';
     document.querySelectorAll('#page-gudang > .gudang-subtabs .gudang-subtab').forEach(b => b.classList.remove('active'));
     if (btn) btn.classList.add('active');
     else {
@@ -5216,6 +5291,11 @@ self.onmessage = function(e){
     const cekBtn = document.getElementById('cekTabBtn');
     if (cekBtn) cekBtn.classList.toggle('active', _gudangSub === 'cek');
     if (_gudangSub !== 'cek') closeCekMenu();
+    if (typeof closeStokMenu === 'function') closeStokMenu();
+    const stokBtn = document.getElementById('stokTabBtn');
+    if (stokBtn) stokBtn.classList.toggle('active', _gudangSub === 'stok');
+    const stokPanel = document.getElementById('gudangStokPanel');
+    if (stokPanel) stokPanel.style.display = (_gudangSub === 'stok') ? 'block' : 'none';
     const fitriPanel = document.getElementById('gudangFitriPanel');
     const rupaPanel  = document.getElementById('gudangRupaPanel');
     const fitriToolbar = document.getElementById('gudangToolbarFitri');
@@ -5227,6 +5307,10 @@ self.onmessage = function(e){
     if (fitriToolbar) fitriToolbar.style.display = (_gudangSub === 'fitri') ? 'flex' : 'none';
     if (vtg) vtg.style.display = (_gudangSub === 'fitri') ? 'flex' : 'none';
     if (cekPage) cekPage.style.display = isCek ? 'block' : 'none';
+    if (_gudangSub === 'stok') {
+      if (typeof loadStokFrame === 'function') loadStokFrame();
+      return;
+    }
     if (isCek) {
       updateCekDDLabel();
       switchCekSub(_cekSub || 'fitri');
@@ -5236,7 +5320,7 @@ self.onmessage = function(e){
     else renderGudangPage(gudangData);
   }
   function renderGudangPage(data){
-    if (_gudangSub === 'cek') { return; }
+    if (_gudangSub === 'cek' || _gudangSub === 'stok') { return; }
     if (_gudangSub === 'rupa') { rrRenderAll(); return; }
     const kpiBox = document.getElementById('gudangKpis');
     const thead  = document.getElementById('gudangThead');
