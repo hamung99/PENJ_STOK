@@ -1019,7 +1019,7 @@ body.dark .rr-app .dd-upload .field input[type=text]{background:#0f172a;color:#e
                 <button type="button" onclick="rrCloseAllDd();rrDownloadExcel()">⬇ Download Excel</button>
                 <button type="button" onclick="rrCloseAllDd();openCekRupaNamaFix()" title="Perbaiki nama produk untuk pencocokan Cek Rupa Rupa">✏️ Perbaiki Nama</button>
                 <hr>
-                <button type="button" id="rrBtnDeleteCat" onclick="rrCloseAllDd();rrDeleteCategory()" disabled>🗑 Hapus Kategori Ini</button>
+                <button type="button" id="rrBtnDeleteCat" onclick="rrCloseAllDd();rrDeleteCategory()">🗑 Hapus Kategori</button>
                 <button type="button" class="danger" onclick="rrCloseAllDd();rrClearAll()">🗑 Hapus Semua</button>
               </div>
             </div>
@@ -5008,12 +5008,32 @@ self.onmessage = function(e){
   }
 
   async function rrDeleteCategory(){
-    if (!rrCurrentKategori) return;
-    const count = rrKategoriProdukCount(rrCurrentKategori);
-    if (!confirm('Hapus kategori "' + rrCurrentKategori + '" beserta ' + count + ' produk di dalamnya?')) return;
-    const namaHapus = rrCurrentKategori;
+    if (!rrCategories.length) return alert('Belum ada kategori yang bisa dihapus.');
+    let namaHapus = rrCurrentKategori;
+    if (!namaHapus) {
+      if (rrCategories.length === 1) {
+        namaHapus = rrCategories[0].nama;
+      } else {
+        const daftar = rrCategories.map((c, i) => (i + 1) + '. ' + c.nama + ' (' + (c.products || []).length + ' produk)').join('\n');
+        const pilih = prompt('Pilih kategori yang mau dihapus (ketik nomor atau nama):\n\n' + daftar);
+        if (pilih == null || !String(pilih).trim()) return;
+        const raw = String(pilih).trim();
+        const byNum = parseInt(raw, 10);
+        if (!isNaN(byNum) && byNum >= 1 && byNum <= rrCategories.length) {
+          namaHapus = rrCategories[byNum - 1].nama;
+        } else {
+          const found = rrCategories.find(c => rrU(c.nama) === rrU(raw) || rrU(c.nama).includes(rrU(raw)));
+          if (!found) return alert('Kategori tidak ditemukan: ' + raw);
+          namaHapus = found.nama;
+        }
+      }
+    }
+    const count = rrKategoriProdukCount(namaHapus);
+    if (!confirm('Hapus kategori "' + namaHapus + '" beserta ' + count + ' produk di dalamnya?\nTindakan ini tidak bisa dibatalkan.')) return;
     rrCategories = rrCategories.filter(c => rrU(c.nama) !== rrU(namaHapus));
-    rrCurrentKategori = '';
+    if (rrU(rrCurrentKategori) === rrU(namaHapus)) rrCurrentKategori = '';
+    const sel = document.getElementById('rrKategoriSel');
+    if (sel && rrU(sel.value) === rrU(namaHapus)) sel.value = '';
     await rrSaveAll(); rrRenderAll(); rrSetStatusUpload('Kategori "' + namaHapus + '" dihapus.');
   }
 
@@ -5049,7 +5069,7 @@ self.onmessage = function(e){
     const dl = document.getElementById('rrKategoriList');
     if (dl) dl.innerHTML = rrCategories.map(c => '<option value="' + rrEsc(c.nama) + '">').join('');
     const btn = document.getElementById('rrBtnDeleteCat');
-    if (btn) btn.disabled = !sel.value;
+    if (btn) btn.disabled = !rrCategories.length;
   }
 
   function rrDisplayName(nama){
@@ -5285,7 +5305,7 @@ self.onmessage = function(e){
     const sel = document.getElementById('rrKategoriSel');
     if (sel && !sel._rrBound){ sel._rrBound = true; sel.addEventListener('change', e => {
       rrCurrentKategori = e.target.value;
-      const b = document.getElementById('rrBtnDeleteCat'); if (b) b.disabled = !rrCurrentKategori;
+      const b = document.getElementById('rrBtnDeleteCat'); if (b) b.disabled = !rrCategories.length;
       rrRender();
     }); }
     const si = document.getElementById('rrSearchInput');
