@@ -278,24 +278,6 @@ body.dark .hbdiff-cancel{background:#334155;color:#e2e8f0}
 .main-tab:hover{background:rgba(255,255,255,.30)}
 .main-tab.active{background:#fff;color:#1f4e78}
 #page-penjualan{display:block}
-.um-page{padding:6px 0}
-:root{--bg:#F0F4FA;--card:#F2F6FC;--primary:#24518E;--primary-d:#1A4B75;--accent:#1E4D7B;--danger:#e03131;--text:#1f2733;--muted:#7A8B9E;--border:#E5ECF4;--tab-inactive:#E6ECF5;--tab-inactive-text:#333333}
-.um-page *{box-sizing:border-box;margin:0;padding:0}.um-page body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text)}.um-page header{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;background:var(--primary);color:#fff;padding:5px 18px;box-shadow:0 2px 6px rgba(0,0,0,.12)}.um-page header h1{font-size:16px;font-weight:700;line-height:1.15}.um-page header small{display:block;font-size:10px;font-weight:400;opacity:.85;margin-top:0px}.um-page .menu-wrap{position:relative}.um-page .menu-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35);color:#fff;font-size:13px;padding:5px 12px;border-radius:6px;cursor:pointer}.um-page .menu-btn:hover{background:rgba(255,255,255,.28)}.um-page .dropdown{display:none;position:absolute;right:0;top:calc(100% + 8px);min-width:230px;background:#fff;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.2);overflow:hidden}.um-page .dropdown.show{display:block}.um-page .dropdown button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:12px 16px;border:0;background:#fff;color:var(--text);font-size:14px;cursor:pointer}.um-page .dropdown button:hover{background:#f0f4ff}.um-page .dropdown hr{border:0;border-top:1px solid var(--border)}.um-page main{width:100%;max-width:none;margin:16px auto;padding:0 20px 60px}
-.um-local-header{display:flex;align-items:center;justify-content:space-between;background:var(--primary);color:#fff;padding:5px 18px;border-radius:10px;margin-bottom:12px;box-shadow:0 2px 6px rgba(0,0,0,.12)}
-.um-local-header h1{font-size:16px;font-weight:700;line-height:1.15}
-.um-local-header h1 small{display:block;font-size:10px;font-weight:400;opacity:.85}
-.um-page .menu-wrap{position:relative}
-.um-page .menu-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35);color:#fff;font-size:13px;padding:5px 12px;border-radius:6px;cursor:pointer}
-.um-page .menu-btn:hover{background:rgba(255,255,255,.28)}
-.um-page .dropdown{display:none;position:absolute;right:0;top:calc(100% + 8px);min-width:230px;background:#fff;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.2);overflow:hidden;z-index:500}
-.um-page .dropdown.show{display:block}
-.um-page .dropdown button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:12px 16px;border:0;background:#fff;color:var(--text);font-size:14px;cursor:pointer}
-.um-page .dropdown button:hover{background:#f0f4ff}
-.um-page .dropdown hr{border:0;border-top:1px solid var(--border)}
-.um-page #um-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#1f2733;color:#fff;padding:12px 22px;border-radius:10px;font-size:14px;transition:.3s;opacity:0;z-index:600;box-shadow:0 6px 20px rgba(0,0,0,.3)}
-.um-page #um-toast.show{transform:translateX(-50%) translateY(0);opacity:1}
-.um-page #um-toast.ok{background:#1e7a3c}
-.um-page #um-toast.err{background:var(--danger)}
 #page-cek .cek-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px}
 #page-cek .cek-card-title{font-size:12px;font-weight:700;color:#1f4e78;white-space:nowrap;letter-spacing:.02em}
 #page-cek .cek-card-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
@@ -734,8 +716,6 @@ body.dark .rr-app .dd-upload .field input[type=text]{background:#0f172a;color:#e
     <div style="display:flex;align-items:center;gap:10px">
     <nav class="main-tabs" role="tablist" id="mainTabs">
       <button type="button" class="main-tab active" data-tab="penjualan">Penjualan</button>
-      <button type="button" class="main-tab" data-tab="um">UM</button>
-      <button type="button" class="main-tab" data-tab="ar">AR</button>
       <button type="button" class="main-tab" data-tab="gudang">Data Gudang</button>
       <button type="button" class="main-tab" data-tab="analisa">📊 Analisa</button>
     </nav>
@@ -1417,13 +1397,6 @@ body.dark .rr-app .dd-upload .field input[type=text]{background:#0f172a;color:#e
   </div>
 </div>
 
-<div id="page-ar" style="display:none;padding:0;margin:0">
-  <iframe id="arFrame" src="./AR.html" title="Data AR" style="width:100%;min-height:calc(100vh - 48px);height:calc(100vh - 48px);border:0;display:block;background:#f0f4f8"></iframe>
-</div>
-
-<div id="page-um" style="display:none;padding:0;margin:0">
-  <iframe id="umFrame" src="./UM.html" title="Uang Masuk" style="width:100%;min-height:calc(100vh - 48px);height:calc(100vh - 48px);border:0;display:block;background:#f0f4f8"></iframe>
-</div>
 </main>
 
 <script type="text/javascript">
@@ -4521,13 +4494,9 @@ self.onmessage = function(e){
       const gd = document.getElementById('page-gudang');
       const ck = document.getElementById('page-cek');
       const an = document.getElementById('page-analisa');
-      const ar = document.getElementById('page-ar');
-      const um = document.getElementById('page-um');
       if (pj) pj.style.display = (tab === 'penjualan') ? 'block' : 'none';
       if (gd) gd.style.display = (tab === 'gudang') ? 'block' : 'none';
       if (an) an.style.display = (tab === 'analisa') ? 'block' : 'none';
-      if (ar) ar.style.display = (tab === 'ar') ? 'block' : 'none';
-      if (um) um.style.display = (tab === 'um') ? 'block' : 'none';
       // Cek = sub-tab Data Gudang; Sales/Customer = sub-tab Analisa
       if (ck) ck.style.display = (tab === 'gudang' && typeof _gudangSub !== 'undefined' && _gudangSub === 'cek') ? 'block' : 'none';
       if (sc) sc.style.display = (tab === 'analisa' && typeof _analisaSub !== 'undefined' && _analisaSub === 'salescust') ? 'block' : 'none';
@@ -5758,17 +5727,6 @@ self.onmessage = function(e){
     const btn = document.getElementById('themeBtn'); if (btn) btn.textContent = dark ? '☀️' : '🌙';
     const meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.setAttribute('content', dark ? '#1e3a5f' : '#1f4e78');
     try { localStorage.setItem('rekap-theme', dark ? 'dark' : 'light'); } catch(e){}
-    // Sinkronkan tema ke iframe AR & UM
-    const bg = dark ? '#0f172a' : '#f0f4f8';
-    ['arFrame','umFrame'].forEach(id => {
-      const fr = document.getElementById(id);
-      if (fr) {
-        fr.style.background = bg;
-        try {
-          if (fr.contentWindow) fr.contentWindow.postMessage({ type: 'rekap-theme', theme: dark ? 'dark' : 'light' }, '*');
-        } catch(e){}
-      }
-    });
   }
   function toggleTheme(){ applyTheme(document.body.classList.contains('dark') ? 'light' : 'dark'); }
   function initTheme(){
@@ -5777,20 +5735,8 @@ self.onmessage = function(e){
     applyTheme(mode);
   }
 
-  function bindIframeThemeSync(){
-    ['arFrame','umFrame'].forEach(id => {
-      const fr = document.getElementById(id);
-      if (!fr || fr._themeBound) return;
-      fr._themeBound = true;
-      fr.addEventListener('load', () => {
-        const dark = document.body.classList.contains('dark');
-        fr.style.background = dark ? '#0f172a' : '#f0f4f8';
-        try { fr.contentWindow.postMessage({ type: 'rekap-theme', theme: dark ? 'dark' : 'light' }, '*'); } catch(e){}
-      });
-    });
-  }
   (async function init(){
-    initTheme(); initMainTabs(); bindIframeThemeSync();
+    initTheme(); initMainTabs();
     const _gvm = document.getElementById('gudangViewMode');
     if (_gvm) _gvm.value = _gudangViewMode;
     const vtg = document.getElementById('gudangViewToggleWrap');
