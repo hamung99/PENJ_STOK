@@ -65,7 +65,26 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .s7table th.s7-prod,.s7table td.s7-prod{width:auto;min-width:140px;text-align:left}
 .s7table th.s7-sales,.s7table td.s7-sales{width:88px;text-align:right;padding:6px 6px;vertical-align:top}
 .s7table .s7-fk{font-size:10px;font-weight:600;color:#64748b;line-height:1.2;margin-top:1px;white-space:nowrap}
+.s7table .s7-fk-link{color:#1f4e78;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.s7table .s7-fk-link:hover{color:#0c3a66}
 body.dark .s7table .s7-fk{color:#94a3b8}
+body.dark .s7table .s7-fk-link{color:#93c5fd}
+body.dark .s7table .s7-fk-link:hover{color:#bfdbfe}
+#s7FakturOverlay .gmodal-box h3{margin:0 0 4px;font-size:16px;color:#1f4e78}
+#s7FakturOverlay .gmodal-sub{font-size:12px;color:#64748b;margin-bottom:4px;line-height:1.45}
+#s7FakturOverlay table{width:100%;border-collapse:collapse;font-size:12px;min-width:0}
+#s7FakturOverlay th{background:#1f4e78;color:#fff;padding:6px 8px;text-align:left;position:sticky;top:0;z-index:1}
+#s7FakturOverlay td{padding:6px 8px;border-bottom:1px solid #e2e8f0}
+#s7FakturOverlay td.num{text-align:right}
+#s7FakturOverlay .s7-fk-group{margin:10px 0 6px;font-size:12px;font-weight:800;color:#1f4e78}
+#s7FakturOverlay .s7-fk-group span{font-weight:600;color:#64748b;margin-left:6px}
+body.dark #s7FakturOverlay .gmodal-box{background:#1e293b;color:#e2e8f0}
+body.dark #s7FakturOverlay .gmodal-box h3{color:#93c5fd}
+body.dark #s7FakturOverlay .gmodal-sub{color:#94a3b8}
+body.dark #s7FakturOverlay th{background:#1e3a5f}
+body.dark #s7FakturOverlay td{border-color:#334155}
+body.dark #s7FakturOverlay .s7-fk-group{color:#93c5fd}
+body.dark #s7FakturOverlay .s7-fk-group span{color:#94a3b8}
 .month-quick label{font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.04em}
 .month-quick select{width:auto;min-width:150px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:7px;font-size:12px;background:#fff;color:#172033}
 .month-quick .filter-btn{width:30px;height:30px;padding:0;display:inline-flex;align-items:center;justify-content:center;font-size:15px;border-radius:7px;position:relative}
@@ -1195,6 +1214,17 @@ body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#
     <div class="fk-modal-body" id="custTglBody"></div>
     <div class="gmodal-actions">
       <button type="button" class="gmodal-ghost" onclick="closeCustTglModal()">Tutup</button>
+    </div>
+  </div>
+</div>
+
+<div class="gmodal-overlay" id="s7FakturOverlay" onclick="if(event.target===this) closeS7FakturModal()">
+  <div class="gmodal-box" style="max-width:720px;width:100%;max-height:88vh;display:flex;flex-direction:column;padding:18px 20px 16px">
+    <h3>Detail Faktur — <span id="s7FkTitle">-</span></h3>
+    <div class="gmodal-sub" id="s7FkSub">-</div>
+    <div class="fk-modal-body" id="s7FkBody" style="overflow:auto;flex:1;min-height:0;margin:8px 0 12px"></div>
+    <div class="gmodal-actions">
+      <button type="button" class="gmodal-ghost" onclick="closeS7FakturModal()">Tutup</button>
     </div>
   </div>
 </div>
@@ -2940,6 +2970,98 @@ self.onmessage = function(e){
     return '<option value="">Semua tanggal</option>' + keys.map(k => { const [y,m,dd] = k.split('-').map(Number); const label = new Date(y, m-1, dd).toLocaleDateString('id-ID'); return '<option value="' + k + '"' + (s7DateFilter === k ? ' selected' : '') + '>' + label + '</option>'; }).join('');
   }
   function setS7DateFilter(val){ s7DateFilter = val || ''; s7Page = 0; viewCache['s7'] = null; const btn = document.querySelector('.tabs button.active'); show('s7', btn); }
+  function closeS7FakturModal(){
+    const ov = document.getElementById('s7FakturOverlay');
+    if (ov) ov.classList.remove('show');
+  }
+  function openS7FakturModal(dateKey, produk, sales){
+    const ov = document.getElementById('s7FakturOverlay');
+    const body = document.getElementById('s7FkBody');
+    const title = document.getElementById('s7FkTitle');
+    const sub = document.getElementById('s7FkSub');
+    if (!ov || !body) return;
+    const wantSales = normSales(sales);
+    const wantProd = String(produk || '').trim();
+    const wantDate = String(dateKey || '');
+    // Group matching rows by faktur
+    const byFk = new Map();
+    const n = filteredRows.length;
+    for (let i = 0; i < n; i++){
+      const x = getUiRow(i); if (!x) continue;
+      const d = toDate(x.Tanggal ?? x.tanggal); if (!d) continue;
+      const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+      if (wantDate && key !== wantDate) continue;
+      const p = String(x.Produk ?? x.produk ?? '').trim() || '(Tanpa Produk)';
+      if (p !== wantProd) continue;
+      if (normSales(x.Sales ?? x.sales) !== wantSales) continue;
+      const fk = String(x['No. Faktur'] ?? x.faktur ?? '').trim() || '(Tanpa Faktur)';
+      let g = byFk.get(fk);
+      if (!g){
+        g = {
+          faktur: fk,
+          customer: String(x.Customer ?? x.customer ?? '').trim(),
+          bayar: String(x.Pembayaran ?? x.pembayaran ?? '').trim(),
+          items: [],
+          qty: 0,
+          total: 0
+        };
+        byFk.set(fk, g);
+      }
+      const qty = N(x.Jumlah ?? x.jumlah);
+      const tot = N(x.Total ?? x.total);
+      g.qty += qty;
+      g.total += tot;
+      g.items.push({
+        qty,
+        satuan: String(x.Satuan ?? x.satuan ?? '').trim(),
+        hjual: N(x['Harga Jual'] ?? x.hargaJual),
+        total: tot,
+        disc: N(x.Discount ?? x.discount)
+      });
+    }
+    const list = [...byFk.values()].sort((a,b) => a.faktur.localeCompare(b.faktur, 'id'));
+    if (title) title.textContent = wantSales || '-';
+    let dateLabel = wantDate;
+    try {
+      if (wantDate) {
+        const [yy,mm,dd] = wantDate.split('-').map(Number);
+        dateLabel = new Date(yy, mm-1, dd).toLocaleDateString('id-ID');
+      }
+    } catch(e){}
+    if (sub) {
+      sub.innerHTML = 'Produk: <b>' + escHtml(wantProd) + '</b> · Tanggal: <b>' + escHtml(dateLabel) + '</b> · '
+        + list.length + ' faktur · Qty total <b>' + list.reduce((a,g)=>a+g.qty,0).toLocaleString('id-ID') + '</b>';
+    }
+    if (!list.length) {
+      body.innerHTML = '<div style="padding:20px;text-align:center;color:#64748b">Tidak ada detail faktur.</div>';
+    } else {
+      let html = '';
+      list.forEach(g => {
+        html += '<div class="s7-fk-group">' + escHtml(g.faktur)
+          + '<span>' + (g.customer ? escHtml(g.customer) + ' · ' : '')
+          + (g.bayar ? escHtml(g.bayar) + ' · ' : '')
+          + 'Qty ' + g.qty.toLocaleString('id-ID')
+          + ' · ' + (typeof rp === 'function' ? rp(g.total) : g.total.toLocaleString('id-ID'))
+          + '</span></div>';
+        html += '<table><thead><tr><th>Qty</th><th>Satuan</th><th>Harga Jual</th><th>Discount</th><th>Total</th></tr></thead><tbody>';
+        g.items.forEach(it => {
+          html += '<tr>'
+            + '<td class="num">' + it.qty.toLocaleString('id-ID') + '</td>'
+            + '<td>' + escHtml(it.satuan) + '</td>'
+            + '<td class="num">' + (typeof rp === 'function' ? rp(it.hjual) : it.hjual) + '</td>'
+            + '<td class="num">' + (typeof rp === 'function' ? rp(it.disc) : it.disc) + '</td>'
+            + '<td class="num">' + (typeof rp === 'function' ? rp(it.total) : it.total) + '</td>'
+            + '</tr>';
+        });
+        html += '</tbody></table>';
+      });
+      body.innerHTML = html;
+    }
+    ov.classList.add('show');
+  }
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape') closeS7FakturModal();
+  });
   function renderS7(){
     const pivot = buildS7Pivot(s7DateFilter);
     const head = ['TGL','PRODUK', ...SO_S7.map(s => s === 'PARIMIN' ? 'PRTIMIN' : s), 'TOTAL QTY'];
@@ -2985,9 +3107,12 @@ self.onmessage = function(e){
             const v = r.q[s] || 0;
             const fk = (r.fk && r.fk[s]) ? r.fk[s] : 0;
             if (!v) { body += '<td class="num s7-sales"></td>'; return; }
-            body += '<td class="num s7-sales">' + v.toLocaleString('id-ID')
-              + (fk ? '<div class="s7-fk">(' + fk + ' faktur)</div>' : '')
-              + '</td>';
+            const fkLink = fk
+              ? ('<div class="s7-fk s7-fk-link" onclick="event.stopPropagation();openS7FakturModal('
+                  + JSON.stringify(r.dateKey) + ',' + JSON.stringify(r.produk) + ',' + JSON.stringify(s)
+                  + ')" title="Klik untuk lihat detail faktur">(' + fk + ' faktur)</div>')
+              : '';
+            body += '<td class="num s7-sales">' + v.toLocaleString('id-ID') + fkLink + '</td>';
           });
           body += '<td class="num s7-total" style="font-weight:700">' + (r.total ? r.total.toLocaleString('id-ID') : '') + '</td>';
           body += '</tr>';
