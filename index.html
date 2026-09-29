@@ -362,6 +362,11 @@ body.dark #cekRingkasanTable tfoot td,body.dark #cekRupaTable tfoot td{backgroun
 #page-gudang .gudang-dd-menu button{display:block;width:100%;text-align:left;background:transparent;color:#334155;padding:6px 10px;font-size:12px;font-weight:700;border-radius:6px;border:0}
 #page-gudang .gudang-dd-menu button:hover{background:#e2e8f0}
 #page-gudang .gudang-dd-menu button.active{background:#dbeafe;color:#1f4e78}
+#page-gudang #cekTabBtn .gudang-dd-caret{font-size:10px;opacity:.85;margin-left:2px}
+#page-gudang #cekDDLabel{font-weight:600;opacity:.9}
+#page-gudang #cekMenu{min-width:150px}
+#page-gudang #cekMenu button.active{background:#dbeafe;color:#1f4e78}
+body.dark #page-gudang #cekMenu button.active{background:#1d4ed8;color:#fff}
 body.dark #page-gudang .gudang-dd-menu{background:#1e293b;border-color:#475569}
 body.dark #page-gudang .gudang-dd-menu button{color:#cbd5e1}
 body.dark #page-gudang .gudang-dd-menu button:hover{background:#334155}
@@ -1008,7 +1013,16 @@ body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#
   <div class="gudang-subtabs" role="tablist">
     <button type="button" class="gudang-subtab active" data-gudang="fitri" onclick="switchGudangSub('fitri',this)">🧴 Fitri</button>
     <button type="button" class="gudang-subtab" data-gudang="rupa" onclick="switchGudangSub('rupa',this)">📦 Rupa Rupa</button>
-    <button type="button" class="gudang-subtab" data-gudang="cek" onclick="switchGudangSub('cek',this)">✅ Cek</button>
+    <div class="gudang-dd" id="cekDD" style="position:relative;display:inline-block">
+      <button type="button" class="gudang-subtab" id="cekTabBtn" data-gudang="cek" aria-expanded="false"
+        onclick="toggleCekMenu(event)" title="Pilih Cek Fitri / Rupa Rupa">
+        ✅ Cek <span id="cekDDLabel"></span> <span class="gudang-dd-caret">▼</span>
+      </button>
+      <div class="gudang-dd-menu" id="cekMenu" hidden>
+        <button type="button" data-cek="fitri" onclick="pickCekSub('fitri')">🧴 Fitri</button>
+        <button type="button" data-cek="rupa" onclick="pickCekSub('rupa')">📦 Rupa Rupa</button>
+      </div>
+    </div>
     <div class="gudang-view-toggle" id="gudangViewToggleWrap">
       <label for="gudangViewMode">Mode</label>
       <select id="gudangViewMode" onchange="setGudangViewMode(this.value)">
@@ -1261,7 +1275,7 @@ body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#
 </div>
 
 <div id="page-cek" style="display:none">
-  <div class="cek-subtabs" role="tablist">
+  <div class="cek-subtabs" role="tablist" style="display:none" aria-hidden="true">
     <button type="button" class="cek-subtab active" data-cek="fitri" onclick="switchCekSub('fitri',this)">🧴 Fitri</button>
     <button type="button" class="cek-subtab" data-cek="rupa" onclick="switchCekSub('rupa',this)">📦 Rupa Rupa</button>
     <span class="cek-alert-flags" id="cekAlertFlags" title="Ada selisih Gudang/Penjualan yang perlu dicek"></span>
@@ -4465,20 +4479,65 @@ self.onmessage = function(e){
   }
   let _cekRupaLastData = null;
   let _cekRupaFilterKey = '';
+  let _cekSub = 'fitri';
+  function updateCekDDLabel(){
+    const lb = document.getElementById('cekDDLabel');
+    if (lb) lb.textContent = _cekSub === 'rupa' ? ' · Rupa Rupa' : ' · Fitri';
+    document.querySelectorAll('#cekMenu button').forEach(b => {
+      b.classList.toggle('active', b.dataset.cek === _cekSub);
+    });
+    // sync hidden legacy subtabs
+    document.querySelectorAll('#page-cek .cek-subtab').forEach(b => {
+      b.classList.toggle('active', b.dataset.cek === _cekSub);
+    });
+  }
+  function closeCekMenu(){
+    const m = document.getElementById('cekMenu'); if (m) m.hidden = true;
+    const b = document.getElementById('cekTabBtn'); if (b) b.setAttribute('aria-expanded', 'false');
+  }
+  function toggleCekMenu(ev){
+    if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+    const m = document.getElementById('cekMenu'); if (!m) return;
+    const willOpen = m.hidden;
+    // close other menus
+    document.querySelectorAll('#page-gudang .gudang-dd-menu').forEach(x => { if (x !== m) x.hidden = true; });
+    m.hidden = !willOpen;
+    const b = document.getElementById('cekTabBtn'); if (b) b.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    if (willOpen) updateCekDDLabel();
+  }
+  function pickCekSub(which){
+    closeCekMenu();
+    _cekSub = (which === 'rupa') ? 'rupa' : 'fitri';
+    updateCekDDLabel();
+    // Activate Cek main sub + open panel
+    switchGudangSub('cek', document.getElementById('cekTabBtn'));
+    switchCekSub(_cekSub);
+  }
   function switchCekSub(which, btn){
+    _cekSub = (which === 'rupa') ? 'rupa' : 'fitri';
     document.querySelectorAll('#page-cek .cek-subtab').forEach(b => b.classList.remove('active'));
     if (btn) btn.classList.add('active');
+    else {
+      const match = document.querySelector('#page-cek .cek-subtab[data-cek="' + _cekSub + '"]');
+      if (match) match.classList.add('active');
+    }
+    updateCekDDLabel();
     const pf = document.getElementById('cekPanelFitri');
     const pr = document.getElementById('cekPanelRupa');
-    if (pf) pf.classList.toggle('active', which === 'fitri');
-    if (pr) pr.classList.toggle('active', which === 'rupa');
-    renderCekActive(which);
+    if (pf) pf.classList.toggle('active', _cekSub === 'fitri');
+    if (pr) pr.classList.toggle('active', _cekSub === 'rupa');
+    renderCekActive(_cekSub);
   }
   function renderCekActive(which){
-    if (!which) { const a = document.querySelector('#page-cek .cek-subtab.active'); which = (a && a.dataset && a.dataset.cek) || 'fitri'; }
+    if (!which) which = _cekSub || 'fitri';
     if (which === 'rupa') return renderCekRupa();
     return renderCekFitri();
   }
+  document.addEventListener('click', function(e){
+    const dd = document.getElementById('cekDD');
+    if (dd && !dd.contains(e.target)) closeCekMenu();
+  });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeCekMenu(); });
 
   // ===== Cek > Fitri Sales/Customer =====
   function fitriSizeInfo(name){
@@ -5061,6 +5120,10 @@ self.onmessage = function(e){
       const match = document.querySelector('#page-gudang > .gudang-subtabs .gudang-subtab[data-gudang="' + _gudangSub + '"]');
       if (match) match.classList.add('active');
     }
+    // Ensure Cek dropdown button reflects active state
+    const cekBtn = document.getElementById('cekTabBtn');
+    if (cekBtn) cekBtn.classList.toggle('active', _gudangSub === 'cek');
+    if (_gudangSub !== 'cek') closeCekMenu();
     const fitriPanel = document.getElementById('gudangFitriPanel');
     const rupaPanel  = document.getElementById('gudangRupaPanel');
     const fitriToolbar = document.getElementById('gudangToolbarFitri');
@@ -5072,7 +5135,11 @@ self.onmessage = function(e){
     if (fitriToolbar) fitriToolbar.style.display = (_gudangSub === 'fitri') ? 'flex' : 'none';
     if (vtg) vtg.style.display = (_gudangSub === 'fitri') ? 'flex' : 'none';
     if (cekPage) cekPage.style.display = isCek ? 'block' : 'none';
-    if (isCek) { renderCekActive(); return; }
+    if (isCek) {
+      updateCekDDLabel();
+      switchCekSub(_cekSub || 'fitri');
+      return;
+    }
     if (_gudangSub === 'rupa') rrRenderAll();
     else renderGudangPage(gudangData);
   }
