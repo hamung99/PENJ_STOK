@@ -2228,7 +2228,7 @@ self.onmessage = function(e){
     } catch(e){ filteredRowsInclBatal = filtr.slice(); }
     materialise();
     buildCached(materialisedRows);
-    s7DateFilter = ''; s7Page = 0; viewCache = {};
+    s7Page = 0; viewCache = {}; // pertahankan s7DateFilter (navigasi dari Cek)
     updateSummary(); updateFilterUi();
     const activeBtn = document.querySelector('.tabs button.active') || document.querySelector('.tabs button');
     let tabId = 's0';
@@ -4075,19 +4075,40 @@ self.onmessage = function(e){
     const qs = document.getElementById('quickSearch');
     if (qs) qs.value = prod || '';
     filters.q = (prod || '').toUpperCase();
-    // S7 date filter
+    const fds = document.getElementById('filterDateSingle');
+    if (fds) fds.value = dk || '';
+    s7Page = 0;
+    viewCache = {};
+    // Set sebelum applyFilters (applyFilters tidak lagi mengosongkan s7DateFilter)
+    s7DateFilter = dk || '';
+    try { await applyFilters(); } catch(e) { console.warn(e); }
+    // Pastikan tetap terisi setelah filter
     s7DateFilter = dk || '';
     s7Page = 0;
     viewCache['s7'] = null;
-    try { await applyFilters(); } catch(e) { console.warn(e); }
     const s7btn = document.querySelector('.tabs button[onclick*="s7"]');
+    if (s7btn) {
+      document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+      s7btn.classList.add('active');
+    }
     show('s7', s7btn || null);
-    // Update s7 date select UI
     const sel = document.getElementById('s7DateFilter');
     if (sel) {
-      try { sel.innerHTML = s7DateOptionsHtml(); sel.value = s7DateFilter; } catch(e){}
+      try {
+        sel.innerHTML = s7DateOptionsHtml();
+        if (s7DateFilter && ![...sel.options].some(o => o.value === s7DateFilter)) {
+          const parts = s7DateFilter.split('-').map(Number);
+          const label = (parts.length === 3)
+            ? new Date(parts[0], parts[1]-1, parts[2]).toLocaleDateString('id-ID')
+            : s7DateFilter;
+          const opt = document.createElement('option');
+          opt.value = s7DateFilter; opt.textContent = label;
+          sel.appendChild(opt);
+        }
+        sel.value = s7DateFilter;
+      } catch(e){}
     }
-    // Highlight product rows after render
+        // Highlight product rows after render
     window._s7HighlightProduk = prod;
     setTimeout(() => {
       try { highlightS7Produk(prod); } catch(e){}
