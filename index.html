@@ -1004,6 +1004,9 @@ body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#
             <label for="rrKategoriSel">Tampilkan</label>
             <select id="rrKategoriSel"><option value="">Semua Kategori</option></select>
 
+            <label for="rrMonthSel">Bulan</label>
+            <select id="rrMonthSel" onchange="rrOnMonthChange()"><option value="">Semua bulan</option></select>
+
             <label>Mode</label>
             <div class="mode-group">
               <button type="button" class="mode-btn active" id="rrModeBulan" onclick="rrSetViewMode('bulan')">📊 Data/Bulan</button>
@@ -4837,6 +4840,7 @@ self.onmessage = function(e){
   let rrCurrentSearch = '';
   let rrViewMode = 'bulan';
   let rrUploadMode = 'bulan'; // 'bulan' | 'tgl'
+  let rrCurrentMonth = ''; // 'YYYY-MM' or ''
 
   const rrN  = x => { const n = Number(x); return isFinite(n) ? n : 0; };
   const rrU  = x => String(x ?? '').trim().toUpperCase();
@@ -5168,15 +5172,102 @@ self.onmessage = function(e){
     try { return cekRupaDisplayName(productMatchKey(nama), nama); } catch(e) { return nama; }
   }
 
+  function rrRowMonthKey(r, cat){
+    if (r && r.tanggal) {
+      try {
+        if (typeof monthKeyUTC === 'function') {
+          const mk = monthKeyUTC(r.tanggal);
+          if (mk) return mk;
+        }
+      } catch(e){}
+      const d = r.tanggal instanceof Date ? r.tanggal : new Date(r.ts || r.tanggal);
+      if (d && !isNaN(d.getTime())) {
+        return d.getUTCFullYear() + '-' + String(d.getUTCMonth()+1).padStart(2,'0');
+      }
+    }
+    if (r && r.ts) {
+      const d = new Date(r.ts);
+      if (!isNaN(d.getTime())) return d.getUTCFullYear() + '-' + String(d.getUTCMonth()+1).padStart(2,'0');
+    }
+    if (cat && cat.bulan) return String(cat.bulan);
+    return '';
+  }
+
+  function rrCollectMonths(){
+    const set = new Set();
+    (rrCategories || []).forEach(cat => {
+      if (cat.bulan) set.add(String(cat.bulan));
+      (cat.rows || []).forEach(r => {
+        const mk = rrRowMonthKey(r, cat);
+        if (mk) set.add(mk);
+      });
+    });
+    return [...set].sort().reverse();
+  }
+
+  function rrPopulateMonthDropdown(){
+    const sel = document.getElementById('rrMonthSel'); if (!sel) return;
+    const months = rrCollectMonths();
+    const cur = rrCurrentMonth || sel.value || '';
+    sel.innerHTML = '<option value="">Semua bulan</option>' +
+      months.map(m => {
+        let label = m;
+        try { if (typeof monthLabel === 'function') label = monthLabel(m); } catch(e){}
+        return '<option value="' + m + '">' + label + '</option>';
+      }).join('');
+    if (months.includes(cur)) { sel.value = cur; rrCurrentMonth = cur; }
+    else if (cur === '') { sel.value = ''; rrCurrentMonth = ''; }
+    else if (months.length) {
+      // keep "semua" if user had cleared; otherwise pick latest if first load empty was intentional
+      sel.value = '';
+      rrCurrentMonth = '';
+    } else {
+      sel.value = '';
+      rrCurrentMonth = '';
+    }
+  }
+
+  function rrOnMonthChange(){
+    const sel = document.getElementById('rrMonthSel');
+    rrCurrentMonth = (sel && sel.value) ? sel.value : '';
+    rrRender();
+  }
+
+  function rrRowsForMonth(cat){
+    const rows = (cat && cat.rows) ? cat.rows : [];
+    if (!rrCurrentMonth) return rows.slice();
+    return rows.filter(r => rrRowMonthKey(r, cat) === rrCurrentMonth);
+  }
+
+  function rrStokBeforeMonth(cat, product, month){
+    // running stock just before the selected month
+    let running = rrN((cat.saldoAwal || {})[product]);
+    if (!month) return running;
+    const sorted = (cat.rows || []).slice().sort((a,b) => (a.ts||0) - (b.ts||0));
+    for (const r of sorted) {
+      const mk = rrRowMonthKey(r, cat);
+      if (mk && mk >= month) break;
+      const v = r.values && r.values[product];
+      if (!v) continue;
+      if (v.stok != null) running = rrN(v.stok);
+      else running = running + rrN(v.masuk) - rrN(v.keluar);
+    }
+    return running;
+  }
+
   function rrSummarizeCategory(cat){
     const out = [];
+    const rows = rrRowsForMonth(cat);
     (cat.products || []).forEach(p => {
-      const stokAwal = rrN((cat.saldoAwal || {})[p]);
+      const stokAwal = rrCurrentMonth
+        ? rrStokBeforeMonth(cat, p, rrCurrentMonth)
+        : rrN((cat.saldoAwal || {})[p]);
       let masuk = 0, keluar = 0, stokAkhir = stokAwal;
-      (cat.rows || []).forEach(r => {
+      rows.forEach(r => {
         const v = r.values[p]; if (!v) return;
         masuk += rrN(v.masuk); keluar += rrN(v.keluar);
         if (v.stok != null) stokAkhir = v.stok;
+        else stokAkhir = stokAkhir + rrN(v.masuk) - rrN(v.keluar);
       });
       out.push({ nama: p, namaTampil: rrDisplayName(p), stokAwal, masuk, keluar, stokAkhir });
     });
@@ -5186,10 +5277,16 @@ self.onmessage = function(e){
   function rrFilteredCategories(){
     let list = rrCategories.slice();
     if (rrCurrentKategori) list = list.filter(c => rrU(c.nama) === rrU(rrCurrentKategori));
+    if (rrCurrentMonth) {
+      list = list.filter(cat => {
+        if (cat.bulan && String(cat.bulan) === rrCurrentMonth) return true;
+        return (cat.rows || []).some(r => rrRowMonthKey(r, cat) === rrCurrentMonth);
+      });
+    }
     return list;
   }
 
-  function rrRenderAll(){ rrPopulateKategoriDropdown(); rrRender(); }
+  function rrRenderAll(){ rrPopulateKategoriDropdown(); rrPopulateMonthDropdown(); rrRender(); }
 
   function rrRender(){
     const rv = document.getElementById('rrRingkasanView');
@@ -5281,9 +5378,12 @@ self.onmessage = function(e){
     h1 += '</tr>'; h2 += '</tr>';
     thead.innerHTML = h1 + h2;
     let body = '<tr class="subtotal"><td><b>stok awal</b></td>';
-    products.forEach(p => { body += '<td class="num"></td><td class="num"></td><td class="num strong">' + rrNf(rrN((cat.saldoAwal || {})[p])) + '</td>'; });
+    products.forEach(p => {
+      const sa = rrCurrentMonth ? rrStokBeforeMonth(cat, p, rrCurrentMonth) : rrN((cat.saldoAwal || {})[p]);
+      body += '<td class="num"></td><td class="num"></td><td class="num strong">' + rrNf(sa) + '</td>';
+    });
     body += '</tr>';
-    const rowsSorted = (cat.rows || []).slice().sort((a,b) => a.ts - b.ts);
+    const rowsSorted = rrRowsForMonth(cat).slice().sort((a,b) => a.ts - b.ts);
     const totMsk = {}, totKlr = {};
     products.forEach(p => { totMsk[p] = 0; totKlr[p] = 0; });
     rowsSorted.forEach(r => {
@@ -5326,9 +5426,9 @@ self.onmessage = function(e){
       products.forEach(p => { head1.push(rrDisplayName(p), '', ''); head2.push('msk', 'klr', 'stok'); });
       const aoa = [head1, head2];
       const saRow = ['stok awal'];
-      products.forEach(p => { saRow.push('', '', rrN((cat.saldoAwal || {})[p])); });
+      products.forEach(p => { saRow.push('', '', rrCurrentMonth ? rrStokBeforeMonth(cat, p, rrCurrentMonth) : rrN((cat.saldoAwal || {})[p])); });
       aoa.push(saRow);
-      const rowsSorted = (cat.rows || []).slice().sort((a,b) => a.ts - b.ts);
+      const rowsSorted = rrRowsForMonth(cat).slice().sort((a,b) => a.ts - b.ts);
       const totMsk = {}, totKlr = {};
       products.forEach(p => { totMsk[p] = 0; totKlr[p] = 0; });
       rowsSorted.forEach(r => {
