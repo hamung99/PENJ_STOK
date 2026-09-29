@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
     <style>
         .dropdown-enter { animation: fadeIn 0.2s ease-out; }
@@ -276,6 +277,7 @@
                 </div>
                 <p class="text-red-500 text-xs mt-1 font-medium" id="statusText"></p>
                 <p class="text-gray-400 text-xs mt-1" id="saveText"></p>
+                <p class="text-gray-400 text-xs mt-1" id="cloudText"></p>
             </div>
             
             <div class="flex flex-col items-end gap-2">
@@ -303,6 +305,11 @@
                                 <a href="#" id="demoBtn" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition">
                                     <i class="fas fa-magic text-purple-500 w-5 mr-3 text-center"></i>
                                     Coba Contoh Data
+                                </a>
+                                <div class="border-t border-gray-100 my-1"></div>
+                                <a href="#" id="cloudSyncBtn" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition">
+                                    <i class="fas fa-cloud-arrow-down text-sky-500 w-5 mr-3 text-center"></i>
+                                    Sinkron Cloud Sekarang
                                 </a>
                                 <div class="border-t border-gray-100 my-1"></div>
                                 <a href="#" id="saveJsonBtn" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition">
@@ -1375,10 +1382,174 @@
             }));
         }
 
-        function dbSave(record) { return dbTx('readwrite', s => s.put(record)); }
-        function dbDelete(key) { return dbTx('readwrite', s => s.delete(key)); }
+        function dbSave(record) { return dbTx('readwrite', s => s.put(record)).then(r => { cloudPush(record); return r; }); }
+        function dbDelete(key) { return dbTx('readwrite', s => s.delete(key)).then(r => { cloudDelete(key); return r; }); }
         function dbClear() { return dbTx('readwrite', s => s.clear()); }
         function dbLoadAll() { return dbTx('readonly', s => s.getAll()); }
+
+        // ============================================================
+        // SINKRON CLOUD (Supabase) - satu baris per file Excel di tabel app_sync
+        // id baris = 'stok-<kategori>::<nama file>'  (baris 'main' penjualan tidak tersentuh)
+        // ============================================================
+        const SB_URL = 'https://twrfpovxjuubisskljjv.supabase.co';
+        const SB_KEY = 'sb_publishable_AeR-sG7aYIFrP5nIsloGfw_uJVYO3GN';
+        const CLOUD_PREFIX = 'stok-' + KATEGORI_ID + '::';
+        const LS_SYNCED = 'stokCloudSynced-' + KATEGORI_ID;
+        const LS_PDEL = 'stokCloudPdel-' + KATEGORI_ID;
+        const cloudText = document.getElementById('cloudText');
+        let sbc = null, lastCloudSync = 0, cloudBusy = false;
+
+        function lsGetSet(k) { try { return new Set(JSON.parse(localStorage.getItem(k) || '[]')); } catch (e) { return new Set(); } }
+        function lsPutSet(k, s) { try { localStorage.setItem(k, JSON.stringify(Array.from(s))); } catch (e) {} }
+        function cloudStatus(msg, isErr) {
+            if (!cloudText) return;
+            cloudText.textContent = msg;
+            cloudText.style.color = isErr ? '#dc2626' : '';
+        }
+        function cloudClient() {
+            if (sbc) return sbc;
+            try {
+                if (typeof supabase === 'undefined') return null;
+                sbc = supabase.createClient(SB_URL, SB_KEY);
+            } catch (e) { console.warn('Supabase init gagal', e); sbc = null; }
+            return sbc;
+        }
+        function errMsg(e) { return (e && (e.message || e.error_description)) || String(e); }
+        function nowLabel() { return new Date().toLocaleTimeString('id-ID'); }
+
+        function dbSaveLocal(record) { return dbTx('readwrite', s => s.put(record)); }
+        function dbDeleteLocal(key) { return dbTx('readwrite', s => s.delete(key)); }
+
+        async function pushRecord(rec) {
+            const c = cloudClient();
+            if (!c) throw new Error('Library Supabase belum termuat.');
+            const savedAt = rec.savedAt || Date.now();
+            const row = {
+                id: CLOUD_PREFIX + rec.fileKey,
+                data: { fileKey: rec.fileKey, seq: rec.seq || 0, savedAt: savedAt, data: bufferToBase64(rec.buffer) },
+                updated_at: new Date(savedAt).toISOString()
+            };
+            const res = await c.from('app_sync').upsert(row, { onConflict: 'id' });
+            if (res.error) throw res.error;
+            const synced = lsGetSet(LS_SYNCED); synced.add(rec.fileKey); lsPutSet(LS_SYNCED, synced);
+            const pdel = lsGetSet(LS_PDEL); if (pdel.delete(rec.fileKey)) lsPutSet(LS_PDEL, pdel);
+        }
+        async function cloudPush(rec) {
+            if (!cloudClient()) return;
+            try {
+                cloudStatus('Mengunggah ke cloud…');
+                await pushRecord(rec);
+                cloudStatus('Tersimpan di cloud • ' + nowLabel());
+            } catch (e) {
+                console.error('Upload cloud gagal', e);
+                cloudStatus('Upload cloud gagal: ' + errMsg(e) + ' (data tetap aman di browser ini)', true);
+            }
+        }
+        async function cloudDelete(key) {
+            const pdel = lsGetSet(LS_PDEL); pdel.add(key); lsPutSet(LS_PDEL, pdel);
+            const synced = lsGetSet(LS_SYNCED); synced.delete(key); lsPutSet(LS_SYNCED, synced);
+            const c = cloudClient(); if (!c) return;
+            try {
+                const res = await c.from('app_sync').delete().eq('id', CLOUD_PREFIX + key);
+                if (res.error) throw res.error;
+                pdel.delete(key); lsPutSet(LS_PDEL, pdel);
+                cloudStatus('Terhapus dari cloud • ' + nowLabel());
+            } catch (e) {
+                console.error('Hapus cloud gagal', e);
+                cloudStatus('Hapus di cloud gagal: ' + errMsg(e) + ' (akan dicoba lagi saat sinkron berikutnya)', true);
+            }
+        }
+
+        // Kembalikan true bila data lokal berubah karena tarikan dari cloud
+        async function cloudSync() {
+            const c = cloudClient();
+            if (!c) { cloudStatus('Mode lokal (cloud tidak tersedia)'); return false; }
+            cloudStatus('Sinkron cloud…');
+            let changed = false;
+            try {
+                const synced = lsGetSet(LS_SYNCED);
+                const pdel = lsGetSet(LS_PDEL);
+
+                for (const k of Array.from(pdel)) {
+                    const r = await c.from('app_sync').delete().eq('id', CLOUD_PREFIX + k);
+                    if (!r.error) { pdel.delete(k); synced.delete(k); }
+                }
+                lsPutSet(LS_PDEL, pdel);
+
+                const listRes = await c.from('app_sync').select('id,saved:data->>savedAt').like('id', CLOUD_PREFIX + '%');
+                if (listRes.error) throw listRes.error;
+                const cloudMap = new Map();
+                (listRes.data || []).forEach(r => cloudMap.set(r.id.slice(CLOUD_PREFIX.length), Number(r.saved) || 0));
+
+                const local = (await dbLoadAll()) || [];
+                const localMap = new Map(local.map(r => [r.fileKey, r]));
+
+                for (const entry of cloudMap) {
+                    const key = entry[0], t = entry[1];
+                    if (pdel.has(key)) continue;
+                    const l = localMap.get(key);
+                    if (!l || (l.savedAt || 0) < t) {
+                        const one = await c.from('app_sync').select('data').eq('id', CLOUD_PREFIX + key).maybeSingle();
+                        if (one.error) throw one.error;
+                        const d = one.data && one.data.data;
+                        if (d && d.data) {
+                            await dbSaveLocal({ fileKey: key, seq: d.seq || 0, buffer: base64ToBuffer(d.data), savedAt: d.savedAt || Date.now() });
+                            synced.add(key);
+                            changed = true;
+                        }
+                    } else {
+                        synced.add(key);
+                    }
+                }
+
+                for (const l of local) {
+                    const t = cloudMap.get(l.fileKey);
+                    if (t === undefined) {
+                        if (synced.has(l.fileKey)) {          // pernah tersinkron, kini hilang di cloud = dihapus di device lain
+                            await dbDeleteLocal(l.fileKey);
+                            synced.delete(l.fileKey);
+                            changed = true;
+                        } else {                              // belum pernah naik ke cloud
+                            await pushRecord(l);
+                        }
+                    } else if ((l.savedAt || 0) > t) {        // lokal lebih baru
+                        await pushRecord(l);
+                    }
+                }
+
+                lsPutSet(LS_SYNCED, synced);
+                lastCloudSync = Date.now();
+                cloudStatus('Sinkron cloud OK • ' + nowLabel());
+            } catch (e) {
+                console.error('Sinkron cloud gagal', e);
+                cloudStatus('Sinkron cloud gagal: ' + errMsg(e) + ' (memakai data browser ini)', true);
+            }
+            return changed;
+        }
+
+        async function refreshFromCloud(force) {
+            if (cloudBusy) return;
+            if (!force && Date.now() - lastCloudSync < 20000) return;
+            cloudBusy = true;
+            try {
+                const changed = await cloudSync();
+                if (changed) {
+                    const idx = activeFile;
+                    resetAll();
+                    await restoreFromDB(idx);
+                }
+            } finally { cloudBusy = false; }
+        }
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshFromCloud(false); });
+        window.addEventListener('message', (e) => {
+            if (e.origin === location.origin && e.data === 'stok-refresh') refreshFromCloud(false);
+        });
+        const cloudSyncBtn = document.getElementById('cloudSyncBtn');
+        if (cloudSyncBtn) cloudSyncBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            dropdownMenu.classList.add('hidden');
+            refreshFromCloud(true);
+        });
 
         const saveText = document.getElementById('saveText');
         function updateSaveText() { saveText.textContent = ''; }
@@ -1734,7 +1905,7 @@
             }
         });
 
-        (async function restoreFromDB() {
+        async function restoreFromDB(keepIdx) {
             try {
                 const records = await dbLoadAll();
                 if (!records || !records.length) return;
@@ -1754,7 +1925,7 @@
                 }
 
                 if (files.length) {
-                    selectFile(0);
+                    selectFile(keepIdx >= 0 && keepIdx < files.length ? keepIdx : 0);
                     updateSaveText();
                 }
                 if (errors.length) setStatus('Sebagian data tersimpan gagal dipulihkan: ' + errors.join('; '));
@@ -1763,6 +1934,12 @@
             } finally {
                 loading.classList.add('hidden');
             }
+        }
+
+        (async function initStok() {
+            cloudBusy = true;
+            try { await cloudSync(); } finally { cloudBusy = false; }
+            await restoreFromDB();
         })();
     })();
     </script>

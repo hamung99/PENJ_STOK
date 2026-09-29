@@ -4640,7 +4640,10 @@ self.onmessage = function(e){
     updateStokDDLabel();
     const fr = document.getElementById('stokFrame'); if (!fr) return;
     const file = STOK_KAT[_stokKat].file;
-    if (fr.dataset.loaded === file) return; // sudah termuat, jangan reload
+    if (fr.dataset.loaded === file) { // sudah termuat: cukup minta halaman stok tarik data terbaru dari cloud
+      try { fr.contentWindow.postMessage('stok-refresh', location.origin); } catch(e){}
+      return;
+    }
     fr.dataset.loaded = file;
     fr.onload = function(){
       try { // sembunyikan navigasi antar halaman di dalam iframe (diganti dropdown di sini)
