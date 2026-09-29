@@ -4479,6 +4479,7 @@ self.onmessage = function(e){
     } else {
       thead.innerHTML = '<tr><th>PRODUK</th>' + salesList.map(s => '<th>' + s + '</th>').join('') + '<th>TOTAL</th><th>OUTPUT GUDANG</th><th>SELISIH</th><th>KET</th></tr>';
       let rBody = '';
+      let _mismatchN = 0;
       const salesGrand = salesList.map(() => 0);
       let grandTotal = 0, grandGudang = 0, lebihSum = 0, kurangSum = 0, bedaAbsSum = 0;
       products.forEach(prod => {
@@ -4942,6 +4943,7 @@ self.onmessage = function(e){
     thead.innerHTML = '<tr><th>PRODUK</th>' + salesList.map(s => '<th>' + s + '</th>').join('') + '<th>TOTAL</th><th>OUTPUT GUDANG</th><th>SELISIH</th><th>KET</th></tr>';
     if (!list.length) { tbody.innerHTML = '<tr><td colspan="' + (salesList.length + 5) + '" style="text-align:center;padding:24px;color:#64748b">Tidak ada produk yang cocok dengan filter.</td></tr>'; tfoot.innerHTML = ''; updateCekAlertFlags(); return; }
     let rBody = '';
+      let _mismatchN = 0;
     const salesGrand = salesList.map(() => 0);
     let grandTotal = 0, grandGudang = 0;
     list.forEach(prod => {
