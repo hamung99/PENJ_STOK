@@ -705,7 +705,8 @@ body.dark .rr-app .dd-menu hr{border-top-color:#334155}
 body.dark .rr-app .dd-upload .title{color:#93c5fd;border-bottom-color:#334155}
 body.dark .rr-app .dd-upload .field label{color:#94a3b8}
 body.dark .rr-app .dd-upload .field input[type=file]{background:#0f172a;border-color:#475569;color:#e2e8f0}
-body.dark .rr-app .dd-upload .field input[type=text]{background:#0f172a;color:#e2e8f0;border-color:#475569}
+body.dark .rr-app .dd-upload .field input[type=text],
+body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#e2e8f0;border-color:#475569}
 </style>
 </head>
 <body>
@@ -1030,6 +1031,17 @@ body.dark .rr-app .dd-upload .field input[type=text]{background:#0f172a;color:#e
               <div class="dd-menu dd-upload">
                 <div class="title">📁 Upload Excel Rupa Rupa</div>
                 <div class="field">
+                  <label>Jenis Data</label>
+                  <div class="mode-group" style="width:100%;display:flex;gap:4px">
+                    <button type="button" class="mode-btn active" id="rrUploadModeBulan" onclick="rrSetUploadMode('bulan')" style="flex:1">📊 Data/Bulan</button>
+                    <button type="button" class="mode-btn" id="rrUploadModeTgl" onclick="rrSetUploadMode('tgl')" style="flex:1">📅 Data/Tgl</button>
+                  </div>
+                </div>
+                <div class="field" id="rrUploadMonthField">
+                  <label for="rrUploadMonth">Bulan Data</label>
+                  <input type="month" id="rrUploadMonth" style="width:100%;padding:8px 10px;border:1px solid #cbd5e1;border-radius:0;font-size:12px;background:#fff;color:#172033;box-sizing:border-box">
+                </div>
+                <div class="field">
                   <label for="rrFileInput">Pilih file Excel</label>
                   <input type="file" id="rrFileInput" accept=".xlsx,.xls">
                 </div>
@@ -1038,7 +1050,7 @@ body.dark .rr-app .dd-upload .field input[type=text]{background:#0f172a;color:#e
                   <input type="text" id="rrKategoriInput" list="rrKategoriList" placeholder="mis: SARI SEDAP">
                   <datalist id="rrKategoriList"></datalist>
                 </div>
-                <div class="hint">Satu file = satu kategori. Nama kategori otomatis terisi dari nama file — edit bila perlu.</div>
+                <div class="hint" id="rrUploadHint">Mode <b>Data/Bulan</b>: file rekap bulanan (kolom Nama Produk, Stok Awal, Masuk, Keluar, Stok Akhir). Satu file = satu kategori + satu bulan.</div>
                 <button type="button" class="primary" id="rrBtnProcess">Proses Excel</button>
               </div>
             </div>
@@ -4824,6 +4836,7 @@ self.onmessage = function(e){
   let rrCurrentKategori = '';
   let rrCurrentSearch = '';
   let rrViewMode = 'bulan';
+  let rrUploadMode = 'bulan'; // 'bulan' | 'tgl'
 
   const rrN  = x => { const n = Number(x); return isFinite(n) ? n : 0; };
   const rrU  = x => String(x ?? '').trim().toUpperCase();
@@ -4957,10 +4970,42 @@ self.onmessage = function(e){
     return s.toUpperCase();
   }
 
+  function rrSetUploadMode(mode){
+    rrUploadMode = (mode === 'tgl') ? 'tgl' : 'bulan';
+    const b1 = document.getElementById('rrUploadModeBulan');
+    const b2 = document.getElementById('rrUploadModeTgl');
+    if (b1) b1.classList.toggle('active', rrUploadMode === 'bulan');
+    if (b2) b2.classList.toggle('active', rrUploadMode === 'tgl');
+    const monthField = document.getElementById('rrUploadMonthField');
+    if (monthField) monthField.style.display = (rrUploadMode === 'bulan') ? 'block' : 'none';
+    const hint = document.getElementById('rrUploadHint');
+    if (hint) {
+      if (rrUploadMode === 'bulan') {
+        hint.innerHTML = 'Mode <b>Data/Bulan</b>: file rekap bulanan (kolom Nama Produk, Stok Awal, Masuk, Keluar, Stok Akhir). Satu file = satu kategori + satu bulan.';
+      } else {
+        hint.innerHTML = 'Mode <b>Data/Tgl</b>: file matrix harian (header TANGGAL + tiap produk 3 kolom msk/klr/stok, baris "stok awal"). Satu file = satu kategori, banyak tanggal.';
+      }
+    }
+  }
+
+  function rrMonthEndUTC(ym){
+    // ym = "YYYY-MM" → Date UTC last day of that month
+    const [y, m] = String(ym).split('-').map(Number);
+    if (!y || !m) return null;
+    return new Date(Date.UTC(y, m, 0)); // day 0 of next month = last day of m
+  }
+
   async function rrProcessFile(){
     const inp = document.getElementById('rrFileInput');
     const f = inp && inp.files && inp.files[0];
     if (!f) return alert('Pilih file Excel terlebih dahulu.');
+    const mode = rrUploadMode === 'tgl' ? 'tgl' : 'bulan';
+    let bulanYm = '';
+    if (mode === 'bulan') {
+      const mInp = document.getElementById('rrUploadMonth');
+      bulanYm = (mInp && mInp.value) ? mInp.value : '';
+      if (!bulanYm) return alert('Pilih Bulan Data terlebih dahulu (mode Data/Bulan).');
+    }
     const katInp = document.getElementById('rrKategoriInput');
     let kategori = (katInp.value || '').trim();
     if (!kategori){
@@ -4971,30 +5016,77 @@ self.onmessage = function(e){
     kategori = kategori.toUpperCase();
     const existing = rrCategories.find(c => rrU(c.nama) === kategori);
     if (existing && !confirm('Kategori "' + kategori + '" sudah ada. Ganti dengan isi file baru?')) return;
-    rrSetStatusUpload('Memproses ' + f.name + '...');
+    rrSetStatusUpload('Memproses ' + f.name + ' (mode ' + (mode === 'bulan' ? 'Data/Bulan' : 'Data/Tgl') + ')...');
     try{
       await loadXLSX();
       const buf = await f.arrayBuffer();
       const wb = XLSX.read(buf, { type:'array', cellDates:true });
       const ws = wb.Sheets[wb.SheetNames[0]];
       const grid = XLSX.utils.sheet_to_json(ws, { header:1, defval:null, raw:true });
-      let parsed = rrParseMatrixFormat(grid);
-      let formatUsed = 'matrix';
-      if (!parsed){ parsed = rrParseFlatFormat(grid); formatUsed = 'flat'; }
+      let parsed = null;
+      let formatUsed = '';
+      if (mode === 'tgl') {
+        parsed = rrParseMatrixFormat(grid);
+        formatUsed = 'matrix';
+        if (!parsed) {
+          // fallback: flat still accepted but treated as single-day
+          parsed = rrParseFlatFormat(grid);
+          formatUsed = 'flat';
+        }
+      } else {
+        parsed = rrParseFlatFormat(grid);
+        formatUsed = 'flat';
+        if (!parsed) {
+          // if user uploaded matrix by mistake in bulan mode, aggregate to one month summary
+          const mat = rrParseMatrixFormat(grid);
+          if (mat) {
+            const saldoAwal = { ...(mat.saldoAwal || {}) };
+            const values = {};
+            (mat.products || []).forEach(p => {
+              let masuk = 0, keluar = 0, stok = saldoAwal[p] || 0;
+              (mat.rows || []).forEach(r => {
+                const v = r.values[p]; if (!v) return;
+                masuk += rrN(v.masuk); keluar += rrN(v.keluar);
+                if (v.stok != null) stok = v.stok;
+              });
+              values[p] = { masuk, keluar, stok };
+            });
+            const dt = rrMonthEndUTC(bulanYm) || new Date();
+            parsed = { products: mat.products, saldoAwal, rows: [{ ts: dt.getTime(), tanggal: dt, values }] };
+            formatUsed = 'matrix→bulan';
+          }
+        }
+      }
       if (!parsed){
         rrSetStatusUpload('Format file tidak dikenali.', 'err');
-        return alert('Format file tidak dikenali.\n\nFormat yang didukung:\n1) Matrix: baris pertama berisi TANGGAL + nama produk (tiap produk 3 kolom: msk/klr/stok), dengan baris "stok awal".\n2) Tabel datar: kolom Nama Produk + Stok Akhir.');
+        if (mode === 'tgl') {
+          return alert('Format Data/Tgl tidak dikenali.\n\nHarus matrix harian:\n• Header berisi TANGGAL\n• Tiap produk 3 kolom: masuk / keluar / stok\n• Ada baris "stok awal"');
+        }
+        return alert('Format Data/Bulan tidak dikenali.\n\nHarus tabel rekap:\n• Kolom: Nama Produk, Stok Awal, Masuk, Keluar, Stok Akhir');
+      }
+      // For Data/Bulan: pin the single summary row to selected month
+      if (mode === 'bulan') {
+        const dt = rrMonthEndUTC(bulanYm);
+        if (dt && parsed.rows && parsed.rows.length) {
+          parsed.rows = parsed.rows.map(r => ({ ...r, ts: dt.getTime(), tanggal: dt }));
+        } else if (dt) {
+          parsed.rows = [{ ts: dt.getTime(), tanggal: dt, values: {} }];
+        }
       }
       const record = {
         nama: kategori, products: parsed.products, saldoAwal: parsed.saldoAwal,
         rows: parsed.rows, uploadedAt: new Date().toISOString(),
-        sourceFile: f.name, format: formatUsed
+        sourceFile: f.name, format: formatUsed, uploadMode: mode,
+        bulan: mode === 'bulan' ? bulanYm : ''
       };
       const i = rrCategories.findIndex(c => rrU(c.nama) === kategori);
       if (i >= 0) rrCategories[i] = record; else rrCategories.push(record);
       await rrSaveAll();
       rrRenderAll();
-      rrSetStatusUpload('✅ ' + f.name + ' → Kategori "' + kategori + '" · ' + parsed.products.length + ' produk · ' + parsed.rows.length.toLocaleString('id-ID') + ' baris tanggal (format: ' + formatUsed + ').', 'ok');
+      // switch view mode to match upload type
+      rrSetViewMode(mode === 'tgl' ? 'tgl' : 'bulan');
+      const modeLabel = mode === 'bulan' ? ('Data/Bulan ' + bulanYm) : 'Data/Tgl';
+      rrSetStatusUpload('✅ ' + f.name + ' → Kategori "' + kategori + '" · ' + parsed.products.length + ' produk · ' + parsed.rows.length.toLocaleString('id-ID') + ' baris (' + modeLabel + ', format: ' + formatUsed + ').', 'ok');
       inp.value = ''; katInp.value = ''; rrCloseAllDd();
     } catch(e){ console.error(e); rrSetStatusUpload('Gagal memproses: ' + (e.message || e), 'err'); }
   }
@@ -5302,6 +5394,13 @@ self.onmessage = function(e){
   function rrBindEvents(){
     const btnP = document.getElementById('rrBtnProcess');
     if (btnP && !btnP._rrBound){ btnP._rrBound = true; btnP.addEventListener('click', rrProcessFile); }
+    // default bulan upload = current month
+    const mInp = document.getElementById('rrUploadMonth');
+    if (mInp && !mInp.value) {
+      const n = new Date();
+      mInp.value = n.getFullYear() + '-' + String(n.getMonth()+1).padStart(2,'0');
+    }
+    rrSetUploadMode(rrUploadMode);
     const sel = document.getElementById('rrKategoriSel');
     if (sel && !sel._rrBound){ sel._rrBound = true; sel.addEventListener('change', e => {
       rrCurrentKategori = e.target.value;
