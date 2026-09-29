@@ -2979,7 +2979,7 @@ self.onmessage = function(e){
     const body = document.getElementById('s7FkBody');
     const title = document.getElementById('s7FkTitle');
     const sub = document.getElementById('s7FkSub');
-    if (!ov || !body) return;
+    if (!ov || !body) { console.warn('s7FakturOverlay missing'); return; }
     const wantSales = normSales(sales);
     const wantProd = String(produk || '').trim();
     const wantDate = String(dateKey || '');
@@ -3062,6 +3062,21 @@ self.onmessage = function(e){
   document.addEventListener('keydown', function(e){
     if (e.key === 'Escape') closeS7FakturModal();
   });
+  window.openS7FakturModal = openS7FakturModal;
+  window.closeS7FakturModal = closeS7FakturModal;
+  if (!window._s7FkClickBound) {
+    window._s7FkClickBound = true;
+    document.addEventListener('click', function(ev) {
+      const el = ev.target && ev.target.closest ? ev.target.closest('.s7-fk-link') : null;
+      if (!el) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      const dateKey = el.getAttribute('data-date') || '';
+      const produk = el.getAttribute('data-produk') || '';
+      const sales = el.getAttribute('data-sales') || '';
+      openS7FakturModal(dateKey, produk, sales);
+    });
+  }
   function renderS7(){
     const pivot = buildS7Pivot(s7DateFilter);
     const head = ['TGL','PRODUK', ...SO_S7.map(s => s === 'PARIMIN' ? 'PRTIMIN' : s), 'TOTAL QTY'];
@@ -3108,9 +3123,11 @@ self.onmessage = function(e){
             const fk = (r.fk && r.fk[s]) ? r.fk[s] : 0;
             if (!v) { body += '<td class="num s7-sales"></td>'; return; }
             const fkLink = fk
-              ? ('<div class="s7-fk s7-fk-link" onclick="event.stopPropagation();openS7FakturModal('
-                  + JSON.stringify(r.dateKey) + ',' + JSON.stringify(r.produk) + ',' + JSON.stringify(s)
-                  + ')" title="Klik untuk lihat detail faktur">(' + fk + ' faktur)</div>')
+              ? ('<div class="s7-fk s7-fk-link" role="button" tabindex="0" '
+                  + 'data-date="' + escHtml(r.dateKey) + '" '
+                  + 'data-produk="' + escHtml(r.produk) + '" '
+                  + 'data-sales="' + escHtml(s) + '" '
+                  + 'title="Klik untuk lihat detail faktur">(' + fk + ' faktur)</div>')
               : '';
             body += '<td class="num s7-sales">' + v.toLocaleString('id-ID') + fkLink + '</td>';
           });
