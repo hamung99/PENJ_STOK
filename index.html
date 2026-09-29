@@ -3752,14 +3752,15 @@ self.onmessage = function(e){
   function cekDateLabelLong(key){ if (!key) return ''; const [y,m,d] = key.split('-').map(Number); const dt = new Date(y, m-1, d); const bulan = dt.toLocaleDateString('id-ID', {month:'long'}); return String(d).padStart(2,'0') + '-' + bulan + '-' + String(y).slice(-2); }
   function ketBadge(selisih, dates){
     if (selisih === 0) return '<span class="ket-badge ok">✅ Cocok</span>';
-    if (selisih > 0) return '<span class="ket-badge warn" title="Normal, kemungkinan ada transaksi batal">🔷 Penjualan Lebih Banyak</span>';
     const dTxt = (dates && dates.length) ? (' (' + dates.join(', ') + ')') : '';
+    if (selisih > 0) return '<span class="ket-badge warn" title="Penjualan lebih banyak dari output gudang pada tanggal tersebut">🔷 Penjualan Lebih Banyak' + dTxt + '</span>';
     return '<span class="ket-badge alert">🚨 GUDANG LEBIH BANYAK!!' + dTxt + '</span>';
   }
   function ketText(selisih, dates){
     if (selisih === 0) return 'Cocok';
-    if (selisih > 0) return 'Penjualan Lebih Banyak';
-    return 'Gudang Lebih Banyak' + ((dates && dates.length) ? (' (' + dates.join(', ') + ')') : '');
+    const dTxt = (dates && dates.length) ? (' (' + dates.join(', ') + ')') : '';
+    if (selisih > 0) return 'Penjualan Lebih Banyak' + dTxt;
+    return 'Gudang Lebih Banyak' + dTxt;
   }
   function ketGudangLebihDates(perDatePenjualan, perDateGudang){
     const pd = perDatePenjualan || {}; const gd = perDateGudang || {};
@@ -3767,6 +3768,18 @@ self.onmessage = function(e){
     const out = [];
     keys.forEach(k => { const p = N(pd[k]); const g = N(gd[k]); if (g > p) out.push(cekDateLabelLong(k)); });
     return out;
+  }
+  function ketPenjualanLebihDates(perDatePenjualan, perDateGudang){
+    const pd = perDatePenjualan || {}; const gd = perDateGudang || {};
+    const keys = Array.from(new Set([...Object.keys(pd), ...Object.keys(gd)])).sort();
+    const out = [];
+    keys.forEach(k => { const p = N(pd[k]); const g = N(gd[k]); if (p > g) out.push(cekDateLabelLong(k)); });
+    return out;
+  }
+  function ketSelisihDates(selisih, perDatePenjualan, perDateGudang){
+    if (selisih < 0) return ketGudangLebihDates(perDatePenjualan, perDateGudang);
+    if (selisih > 0) return ketPenjualanLebihDates(perDatePenjualan, perDateGudang);
+    return [];
   }
   const CEK_FLAG_MAX = 7;
   const CEK_FLAG_INTERVAL_MS = 500;
@@ -4045,9 +4058,9 @@ self.onmessage = function(e){
         bedaAbsSum += Math.abs(selisih);
         if (selisih > 0) kurangSum += selisih;
         if (selisih < 0) lebihSum += Math.abs(selisih);
-        const gudangLebihDates = (hasGudang && selisih < 0) ? ketGudangLebihDates(penjualanPD[prod.key], gudangPD[prod.key]) : [];
+        const ketDates = hasGudang ? ketSelisihDates(selisih, penjualanPD[prod.key], gudangPD[prod.key]) : [];
         const selColor = ok ? '#166534' : (selisih > 0 ? '#1d4ed8' : '#dc2626');
-        rBody += '<tr><td>' + prod.name + '</td>' + cells + '<td class="num" style="font-weight:800">' + nfQty(rowTotal) + '</td><td class="num">' + (hasGudang ? nfQty(gTotal) : '-') + '</td><td class="num" style="color:' + selColor + ';font-weight:700">' + (selisih > 0 ? '+' : '') + nfQty(selisih) + '</td><td>' + (hasGudang ? ketBadge(selisih, gudangLebihDates) : '-') + '</td></tr>';
+        rBody += '<tr><td>' + prod.name + '</td>' + cells + '<td class="num" style="font-weight:800">' + nfQty(rowTotal) + '</td><td class="num">' + (hasGudang ? nfQty(gTotal) : '-') + '</td><td class="num" style="color:' + selColor + ';font-weight:700">' + (selisih > 0 ? '+' : '') + nfQty(selisih) + '</td><td>' + (hasGudang ? ketBadge(selisih, ketDates) : '-') + '</td></tr>';
       });
       tbody.innerHTML = rBody;
       const net = grandTotal - grandGudang;
@@ -4088,8 +4101,8 @@ self.onmessage = function(e){
       const gTotal = Object.values(gudangPD[prod.key] || {}).reduce((a,b)=>a+N(b),0);
       grandTotal += rowTotal; grandGudang += gTotal;
       const selisih = rowTotal - gTotal;
-      const gudangLebihDates = selisih < 0 ? ketGudangLebihDates(penjualanPD[prod.key], gudangPD[prod.key]) : [];
-      return [prod.name, ...cells, rowTotal, hasGudang ? gTotal : '-', selisih, hasGudang ? ketText(selisih, gudangLebihDates) : '-'];
+      const ketDates = ketSelisihDates(selisih, penjualanPD[prod.key], gudangPD[prod.key]);
+      return [prod.name, ...cells, rowTotal, hasGudang ? gTotal : '-', selisih, hasGudang ? ketText(selisih, ketDates) : '-'];
     });
     const foot = ['TOTAL', ...salesGrand, grandTotal, hasGudang?grandGudang:'-', grandTotal-grandGudang, ''];
     const ws = XLSX.utils.aoa_to_sheet([head, ...rows, foot]);
@@ -4459,9 +4472,9 @@ self.onmessage = function(e){
       const ok = selisih === 0;
       const hasGForProd = hasGudang && Object.keys(gudangPD[prod.key] || {}).length > 0;
       grandTotal += rowTotal; grandGudang += gTotal;
-      const gudangLebihDates = (hasGForProd && selisih < 0) ? ketGudangLebihDates(penjualanPD[prod.key], gudangPD[prod.key]) : [];
+      const ketDates = hasGForProd ? ketSelisihDates(selisih, penjualanPD[prod.key], gudangPD[prod.key]) : [];
       const selColor = ok ? '#166534' : (selisih > 0 ? '#1d4ed8' : '#dc2626');
-      rBody += '<tr><td>' + prod.name + '</td>' + cells + '<td class="num" style="font-weight:800">' + nfQty(rowTotal) + '</td><td class="num">' + (hasGForProd ? nfQty(gTotal) : '—') + '</td><td class="num" style="color:' + selColor + ';font-weight:700">' + (hasGForProd ? ((selisih > 0 ? '+' : '') + nfQty(selisih)) : '—') + '</td><td>' + (hasGForProd ? ketBadge(selisih, gudangLebihDates) : '—') + '</td></tr>';
+      rBody += '<tr><td>' + prod.name + '</td>' + cells + '<td class="num" style="font-weight:800">' + nfQty(rowTotal) + '</td><td class="num">' + (hasGForProd ? nfQty(gTotal) : '—') + '</td><td class="num" style="color:' + selColor + ';font-weight:700">' + (hasGForProd ? ((selisih > 0 ? '+' : '') + nfQty(selisih)) : '—') + '</td><td>' + (hasGForProd ? ketBadge(selisih, ketDates) : '—') + '</td></tr>';
     });
     tbody.innerHTML = rBody;
     const anyGudang = list.some(p => hasGudang && Object.keys(gudangPD[p.key] || {}).length > 0);
@@ -4488,8 +4501,8 @@ self.onmessage = function(e){
       grandTotal += rowTotal; grandGudang += gTotal;
       const hasGForProd = hasGudang && Object.keys(gudangPD[prod.key] || {}).length > 0;
       const selisih = rowTotal - gTotal;
-      const gudangLebihDates = (hasGForProd && selisih < 0) ? ketGudangLebihDates(penjualanPD[prod.key], gudangPD[prod.key]) : [];
-      return [prod.name, ...cells, rowTotal, hasGForProd ? gTotal : '-', hasGForProd ? selisih : '-', hasGForProd ? ketText(selisih, gudangLebihDates) : '-'];
+      const ketDates = hasGForProd ? ketSelisihDates(selisih, penjualanPD[prod.key], gudangPD[prod.key]) : [];
+      return [prod.name, ...cells, rowTotal, hasGForProd ? gTotal : '-', hasGForProd ? selisih : '-', hasGForProd ? ketText(selisih, ketDates) : '-'];
     });
     const foot = ['TOTAL', ...salesGrand, grandTotal, grandGudang || '-', grandTotal-grandGudang, ''];
     const ws = XLSX.utils.aoa_to_sheet([head, ...rows, foot]);
