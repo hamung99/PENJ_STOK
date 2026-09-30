@@ -5736,98 +5736,86 @@ self.onmessage = function(e){
     const list = [];
     const thr = _cekUmFuzzyThreshold;
 
-    groups.forEach(g => {
-      if (g.isBatal) return;
+    /* ===== PERBAIKAN: pencocokan Cash Dropping / Piutang Tempo =====
+       1) PASS 1 - No. Faktur sama => langsung dianggap pembayaran faktur itu
+          (nomor faktur unik, tidak perlu cocok Customer/Alamat/Kategori/Bulan lagi).
+       2) PASS 2 - bila tidak ada nomor faktur, cocokkan Sales + Customer + Alamat
+          (longgar). Kategori/bulan hanya dicek jika data UM memilikinya.
+          Baris UM yang sudah dipakai faktur lain tidak dihitung dua kali.
+       3) Fuzzy (opsional) hanya sebagai cadangan terakhir. */
+    const payKind = (p) => { const u = String(p || '').toUpperCase(); if (/CASH|TUNAI/.test(u)) return 'CASH'; if (/TEMPO|KREDIT/.test(u)) return 'TEMPO'; return ''; };
+    const active = [...groups.values()].filter(g => !g.isBatal).sort((x, y) => (x.ts || 0) - (y.ts || 0));
+    const claimed = new Set();
+    const pre = new Map();
+    active.forEach(g => {
+      const kind = payKind(g.pay);
+      const fakIdx = kind === 'CASH' ? cashFak : (kind === 'TEMPO' ? tempoFak : null);
+      const fk = String(g.faktur).trim();
+      let matches = [], matchType = 'none';
+      if (fakIdx && fakIdx.has(fk)) {
+        matches = fakIdx.get(fk).slice();
+        matches.forEach(r => claimed.add(r));
+        matchType = kind === 'CASH' ? 'cash-dropping-faktur' : 'exact';
+      }
+      pre.set(g, { kind, matches, matchType });
+    });
+    const nz = (x) => normalizeForFuzzy(x);
+    const alamatOk = (a, b) => { const x = nz(a), y = nz(b); return !x || !y || x === y || x.includes(y) || y.includes(x); };
 
-      const isCash = (g.pay === 'CASH');
-      const isTempo = (g.pay === 'TEMPO');
-      const exactIdx   = isCash ? cashIdx   : (isTempo ? tempoIdx   : null);
-      const bucketMap  = isCash ? cashBucket: (isTempo ? tempoBucket: null);
-
-      let matches = [];
-      let matchType = 'none';
+    active.forEach(g => {
+      const st = pre.get(g);
+      const isCash = st.kind === 'CASH';
+      const isTempo = st.kind === 'TEMPO';
+      const bucketMap = isCash ? cashBucket : (isTempo ? tempoBucket : null);
+      const targetCategory = mappedSalesCategory(g.products);
+      let matches = st.matches;
+      let matchType = st.matchType;
       let fuzzyInfo = null;
 
-      const fakIdx = isCash ? cashFak : (isTempo ? tempoFak : null);
-      const targetCategory = mappedSalesCategory(g.products);
-
-      // LEVEL 1: identitas utama WAJIB konsisten. No. Faktur tidak boleh
-      // berdiri sendiri; Customer, Alamat, Sales dan kategori juga harus cocok.
-      const identityOk = (r) => {
-        if (umRowSales(r) !== g.sales) return false;
-        if (umRowCustomer(r) !== U(g.cust)) return false;
-        if (umRowAlamat(r) !== U(g.alamat)) return false;
-        if (targetCategory && umRowCategory(r) !== targetCategory) return false;
-        const rMonth = umRowMonth(r);
-        // Untuk Cek Uang Masuk, pembayaran tidak boleh ditarik dari bulan lain.
-        if (g.month && rMonth && rMonth !== g.month) return false;
-        return true;
-      };
-
-      /* CASH: sumber pertama dan utama adalah Uang Masuk > Cash Dropping.
-         Jangan mengambil pembayaran Cash dari Piutang Tempo. */
-      if (isCash && fakIdx && fakIdx.has(String(g.faktur).trim())) {
-        const byFaktur = fakIdx.get(String(g.faktur).trim()).filter(identityOk);
-        if (byFaktur.length) {
-          matches = byFaktur.slice();
-          matchType = 'cash-dropping-faktur';
+      /* PASS 2: identitas longgar (hanya baris UM yang belum terpakai) */
+      if (!matches.length && bucketMap) {
+        const pool = bucketMap.get(nz(g.sales)) || [];
+        const cand = pool.filter(r => {
+          if (claimed.has(r)) return false;
+          if (nz(umRowCustomer(r)) !== nz(g.cust)) return false;
+          if (!alamatOk(umRowAlamat(r), g.alamat)) return false;
+          const rc = umRowCategory(r);
+          if (targetCategory && targetCategory !== 'CAMPURAN' && rc && rc !== 'CAMPURAN' && rc !== targetCategory) return false;
+          const rm = umRowMonth(r);
+          if (g.month && rm && rm !== g.month) return false;
+          return true;
+        });
+        let acc = 0;
+        for (const r of cand) {
+          if (acc >= g.tagihan && matches.length) break;
+          matches.push(r); claimed.add(r); acc += umRowTotal(r);
         }
+        if (matches.length) matchType = isCash ? 'cash-dropping-identitas' : 'exact';
       }
 
-      /* Jika nomor faktur berbeda/kosong, tetap cari di Cash Dropping
-         berdasarkan Sales + Customer + Alamat + kategori + bulan. */
-      if (!matches.length && isCash && exactIdx) {
-        const exactKey = [g.sales, g.month, U(g.cust), U(g.alamat), targetCategory].join('||');
-        if (exactIdx.has(exactKey)) {
-          matches = exactIdx.get(exactKey).filter(identityOk).slice();
-          if (matches.length) matchType = 'cash-dropping-identitas';
-        }
-      }
-
-      /* Untuk TEMPO gunakan alur lama. */
-      if (!matches.length && !isCash && fakIdx && fakIdx.has(String(g.faktur).trim())) {
-        const byFaktur = fakIdx.get(String(g.faktur).trim()).filter(identityOk);
-        if (byFaktur.length) {
-          matches = byFaktur.slice();
-          matchType = 'exact';
-        }
-      }
-
-      if (!matches.length && exactIdx && !isCash) {
-        const exactKey = [g.sales, g.month, U(g.cust), U(g.alamat), targetCategory].join('||');
-        if (exactIdx.has(exactKey)) {
-          matches = exactIdx.get(exactKey).filter(identityOk).slice();
-          if (matches.length) matchType = 'exact';
-        }
-      }
-
-      // Fuzzy hanya sebagai fallback. Untuk CASH, bucketMap di sini adalah
-      // Cash Dropping; untuk TEMPO, bucketMap adalah Piutang Tempo.
-      // Kategori dan bulan tetap wajib sama.
+      /* PASS 3: fuzzy (opsional) */
       if (!matches.length && _cekUmFuzzyEnabled && bucketMap) {
         const salesCands = findSalesBuckets(g.sales, bucketMap, thr);
         const seenKeys = new Set();
         for (const sc of salesCands) {
           const bucketRows = bucketMap.get(sc.key) || [];
           for (const r of bucketRows) {
-            if (targetCategory && umRowCategory(r) !== targetCategory) continue;
+            if (claimed.has(r)) continue;
+            const rc = umRowCategory(r);
+            if (targetCategory && targetCategory !== 'CAMPURAN' && rc && rc !== 'CAMPURAN' && rc !== targetCategory) continue;
             const rMonth = umRowMonth(r);
             if (g.month && rMonth && rMonth !== g.month) continue;
-
             const custScore  = fuzzySimilarityCached(g.cust, umRowCustomer(r));
             if (custScore < thr) continue;
             const alamScore  = fuzzySimilarityCached(g.alamat, umRowAlamat(r));
             if (alamScore < thr) continue;
-
             const minScore = Math.min(sc.score, custScore, alamScore);
             const avgScore = (sc.score + custScore + alamScore) / 3;
             if (avgScore < thr) continue;
-
             const key = (r._uid || (r._uid = Math.random().toString(36).slice(2))) + '|' + sc.key;
             if (seenKeys.has(key)) continue;
             seenKeys.add(key);
-
-            matches.push(r);
+            matches.push(r); claimed.add(r);
             if (!fuzzyInfo || minScore > fuzzyInfo.score) {
               fuzzyInfo = { score: minScore, avg: avgScore, sales: umRowSales(r), cust: umRowCustomer(r), alamat: umRowAlamat(r), month: rMonth, category: umRowCategory(r) };
             }
@@ -5843,7 +5831,7 @@ self.onmessage = function(e){
       if (umTotal === 0) {
         status = 'BELUM';
         ket = 'Belum ada uang masuk di ' + (isCash ? 'Cash Dropping' : (isTempo ? 'Piutang Tempo' : '—'));
-      } else if (umTotal >= g.tagihan) {
+      } else if (umTotal + 1 >= g.tagihan) {
         status = 'LUNAS';
         ket = matches.length + ' baris uang masuk';
       } else {
