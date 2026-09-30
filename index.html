@@ -117,6 +117,10 @@ body.dark .cekum-fk-ket{color:#e2e8f0}
 body.dark .cekum-fk-empty{background:#0f172a;border-color:#334155;color:#94a3b8}
 body.dark .cekum-fk-sum{background:#0f172a;border-color:#334155;color:#cbd5e1}
 body.dark .cekum-fk-sum b{color:#f1f5f9}
+/* Badge kolom STATUS di tab Cek Uang Masuk — lebih ramping & tidak membungkus */
+#cekUmTbody .ket-badge{font-size:10px;padding:2px 8px;line-height:1.3;gap:3px;border-radius:999px}
+#cekUmTbody .ket-badge.alert{font-size:9.5px;font-weight:700;white-space:nowrap;flex-wrap:nowrap;letter-spacing:.01em}
+#cekUmTbody .ket-badge.ok,#cekUmTbody .ket-badge.warn{white-space:nowrap;flex-wrap:nowrap}
 .month-quick label{font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.04em}
 .month-quick select{width:auto;min-width:150px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:7px;font-size:12px;background:#fff;color:#172033}
 .month-quick .filter-btn{width:30px;height:30px;padding:0;display:inline-flex;align-items:center;justify-content:center;font-size:15px;border-radius:7px;position:relative}
@@ -5959,7 +5963,7 @@ self.onmessage = function(e){
     const badgeOf = (s) => {
       if (s === 'LUNAS')    return '<span class="ket-badge ok">✅ LUNAS</span>';
       if (s === 'SEBAGIAN') return '<span class="ket-badge warn">⚠ SEBAGIAN</span>';
-      return '<span class="ket-badge alert">🚨 BELUM ADA UANG MASUK</span>';
+      return '<span class="ket-badge alert" title="Belum ada uang masuk">🚨 BELUM ADA UM</span>';
     };
     const payStyle = (p) => {
       const bg = p === 'CASH' ? '#bae6fd' : (p === 'TEMPO' ? '#fed7aa' : '#e2e8f0');
@@ -6091,7 +6095,7 @@ self.onmessage = function(e){
   function _cekUmFkBadge(s){
     if (s === 'LUNAS') return '<span class="ket-badge ok">✅ LUNAS</span>';
     if (s === 'SEBAGIAN') return '<span class="ket-badge warn">⚠ SEBAGIAN</span>';
-    return '<span class="ket-badge alert">🚨 BELUM ADA UANG MASUK</span>';
+    return '<span class="ket-badge alert" title="Belum ada uang masuk">🚨 BELUM ADA UM</span>';
   }
   function closeCekUmFakturModal(){
     const ov = document.getElementById('cekUmFakturOverlay');
