@@ -1,13 +1,19 @@
 /* Service worker — Rekap Penjualan (PWA)
    Naikkan CACHE_VERSION setiap kali file aplikasi diubah agar cache lama dibuang. */
-const CACHE_VERSION = 'v4';
+const CACHE_VERSION = 'v5';
 const APP_CACHE = 'rekap-app-' + CACHE_VERSION;
 const CDN_CACHE = 'rekap-cdn-' + CACHE_VERSION;
 
 const APP_SHELL = [
   './',
   './index.html',
-  './AR.html',
+  './UMfix.html',
+  './stok-ethoz.html',
+  './stok-fitri.html',
+  './stok-mie.html',
+  './stok-nissin.html',
+  './stok-sabun.html',
+  './stok-sarisedap.html',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
