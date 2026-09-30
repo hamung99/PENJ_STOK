@@ -260,7 +260,6 @@ const TABS = [
   { id: "dropping",  label: "Cash Dropping",               cols: ["tanggal","bulan","sales","no_faktur","nama_toko","alamat","tagihan_nominal","minyak_cash","minyak_transfer","rupa_cash","rupa_transfer","total_pembayaran","ket"] },
   { id: "minyak",    label: "Rekap Minyak & Rupa2",        cols: ["tanggal","bulan","minyak_cash","minyak_transfer","rupa_cash","rupa_transfer","total_minyak","total_rupa","total_cash","total_transfer"] },
   { id: "tokoleng",  label: "Rekap Toko+Sales+Tanggal",    cols: ["tanggal","bulan","sales","nama_toko","alamat","section","jml_transaksi","total_tagihan","minyak_cash","minyak_transfer","rupa_cash","rupa_transfer","total_pembayaran"] },
-  { id: "saleslst",  label: "Daftar Toko per Sales",       cols: ["tanggal","bulan","sales","daftar_toko","jml_toko","total_pembayaran"] },
   { id: "bulanan",   label: "Data Bulanan",                cols: ["bulan","jml_transaksi","piutang_tempo","cash_dropping","total_tagihan","total_cash","total_transfer","total_pembayaran"] },
 ];
 
@@ -273,7 +272,7 @@ const BULANAN_LABEL = { bulan:"BULAN", jml_transaksi:"JML FAKTUR", piutang_tempo
 const VIEW_KEY = {
   detail: "detail", harian: "harian", piutang: "piutang", dropping: "dropping",
   minyak: "minyak", tokoleng: "tokoSalesTgl",
-  saleslst: "salesList", bulanan: "bulanan"
+  bulanan: "bulanan"
 };
 
 const PAGE_SIZE = 500;
@@ -390,6 +389,12 @@ function parseWorkbook(wb) {
         noFaktur = colMap.faktur !== undefined ? vals[colMap.faktur] : vals[2];
         namaToko = vals[colMap.toko];
         alamat = colMap.alamat !== undefined ? vals[colMap.alamat] : vals[colMap.toko + 1];
+        if (alamat === null || alamat === undefined || String(alamat).trim() === "") {
+          for (let i = colMap.toko + 1; i <= 7; i++) {
+            const v = vals[i];
+            if (v !== null && v !== undefined && String(v).trim() !== "" && typeof v !== "number" && !isKode(v)) { alamat = v; break; }
+          }
+        }
       } else {
         noFaktur = vals[2]; namaToko = vals[3]; alamat = vals[4];
         /* Fallback: kalau "nama toko" ternyata deretan angka panjang (nomor faktur/kode), geser kolom */
@@ -849,7 +854,6 @@ function exportExcel() {
     ["Cash Dropping", "dropping"],
     ["Rekap Minyak & Rupa2", "minyak"],
     ["Rekap Toko+Sales+Tanggal", "tokoSalesTgl"],
-    ["Daftar Toko per Sales", "salesList"],
     ["Data Bulanan", "bulanan"],
   ];
   for (const [name, key] of mapping) {
