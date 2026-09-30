@@ -2724,6 +2724,38 @@ self.onmessage = function(e){
     foot.push(Rx.qty, fm(Rx.profit), '', '', '', fm(Rx.hpp), fm(Rx.sales));
     return foot;
   }
+  /* Urutan & pengelompokan produk mengikuti laporan acuan (Laporan_Produk-Saless.xlsx).
+     null = baris kosong pemisah antar grup. Produk yang tidak terdaftar tetap ikut,
+     diletakkan di bagian akhir (tidak dibuang). */
+  const PRODUK_ACUAN = [
+    'FITRI BOTOL 200ML','FITRI  BOTOL 400ML','FITRI BOTOL 800ML',null,
+    'AGAR LUMBA HEMAT COKLAT','AGAR LUMBA HEMAT HIJAU','AGAR LUMBA HEMAT MERAH','AGAR LUMBA HEMAT PUTIH',
+    'AGAR LUMBA SUPER COKLAT','AGAR LUMBA SUPER HIJAU','AGAR LUMBA SUPER MERAH','AGAR LUMBA SUPER PUTIH',null,
+    'BIHUN JAGUNG','BOTOL 600ML','COCOMAXI CAIR 65GR','JELLY ORANGE','JELLYGAR BLUEBERRY','JELLYGAR HEMAT MELON',
+    'JELLYGAR LECI','JELLYGAR PLAIN','JELLYGAR STRAWBERRY',null,
+    'KECAP BOTOL NAS 130ML','KECAP CG ASIN BESAR 625ML','KECAP GUNA 520 REFF','KECAP GUNA JRG','KECAP NAS REFF 520ML','KECAP REF 300ML',null,
+    'MARGARINE FORVITA',null,
+    'MD SR SNACK GOLD 30','MIE IKAT KECIL','NS AYNAKO 10','NS CRIPSY CRACKERS','NS KG MARIE RAJA','NS KUE KERING',
+    'NS WALENS BLUEBERRY SOES','NS WALENS CHOC SOES','NS WALENS COKLAT SOES',null,
+    'SAMBAL BOTOL MEJA 130ML','SAMBAL CABE 500GR','SAMBAL REFFIL 600ML','SAMBAL STICK 9 GR',null,
+    'SHZ CLASIC/MATSU 85GR','SHZ HANA 85GR','SHZ KENSHO 85GR','SHZ KIREI 85GR','SHZ MYORI 85GR','SHZ SAKURA 85GR',
+    'SOUN BAKSO GAJAH 2 KP',
+    'ZEN JUNIPERBERRIES','ZEN REFF JUNIPERBERIS','ZEN REFF SANDALWOOD','ZEN REFF SEASALT','ZEN REFF TEATREE','ZEN SANDALWOOD','ZEN SULPHUR'
+  ];
+  function normProduk(s){ return String(s || '').trim().replace(/\s+/g, ' ').toUpperCase(); }
+  function orderProdukRows(list){
+    const byName = new Map();
+    list.forEach(x => { const k = normProduk(x[0]); if (k && !byName.has(k)) byName.set(k, x); });
+    const used = new Set(), out = [];
+    PRODUK_ACUAN.forEach(nm => {
+      if (nm === null) { out.push(null); return; }
+      const k = normProduk(nm), x = byName.get(k);
+      if (x) { out.push(x); used.add(k); }
+    });
+    byName.forEach((x, k) => { if (!used.has(k)) out.push(x); });
+    while (out.length && out[out.length - 1] === null) out.pop();
+    return out;
+  }
   /* ===== Simpan Excel bergaya (laporan) — dipakai tab Produk. Memakai ExcelJS (dimuat sekali saat dibutuhkan) ===== */
   let _excelJsPromise = null;
   function loadExcelJS(){
@@ -2763,10 +2795,11 @@ self.onmessage = function(e){
     catch(e){ alert(e.message + '\n\nExcel akan disimpan dengan format standar (tanpa warna).'); return false; }
     const r = R, SO2 = r.SO2 || SO, n = SO2.length;
     const head = s1BuildHead(SO2);
-    const rows = (r.s1 || []).map(x => s1BuildRow(x, n));
+    const entries = orderProdukRows(r.s1 || []).map(x => x ? s1BuildRow(x, n) : null);
+    const rows = entries.filter(Boolean);
     const foot = s1BuildFoot(r, SO2);
     const nc = head.length;
-    const FIRST = 2, HEAD_ROW = 5;                       // kolom A = pembatas kosong; judul di baris 3, subjudul baris 4, header baris 5
+    const FIRST = 2, HEAD_ROW = 5, SUB_HEAD_ROW = 6;     // kolom A = pembatas kosong; judul baris 3, subjudul baris 4, header baris 5-6 (2 baris)
     const idxQtyTotal = 2*n + 1, idxProfitProduk = 2*n + 2, idxSatuan = 2*n + 3, idxHB = 2*n + 4, idxHJ = 2*n + 5;
     const kindOf = i => {
       if (i === 0) return 'text';
@@ -2784,8 +2817,8 @@ self.onmessage = function(e){
     const wb = new ExcelJS.Workbook();
     wb.creator = 'Rekap Penjualan'; wb.created = new Date();
     const ws = wb.addWorksheet('Produk', {
-      views: [{ state:'frozen', xSplit:2, ySplit:HEAD_ROW, showGridLines:false }],
-      pageSetup: { paperSize:9, orientation:'landscape', fitToPage:true, fitToWidth:1, fitToHeight:0, printTitlesRow: HEAD_ROW + ':' + HEAD_ROW,
+      views: [{ state:'frozen', xSplit:2, ySplit:SUB_HEAD_ROW, showGridLines:false }],
+      pageSetup: { paperSize:9, orientation:'landscape', fitToPage:true, fitToWidth:1, fitToHeight:0, printTitlesRow: HEAD_ROW + ':' + SUB_HEAD_ROW,
                    margins:{ left:0.4, right:0.4, top:0.5, bottom:0.5, header:0.25, footer:0.25 } },
       headerFooter: { oddFooter: 'Halaman &P dari &N' }
     });
@@ -2796,22 +2829,43 @@ self.onmessage = function(e){
     ws.getCell(4, FIRST).value = reportSubtitle();
     ws.getCell(4, FIRST).font = { name:'Calibri', size:10 };
 
-    // Header
-    const hr = ws.getRow(HEAD_ROW);
-    head.forEach((h, i) => {
-      const c = hr.getCell(FIRST + i);
-      c.value = h;
+    // Header 2 baris (baris 5-6) sesuai laporan acuan:
+    //   baris 5: PRODUK | NAMA SALES (digabung 2 kolom) | TOTAL QTY | PROFIT/PRODUK | SATUAN | HARGA BELI | HARGA JUAL | BELI X QTY | JUAL X QTY
+    //   baris 6: QTY | PROFIT/SALES di bawah tiap sales; kolom lainnya digabung vertikal baris 5-6
+    const styleHead = c => {
       c.font = { name:'Calibri', size:10, bold:true };
       c.alignment = { horizontal:'center', vertical:'middle', wrapText:true };
       c.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FFBDD7EE' } };
       c.border = border;
-    });
-    hr.height = 24;
+    };
+    const hr = ws.getRow(HEAD_ROW), sr = ws.getRow(SUB_HEAD_ROW);
+    styleHead(hr.getCell(FIRST)); styleHead(sr.getCell(FIRST));
+    hr.getCell(FIRST).value = head[0];
+    ws.mergeCells(HEAD_ROW, FIRST, SUB_HEAD_ROW, FIRST);
+    for (let i = 0; i < n; i++) {
+      const cA = FIRST + 1 + 2*i, cB = FIRST + 2 + 2*i;
+      hr.getCell(cA).value = SO2[i];
+      styleHead(hr.getCell(cA)); styleHead(hr.getCell(cB));
+      styleHead(sr.getCell(cA)); styleHead(sr.getCell(cB));
+      sr.getCell(cA).value = 'QTY';
+      sr.getCell(cB).value = 'PROFIT/SALES';
+      ws.mergeCells(HEAD_ROW, cA, HEAD_ROW, cB);
+    }
+    for (let j = 2*n + 1; j < head.length; j++) {
+      const c = FIRST + j;
+      hr.getCell(c).value = head[j];
+      styleHead(hr.getCell(c)); styleHead(sr.getCell(c));
+      ws.mergeCells(HEAD_ROW, c, SUB_HEAD_ROW, c);
+    }
+    hr.height = 20; sr.height = 18;
 
-    // Data
-    rows.forEach((rw, ri) => {
-      const row = ws.getRow(HEAD_ROW + 1 + ri);
-      rw.forEach((v, i) => {
+    // Data — urutan produk sesuai laporan acuan; baris kosong = pemisah grup
+    let dRow = SUB_HEAD_ROW;
+    entries.forEach(en => {
+      dRow++;
+      if (!en) return;                                   // baris kosong pemisah grup
+      const row = ws.getRow(dRow);
+      en.forEach((v, i) => {
         const c = row.getCell(FIRST + i);
         const k = kindOf(i);
         if (k === 'qty' || k === 'money') {
@@ -2828,7 +2882,7 @@ self.onmessage = function(e){
     });
 
     // Baris TOTAL
-    const tr = ws.getRow(HEAD_ROW + 1 + rows.length);
+    const tr = ws.getRow(SUB_HEAD_ROW + 1 + entries.length);
     foot.forEach((v, i) => {
       const c = tr.getCell(FIRST + i);
       const k = kindOf(i);
@@ -2859,7 +2913,7 @@ self.onmessage = function(e){
     });
 
     const buf = await wb.xlsx.writeBuffer();
-    const name = 'Laporan_Produk' + (filters.month ? '_' + filters.month : '') + '.xlsx';
+    const name = 'Laporan_Produk-Saless' + (filters.month ? '_' + filters.month : '') + '.xlsx';
     downloadBlob(new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), name);
     setStatus('Laporan Produk tersimpan: ' + name);
     return true;
@@ -6947,6 +7001,7 @@ self.onmessage = function(e){
   document.getElementById('installBtn')?.addEventListener('click', async () => { if (!_deferredInstallPrompt) return; _deferredInstallPrompt.prompt(); await _deferredInstallPrompt.userChoice; _deferredInstallPrompt = null; document.getElementById('installBtn').style.display = 'none'; });
   window.addEventListener('appinstalled', () => { const btn = document.getElementById('installBtn'); if (btn) btn.style.display = 'none'; });
 </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 </body>
