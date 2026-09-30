@@ -891,6 +891,12 @@ body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#
         <select id="cekUmMonth" onchange="renderCekUangMasuk()"><option value="">Semua bulan</option></select>
         <label for="cekUmSales">Sales</label>
         <select id="cekUmSales" onchange="renderCekUangMasuk()"><option value="">Semua Sales</option></select>
+        <label for="cekUmPayment">Pembayaran</label>
+        <select id="cekUmPayment" onchange="renderCekUangMasuk()">
+          <option value="">Semua Pembayaran</option>
+          <option value="CASH">💵 CASH</option>
+          <option value="TEMPO">📅 TEMPO</option>
+        </select>
         <label for="cekUmStatus">Status</label>
         <select id="cekUmStatus" onchange="renderCekUangMasuk()">
           <option value="">Semua Status</option>
@@ -5454,7 +5460,13 @@ self.onmessage = function(e){
         const row = {
           _month: bn ? (yr + '-' + String(bn).padStart(2, '0')) : '',
           tanggal: r.tanggal, sales: r.sales || '', toko: r.nama_toko || '', alamat: r.alamat || '',
-          faktur: String(r.no_faktur ?? '').trim(), total: N(r.total_pembayaran), ket: r.ket
+          faktur: String(r.no_faktur ?? '').trim(),
+          total: N(r.total_pembayaran),
+          minyakCash: N(r.minyakCash ?? r['Minyak Cash']),
+          minyakTrf: N(r.minyakTrf ?? r.minyakTf ?? r['Minyak Trf'] ?? r['Minyak Transfer']),
+          rupaCash: N(r.rupaCash ?? r['Rupa Cash']),
+          rupaTrf: N(r.rupaTrf ?? r.rupaTf ?? r['Rupa Trf'] ?? r['Rupa Transfer']),
+          ket: r.ket
         };
         const sec = String(r.section || '').toUpperCase();
         if (sec.includes('TEMPO')) out.tempo.push(row);
@@ -5494,8 +5506,8 @@ self.onmessage = function(e){
   // Kategori UM mengikuti struktur bisnis: MINYAK atau RUPA-RUPA.
   // Satu baris UM dapat dikenali dari kolom nominalnya.
   function umRowCategory(r) {
-    const minyak = N(r.minyakCash ?? r['Minyak Cash']) + N(r.minyakTrf ?? r['Minyak Trf']);
-    const rupa   = N(r.rupaCash  ?? r['Rupa Cash'])  + N(r.rupaTrf  ?? r['Rupa Trf']);
+    const minyak = N(r.minyakCash ?? r['Minyak Cash']) + N(r.minyakTrf ?? r.minyakTf ?? r['Minyak Trf'] ?? r['Minyak Transfer']);
+    const rupa   = N(r.rupaCash  ?? r['Rupa Cash'])  + N(r.rupaTrf  ?? r.rupaTf ?? r['Rupa Trf'] ?? r['Rupa Transfer']);
     if (minyak > 0 && rupa <= 0) return 'MINYAK';
     if (rupa > 0 && minyak <= 0) return 'RUPA-RUPA';
     if (minyak > 0 && rupa > 0) return 'CAMPURAN';
@@ -5513,10 +5525,14 @@ self.onmessage = function(e){
     return '';
   }
   function umRowTotal(r) {
+    const minyak = N(r.minyakCash ?? r['Minyak Cash']) + N(r.minyakTrf ?? r.minyakTf ?? r['Minyak Trf'] ?? r['Minyak Transfer']);
+    const rupa   = N(r.rupaCash ?? r['Rupa Cash']) + N(r.rupaTrf ?? r.rupaTf ?? r['Rupa Trf'] ?? r['Rupa Transfer']);
+    const hasCategoryAmounts = minyak > 0 || rupa > 0;
+    if (umRowCategory(r) === 'MINYAK' && minyak > 0) return minyak;
+    if (umRowCategory(r) === 'RUPA-RUPA' && rupa > 0) return rupa;
     const t = r.total ?? r.Total;
-    if (t != null && t !== '') return N(t);
-    return N(r.minyakCash ?? r['Minyak Cash']) + N(r.minyakTrf ?? r['Minyak Trf'])
-         + N(r.rupaCash  ?? r['Rupa Cash'])  + N(r.rupaTrf  ?? r['Rupa Trf']);
+    if (t != null && t !== '' && !hasCategoryAmounts) return N(t);
+    return minyak + rupa;
   }
 
   function normalizeForFuzzy(s) {
@@ -5853,13 +5869,15 @@ self.onmessage = function(e){
     await populateCekUmFilters();
     const month  = document.getElementById('cekUmMonth')?.value || '';
     const salesF = document.getElementById('cekUmSales')?.value || '';
+    const paymentF = document.getElementById('cekUmPayment')?.value || '';
     const statusF= document.getElementById('cekUmStatus')?.value || '';
     const q = (document.getElementById('cekUmSearch')?.value || '').trim().toUpperCase();
 
     let list = await buildFakturReconciliation();
-    if (month)   list = list.filter(g => g.month === month);
-    if (salesF)  list = list.filter(g => g.sales === salesF);
-    if (statusF) list = list.filter(g => g.status === statusF);
+    if (month)    list = list.filter(g => g.month === month);
+    if (salesF)   list = list.filter(g => g.sales === salesF);
+    if (paymentF) list = list.filter(g => g.pay === paymentF);
+    if (statusF)  list = list.filter(g => g.status === statusF);
     if (q) list = list.filter(g => U(g.faktur).includes(q) || U(g.cust).includes(q) || U(g.alamat).includes(q));
 
     const totalFaktur = list.length;
@@ -5963,12 +5981,14 @@ self.onmessage = function(e){
     try { await loadXLSX(); } catch(e){ alert(e.message); return; }
     const month  = document.getElementById('cekUmMonth')?.value || '';
     const salesF = document.getElementById('cekUmSales')?.value || '';
+    const paymentF = document.getElementById('cekUmPayment')?.value || '';
     const statusF= document.getElementById('cekUmStatus')?.value || '';
     const q = (document.getElementById('cekUmSearch')?.value || '').trim().toUpperCase();
     let list = await buildFakturReconciliation();
-    if (month)   list = list.filter(g => g.month === month);
-    if (salesF)  list = list.filter(g => g.sales === salesF);
-    if (statusF) list = list.filter(g => g.status === statusF);
+    if (month)    list = list.filter(g => g.month === month);
+    if (salesF)   list = list.filter(g => g.sales === salesF);
+    if (paymentF) list = list.filter(g => g.pay === paymentF);
+    if (statusF)  list = list.filter(g => g.status === statusF);
     if (q) list = list.filter(g => U(g.faktur).includes(q) || U(g.cust).includes(q) || U(g.alamat).includes(q));
     if (!list.length) return alert('Tidak ada data untuk diunduh.');
 
