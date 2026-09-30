@@ -1685,6 +1685,7 @@ body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#
   const SUPABASE_URL = 'https://twrfpovxjuubisskljjv.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_AeR-sG7aYIFrP5nIsloGfw_uJVYO3GN';
   const SYNC_ROW_ID  = 'main';
+  const UM_META_KEY  = 'uangMasuk';
   let sbClient = null, isSyncingFromCloud = false, pushTimer = null, realtimeReady = false;
 
   function initSupabase(){
@@ -1733,16 +1734,25 @@ body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#
       const { data, error } = await sbClient.from('app_sync').select('data,updated_at').eq('id', SYNC_ROW_ID).maybeSingle();
       if (error) throw error;
       if (data && data.data){
+        let umNeedPush = false;
         isSyncingFromCloud = true;
         try {
           const snap = data.data;
+          let keepUM = null;
+          try { const r0 = await db.meta.get(UM_META_KEY); keepUM = r0 ? r0.value : null; } catch(e){}
           await db.tx.clear();
           if (snap.tx && snap.tx.length) await db.tx.bulkPut(snap.tx);
           await db.meta.clear();
           if (snap.meta && snap.meta.length) await db.meta.bulkPut(snap.meta);
+          if (keepUM) {
+            const cloudUM = (snap.meta || []).find(m => m.key === UM_META_KEY);
+            const cv = cloudUM && cloudUM.value;
+            if (!cv || (keepUM.savedAt || 0) > (cv.savedAt || 0)) { await db.meta.put({ key: UM_META_KEY, value: keepUM }); umNeedPush = true; }
+          }
           if (snap.namaMap && typeof snap.namaMap === 'object') { try { localStorage.setItem('cekRupaNamaProdukMap_v1', JSON.stringify(snap.namaMap)); } catch(e){} }
           setCloudStatus('Sinkron dari cloud • ' + new Date().toLocaleTimeString('id-ID'));
         } finally { isSyncingFromCloud = false; }
+        if (umNeedPush) { try { schedulePush(); } catch(e){} }
       } else {
         const localCount = await db.tx.count();
         if (localCount) await pushToCloud();
@@ -1754,6 +1764,7 @@ body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#
       await restoreFromDB();
       await loadGudangFromDB();
       await rrLoadAll();
+      try { umNotifyFrame(); } catch(e){}
       if (!opts.silent) setStatus('Data tersinkron dari cloud.');
     }
   }
@@ -5106,6 +5117,51 @@ self.onmessage = function(e){
     XLSX.utils.book_append_sheet(wb, ws, 'Rupa Rupa');
     XLSX.writeFile(wb, 'Penjualan_Rupa_Rupa.xlsx');
   }
+  /* ===== UANG MASUK (UMfix.html di dalam iframe) =====
+     Data disimpan di Dexie tabel meta (key 'uangMasuk') -> otomatis ikut snapshot cloud (tombol Upload/Ambil + sinkron otomatis). */
+  async function umReadStored(){
+    try {
+      if (useIDB && db) { const r = await db.meta.get(UM_META_KEY); return r ? r.value : null; }
+      const raw = localStorage.getItem('rekap-uang-masuk'); return raw ? JSON.parse(raw) : null;
+    } catch(e){ console.warn('umReadStored', e); return null; }
+  }
+  async function umWriteStored(payload){
+    try {
+      if (useIDB && db) await db.meta.put({ key: UM_META_KEY, value: payload });
+      else localStorage.setItem('rekap-uang-masuk', JSON.stringify(payload));
+    } catch(e){ console.warn('umWriteStored', e); return false; }
+    try { if (sbClient) schedulePush(); } catch(e){}
+    return true;
+  }
+  async function umClearStored(){
+    try {
+      if (useIDB && db) await db.meta.delete(UM_META_KEY);
+      try { localStorage.removeItem('rekap-uang-masuk'); } catch(e){}
+    } catch(e){ console.warn('umClearStored', e); return false; }
+    try { if (sbClient) schedulePush(); } catch(e){}
+    return true;
+  }
+  function umFrame(){ const f = document.getElementById('umfixFrame'); return (f && f.getAttribute('src') && f.contentWindow) ? f : null; }
+  function umTarget(){ return location.origin === 'null' ? '*' : location.origin; }
+  async function umNotifyFrame(){
+    const f = umFrame(); if (!f) return;
+    const stored = await umReadStored();
+    if (stored) f.contentWindow.postMessage({ type:'um:data', payload: stored }, umTarget());
+  }
+  window.addEventListener('message', async function(e){
+    if (e.origin !== location.origin) return;
+    const f = umFrame(); if (!f || e.source !== f.contentWindow) return;
+    const d = e.data; if (!d || typeof d.type !== 'string' || d.type.indexOf('um:') !== 0) return;
+    if (d.type === 'um:ready') { await umNotifyFrame(); }
+    else if (d.type === 'um:save' && d.payload) {
+      const ok = await umWriteStored(d.payload);
+      f.contentWindow.postMessage({ type:'um:saved', ok, cloud: !!sbClient }, umTarget());
+    }
+    else if (d.type === 'um:clear') {
+      await umClearStored();
+      f.contentWindow.postMessage({ type:'um:cleared' }, umTarget());
+    }
+  });
   function initMainTabs(){
     const nav = document.getElementById('mainTabs'); if (!nav) return;
     nav.addEventListener('click', (e) => {
@@ -5125,6 +5181,7 @@ self.onmessage = function(e){
         if (tab === 'umfix') {
           const fr = document.getElementById('umfixFrame');
           if (fr && !fr.getAttribute('src')) fr.setAttribute('src', fr.dataset.src);
+          else { try { umNotifyFrame(); } catch(e){} }
         }
       }
       if (pj) pj.style.display = isPenjualanFamily ? 'block' : 'none';

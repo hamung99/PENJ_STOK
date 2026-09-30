@@ -183,7 +183,12 @@
       <button class="btn primary" id="btnExport" disabled>Export ke Excel</button>
     </div>
 
+    <div class="actions" id="rowClearStored" style="display:none">
+      <button class="btn ghost" id="btnClearStored">Hapus Data Tersimpan</button>
+    </div>
+
     <div class="status" id="status">Belum ada file.</div>
+    <div class="status" id="storeStatus" style="display:none"></div>
   </div>
   </div>
 </div>
@@ -685,6 +690,13 @@ function processFile(file) {
       /* Default: pilih bulan terakhir dari data yang ada */
       refreshFilterOptions(state.records, true);
       renderAll();
+      /* Simpan ke halaman induk (index.html) -> database lokal + cloud */
+      state.savedAt = Date.now();
+      state.fileName = file.name;
+      if (IN_FRAME) {
+        setStoreStatus("Menyimpan data…");
+        postParent({ type: "um:save", payload: { records: state.records, savedAt: state.savedAt, fileName: file.name } });
+      }
     } catch (err) {
       console.error(err);
       updateStatus("Gagal: " + err.message);
@@ -751,7 +763,49 @@ document.getElementById("btnReset").addEventListener("click", () => {
 });
 document.getElementById("btnExport").addEventListener("click", exportExcel);
 
+/* ===== PENYIMPANAN (saat dibuka di dalam index.html) ===== */
+const IN_FRAME = (window.parent && window.parent !== window);
+const PARENT_ORIGIN = (location.origin === "null") ? "*" : location.origin;
+function postParent(msg) { try { window.parent.postMessage(msg, PARENT_ORIGIN); } catch (e) { console.warn(e); } }
+function setStoreStatus(t) {
+  const el = document.getElementById("storeStatus");
+  el.textContent = t; el.style.display = t ? "block" : "none";
+}
+function describeStored(p, cloud) {
+  const tgl = p.savedAt ? new Date(p.savedAt).toLocaleString("id-ID") : "";
+  return "Tersimpan: " + (p.fileName || "data") + " • " + tgl + (cloud ? " • ikut sinkron ke cloud" : " • di perangkat ini");
+}
+function applyStored(p) {
+  if (!p || !Array.isArray(p.records) || !p.records.length) return;
+  if (state.savedAt && p.savedAt === state.savedAt) return;   /* sudah sama, jangan render ulang */
+  state.records = p.records;
+  state.savedAt = p.savedAt;
+  state.fileName = p.fileName;
+  refreshFilterOptions(state.records, true);
+  renderAll();
+  setStoreStatus(describeStored(p, true));
+}
+if (IN_FRAME) {
+  document.getElementById("rowClearStored").style.display = "flex";
+  document.getElementById("btnClearStored").addEventListener("click", () => {
+    if (confirm("Hapus data uang masuk yang tersimpan (di perangkat dan cloud)?")) postParent({ type: "um:clear" });
+  });
+  window.addEventListener("message", (e) => {
+    if (e.origin !== location.origin && location.origin !== "null") return;
+    if (e.source !== window.parent) return;
+    const d = e.data;
+    if (!d || typeof d.type !== "string") return;
+    if (d.type === "um:data") applyStored(d.payload);
+    else if (d.type === "um:saved") {
+      if (d.ok) setStoreStatus(describeStored({ fileName: state.fileName, savedAt: state.savedAt }, d.cloud));
+      else setStoreStatus("Gagal menyimpan data (penyimpanan penuh atau tidak tersedia).");
+    }
+    else if (d.type === "um:cleared") location.reload();
+  });
+}
+
 renderTabs();
+if (IN_FRAME) postParent({ type: "um:ready" });
 </script>
 
 </body>
