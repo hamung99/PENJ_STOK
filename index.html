@@ -1512,6 +1512,7 @@ body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#
           <div class="analisa-tools">
             <label for="analisaRupaMonth" style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.04em">Bulan</label>
             <select id="analisaRupaMonth" onchange="renderGudangAnalisaRupa()" style="width:auto;min-width:150px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:7px;font-size:12px;background:#fff;color:#172033"></select>
+            <button type="button" onclick="openAnalisaRupaNamaFix()" title="Samakan nama produk Gudang dan Penjualan">✏️ Perbaiki Nama</button>
             <button type="button" onclick="downloadAnalisaRupa()">⬇ Download</button>
           </div>
         </div>
@@ -4361,6 +4362,7 @@ self.onmessage = function(e){
     if(!data || !Array.isArray(data.products) || !data.products.length){
       alert('Belum ada data Rupa Rupa.'); return;
     }
+    { const h=overlay.querySelector('.nama-fix-box h3'); if(h) h.textContent='✏️ Perbaiki Nama Produk — Cek Rupa Rupa'; const sb=overlay.querySelector('.nama-fix-sub'); if(sb) sb.innerHTML='Perubahan ini hanya menjadi <b>nama baku untuk pencocokan dan tampilan Cek Rupa Rupa</b>. Data asli pada Data Penjualan dan Data Gudang tidak diubah. Contoh: <b>SAMBAL STIK 9 GR</b> → <b>SAMBAL STICK 9 GR</b>.'; }
     const map=getCekRupaNamaMap();
     wrap.innerHTML=data.products.map((p,i)=>{
       const safe=String(cekRupaDisplayName(p.key,p.name)||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -4379,13 +4381,16 @@ self.onmessage = function(e){
     closeCekRupaNamaFix();
     renderCekRupa();
     try { if (typeof rrRender === 'function') rrRender(); } catch(e) {}
+    try { refreshAnalisaIfVisible(); } catch(e) {}
   }
   function resetCekRupaNamaFix(){
     if(!confirm('Hapus semua nama produk yang sudah diperbaiki untuk Cek Rupa Rupa?')) return;
     saveCekRupaNamaMap({});
-    openCekRupaNamaFix();
+    const fromAnalisa = (typeof _analisaSub !== 'undefined' && _analisaSub === 'rupa' && document.getElementById('page-analisa') && document.getElementById('page-analisa').style.display !== 'none');
     renderCekRupa();
     try { if (typeof rrRender === 'function') rrRender(); } catch(e) {}
+    if (fromAnalisa) { renderGudangAnalisaRupa().then(function(){ openAnalisaRupaNamaFix(); }); }
+    else { openCekRupaNamaFix(); try { refreshAnalisaIfVisible(); } catch(e) {} }
   }
 
   function collectCekData(month, mode, sourceRows, opts){
@@ -6477,6 +6482,38 @@ self.onmessage = function(e){
       _stokSumLast = Date.now();
     } finally { _stokSumLoading = false; }
   }
+  let _analisaRupaNamaSrc = null;
+  function openAnalisaRupaNamaFix(){
+    const overlay = document.getElementById('cekRupaNamaFixOverlay');
+    const wrap = document.getElementById('cekRupaNamaFixRows');
+    const src = _analisaRupaNamaSrc;
+    if (!overlay || !wrap) return;
+    if (!src || (!src.p.size && !src.g.size)) { alert('Belum ada data Rupa Rupa.'); return; }
+    const setP = new Set(), setG = new Set();
+    src.p.forEach(n => setP.add(cekRupaFinalKeyAndName(n).key));
+    src.g.forEach(n => setG.add(cekRupaFinalKeyAndName(n).key));
+    const allKeys = new Set([...src.p.keys(), ...src.g.keys()]);
+    const rows = [];
+    allKeys.forEach(rk => {
+      const name = src.p.get(rk) || src.g.get(rk);
+      const fk = cekRupaFinalKeyAndName(name).key;
+      const inP = setP.has(fk), inG = setG.has(fk);
+      rows.push({ rk, name, disp: cekRupaDisplayName(rk, name), inP, inG, matched: inP && inG, onlyP: inP && !inG, onlyG: inG && !inP });
+    });
+    rows.sort((a, b) => (a.matched - b.matched) || a.name.localeCompare(b.name, 'id'));
+    const esc = (t) => String(t == null ? '' : t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const unG = rows.filter(r => r.onlyG), unP = rows.filter(r => r.onlyP);
+    wrap.innerHTML = rows.map(r => {
+      const badge = r.matched ? '<span style="color:#15803d">✅ Cocok</span>' : (r.onlyG ? '<span style="color:#b91c1c">📦 Hanya di Gudang</span>' : '<span style="color:#1d4ed8">🛒 Hanya di Penjualan</span>');
+      const cands = r.onlyG ? unP : (r.onlyP ? unG : []);
+      const sel = cands.length ? '<select onchange="if(this.value){this.parentNode.querySelector(\'input\').value=this.value;}" style="margin-top:5px;width:100%;padding:6px 8px;border:1px solid #cbd5e1;border-radius:8px;font-size:12px"><option value="">↳ samakan dengan nama di ' + (r.onlyG ? 'Penjualan' : 'Gudang') + '…</option>' + cands.map(c => '<option value="' + esc(c.disp) + '">' + esc(c.name) + '</option>').join('') + '</select>' : '';
+      return '<div class="nama-fix-row"><div class="nama-fix-old">' + esc(r.name) + '<div style="font-weight:600;font-size:11px;margin-top:2px">' + badge + '</div></div><div><input type="text" data-key="' + esc(r.rk) + '" value="' + esc(r.disp) + '" placeholder="Nama produk baku">' + sel + '</div></div>';
+    }).join('');
+    const box = document.getElementById('cekRupaNamaFixSuggest'); if (box) { box.innerHTML = ''; box.style.display = 'none'; }
+    const h = overlay.querySelector('.nama-fix-box h3'); if (h) h.textContent = '✏️ Perbaiki Nama Produk — Analisa Rupa Rupa';
+    const sub = overlay.querySelector('.nama-fix-sub'); if (sub) sub.innerHTML = 'Produk yang <b>tidak cocok</b> ada di paling atas. Pilih <b>“samakan dengan…”</b> supaya nama di Gudang dan Penjualan dianggap satu produk (Output Penjualan dan Output Gudang akan digabung). Data asli tidak diubah.';
+    overlay.classList.add('show');
+  }
   let _analisaRupaLastData = null;
   let _analisaRupaMonthInit = false;
   async function populateAnalisaRupaMonths(){
@@ -6496,14 +6533,19 @@ self.onmessage = function(e){
     const gd = getStokRupaData() || gudangData;
     const month = document.getElementById('analisaRupaMonth')?.value || '';
     const sourceRows = await fetchCekRawRows(month, { mode: 'rupa' });
+    const rawP = new Map(), rawG = new Map();
+    const gk = (n) => cekRupaFinalKeyAndName(n).key;
+    const gn = (n) => cekRupaFinalKeyAndName(n).name;
     const penjualanMap = new Map();
     for (let i = 0; i < sourceRows.length; i++) {
       const x = sourceRows[i];
       const produk = x.produk ?? x.Produk;
       if (isFitriProduct(produk)) continue;
-      const key = productMatchKey(produk);
+      const fk = cekRupaFinalKeyAndName(String(produk).trim());
+      const key = fk.key;
+      rawP.set(productMatchKey(produk), String(produk).trim());
       let agg = penjualanMap.get(key);
-      if (!agg) { agg = { name: String(produk).trim(), qty: 0, total: 0, hpp: 0, latestHargaBeli: 0, latestTs: -1 }; penjualanMap.set(key, agg); }
+      if (!agg) { agg = { name: fk.name, qty: 0, total: 0, hpp: 0, latestHargaBeli: 0, latestTs: -1 }; penjualanMap.set(key, agg); }
       const j  = N(x.jumlah ?? x.Jumlah);
       const t  = N(x.total ?? x.Total);
       const hb = N(x.hargaBeli ?? x['Harga Beli']);
@@ -6515,8 +6557,9 @@ self.onmessage = function(e){
     if (gd && gd.products) {
       for (const p of gd.products) {
         if (isFitriProduct(p)) continue;
-        const key = productMatchKey(p);
-        if (!gudangMap.has(key)) gudangMap.set(key, { name: p, keluar: 0, stokAkhir: null });
+        rawG.set(productMatchKey(p), p);
+        const key = gk(p);
+        if (!gudangMap.has(key)) gudangMap.set(key, { name: gn(p), keluar: 0, stokAkhir: null });
       }
       for (let i = 0; i < gd.rows.length; i++) {
         const r = gd.rows[i];
@@ -6524,11 +6567,11 @@ self.onmessage = function(e){
         if (month && mk !== month) continue;
         for (const p of gd.products) {
           if (isFitriProduct(p)) continue;
-          const key = productMatchKey(p);
+          const key = gk(p);
           const v = r.values[p];
           if (!v) continue;
           let g = gudangMap.get(key);
-          if (!g) { g = { name: p, keluar: 0, stokAkhir: null }; gudangMap.set(key, g); }
+          if (!g) { g = { name: gn(p), keluar: 0, stokAkhir: null }; gudangMap.set(key, g); }
           g.keluar += N(v.keluar);
         }
       }
@@ -6539,9 +6582,9 @@ self.onmessage = function(e){
         if (month && mk > month) break;
         for (const p of gd.products) {
           if (isFitriProduct(p)) continue;
-          const key = productMatchKey(p);
+          const key = gk(p);
           const v = r.values[p];
-          if (v && v.stok != null) stokMap.set(key, { stok: v.stok, name: p });
+          if (v && v.stok != null) stokMap.set(key, { stok: v.stok, name: gn(p) });
         }
       }
       for (const [key, val] of stokMap) {
@@ -6597,6 +6640,7 @@ self.onmessage = function(e){
     const wrap = document.getElementById('analisaRupaTableWrap');
     if (wrap) wrap.innerHTML = tableHtml;
     _analisaRupaLastData = { month, list, tot, head };
+    _analisaRupaNamaSrc = { p: rawP, g: rawG };
   }
   async function downloadAnalisaRupa(){
     if (!_analisaRupaLastData || !_analisaRupaLastData.list.length) return alert('Belum ada data untuk diunduh.');
