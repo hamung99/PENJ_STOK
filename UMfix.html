@@ -8,37 +8,31 @@
   * { box-sizing: border-box; }
   body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; margin: 0; background: #f5f6fa; color: #222; }
 
-  /* ===== HEADER ===== */
-  header {
-    background: #1f3b73; color: #fff;
-    padding: 6px 20px;
-    display: flex; align-items: center; justify-content: space-between;
+  /* ===== TOOLBAR (menggantikan header) ===== */
+  .toolbar {
+    background: #fff;
+    padding: 8px 24px 0;
+    display: flex; align-items: center; gap: 10px;
     position: relative; z-index: 20;
   }
-  header .title h1 {
-    margin: 0;
-    font-size: 14px;
-    font-weight: 400;
-    letter-spacing: .2px;
-  }
-
   .menu-btn {
-    background: rgba(255,255,255,.12);
-    border: 1px solid rgba(255,255,255,.25);
-    color: #fff;
-    width: 28px; height: 28px; border-radius: 5px;
-    font-size: 16px; line-height: 1; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
+    background: #eef1f7;
+    border: 1px solid #d8deea;
+    color: #1f3b73;
+    height: 28px; padding: 0 12px; border-radius: 6px;
+    font-size: 12px; font-weight: 700; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
     transition: background .15s;
   }
-  .menu-btn:hover { background: rgba(255,255,255,.22); }
+  .menu-btn:hover { background: #dfe6f4; }
+  .toolbar .tb-title { font-size: 12px; color: #667; font-weight: 600; }
 
   .menu-dropdown {
-    position: absolute; top: 44px; right: 20px;
+    position: absolute; top: calc(100% + 2px); left: 24px;
     background: #fff; color: #222;
     border: 1px solid #d8deea; border-radius: 8px;
     box-shadow: 0 8px 24px rgba(0,0,0,.18);
-    min-width: 300px; padding: 10px 0;
+    min-width: 300px; max-width: calc(100vw - 32px); padding: 10px 0;
     display: none;
   }
   .menu-dropdown.open { display: block; }
@@ -140,14 +134,11 @@
 </head>
 <body>
 
-<header>
-  <div class="title">
-    <h1>Laporan Uang Masuk Harian — Minyak &amp; Rupa-Rupa</h1>
-  </div>
+<div class="toolbar">
+  <button class="menu-btn" id="menuBtn" title="Menu">&#9776; Menu</button>
+  <span class="tb-title">Uang Masuk Harian</span>
 
-  <button class="menu-btn" id="menuBtn" title="Menu">&#8942;</button>
-
-  <div class="menu-dropdown" id="menuDropdown">
+<div class="menu-dropdown" id="menuDropdown">
     <div class="item">
       <label>File Excel</label>
       <input type="file" id="fileInput" accept=".xlsx,.xls">
@@ -173,7 +164,7 @@
 
     <div class="status" id="status">Belum ada file.</div>
   </div>
-</header>
+</div>
 
 <!-- ===== CARDS RINGKASAN ===== -->
 <div class="cards" id="cards">
