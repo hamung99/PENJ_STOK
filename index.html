@@ -5764,7 +5764,28 @@ self.onmessage = function(e){
         return true;
       };
 
-      if (fakIdx && fakIdx.has(String(g.faktur).trim())) {
+      /* CASH: sumber pertama dan utama adalah Uang Masuk > Cash Dropping.
+         Jangan mengambil pembayaran Cash dari Piutang Tempo. */
+      if (isCash && fakIdx && fakIdx.has(String(g.faktur).trim())) {
+        const byFaktur = fakIdx.get(String(g.faktur).trim()).filter(identityOk);
+        if (byFaktur.length) {
+          matches = byFaktur.slice();
+          matchType = 'cash-dropping-faktur';
+        }
+      }
+
+      /* Jika nomor faktur berbeda/kosong, tetap cari di Cash Dropping
+         berdasarkan Sales + Customer + Alamat + kategori + bulan. */
+      if (!matches.length && isCash && exactIdx) {
+        const exactKey = [g.sales, g.month, U(g.cust), U(g.alamat), targetCategory].join('||');
+        if (exactIdx.has(exactKey)) {
+          matches = exactIdx.get(exactKey).filter(identityOk).slice();
+          if (matches.length) matchType = 'cash-dropping-identitas';
+        }
+      }
+
+      /* Untuk TEMPO gunakan alur lama. */
+      if (!matches.length && !isCash && fakIdx && fakIdx.has(String(g.faktur).trim())) {
         const byFaktur = fakIdx.get(String(g.faktur).trim()).filter(identityOk);
         if (byFaktur.length) {
           matches = byFaktur.slice();
@@ -5772,7 +5793,7 @@ self.onmessage = function(e){
         }
       }
 
-      if (!matches.length && exactIdx) {
+      if (!matches.length && exactIdx && !isCash) {
         const exactKey = [g.sales, g.month, U(g.cust), U(g.alamat), targetCategory].join('||');
         if (exactIdx.has(exactKey)) {
           matches = exactIdx.get(exactKey).filter(identityOk).slice();
@@ -5780,8 +5801,9 @@ self.onmessage = function(e){
         }
       }
 
-      // Fuzzy hanya sebagai fallback. Kategori tetap WAJIB sama dan bulan
-      // tetap dibatasi; typo tidak boleh membuka pencocokan lintas kategori/bulan.
+      // Fuzzy hanya sebagai fallback. Untuk CASH, bucketMap di sini adalah
+      // Cash Dropping; untuk TEMPO, bucketMap adalah Piutang Tempo.
+      // Kategori dan bulan tetap wajib sama.
       if (!matches.length && _cekUmFuzzyEnabled && bucketMap) {
         const salesCands = findSalesBuckets(g.sales, bucketMap, thr);
         const seenKeys = new Set();
