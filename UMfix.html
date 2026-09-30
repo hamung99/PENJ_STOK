@@ -753,7 +753,10 @@ function processFile(file) {
       const baru = parseWorkbook(wb);
       /* GABUNGKAN dengan data lama (jangan ditimpa): sheet/tanggal yang sama diganti,
          tanggal lain (mis. September) tetap dipertahankan. */
+      const jmlLama = state.records.length;
       state.records = mergeRecords(state.records, baru);
+      const bl = [...new Set(state.records.map(r => r.bulan))].join(", ");
+      state.mergeInfo = `[v2-gabung] lama ${jmlLama} + baru ${baru.length} = ${state.records.length} baris • bulan: ${bl}`;
       /* Default: pilih bulan terakhir dari data yang ada */
       refreshFilterOptions(state.records, true);
       renderAll();
@@ -840,7 +843,7 @@ function setStoreStatus(t) {
 }
 function describeStored(p, cloud) {
   const tgl = p.savedAt ? new Date(p.savedAt).toLocaleString("id-ID") : "";
-  return "Tersimpan: " + (p.fileName || "data") + " • " + tgl + (cloud ? " • ikut sinkron ke cloud" : " • di perangkat ini");
+  return (state.mergeInfo ? state.mergeInfo + "\n" : "") + "Tersimpan: " + (p.fileName || "data") + " • " + tgl + (cloud ? " • ikut sinkron ke cloud" : " • di perangkat ini");
 }
 function applyStored(p) {
   if (!p || !Array.isArray(p.records) || !p.records.length) return;
