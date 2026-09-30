@@ -2723,6 +2723,146 @@ self.onmessage = function(e){
     foot.push(Rx.qty, fm(Rx.profit), '', '', '', fm(Rx.hpp), fm(Rx.sales));
     return foot;
   }
+  /* ===== Simpan Excel bergaya (laporan) — dipakai tab Produk. Memakai ExcelJS (dimuat sekali saat dibutuhkan) ===== */
+  let _excelJsPromise = null;
+  function loadExcelJS(){
+    if (typeof ExcelJS !== 'undefined') return Promise.resolve(ExcelJS);
+    if (_excelJsPromise) return _excelJsPromise;
+    _excelJsPromise = new Promise((resolve, reject) => {
+      const sc = document.createElement('script');
+      sc.src = 'https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js';
+      sc.async = true;
+      sc.onload = () => resolve(window.ExcelJS);
+      sc.onerror = () => { _excelJsPromise = null; reject(new Error('Gagal memuat pustaka ExcelJS. Periksa koneksi internet.')); };
+      document.head.appendChild(sc);
+    });
+    return _excelJsPromise;
+  }
+  function downloadBlob(blob, name){
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  }
+  function reportSubtitle(){
+    const pad = v => String(v).padStart(2, '0');
+    const d = new Date();
+    const stamp = pad(d.getDate()) + '/' + pad(d.getMonth()+1) + '/' + d.getFullYear() + ' ' + pad(d.getHours()) + '.' + pad(d.getMinutes());
+    let periode;
+    if (filters.dateFrom || filters.dateTo) periode = 'periode ' + (filters.dateFrom ? fmtTgl(filters.dateFrom) : '…') + ' s/d ' + (filters.dateTo ? fmtTgl(filters.dateTo) : '…');
+    else periode = filters.month ? 'bulan ' + monthLabel(filters.month) : 'semua bulan';
+    const extra = [];
+    if (filters.sales)   extra.push('Sales: ' + filters.sales);
+    if (filters.product) extra.push('Produk: ' + filters.product);
+    if (filters.payment) extra.push('Pembayaran: ' + filters.payment);
+    return periode + ' , data di save tgl: ' + stamp + (extra.length ? ' | ' + extra.join(' | ') : '');
+  }
+  async function saveStyledProduk(){
+    try { setStatus('Menyiapkan laporan Excel…'); await loadExcelJS(); }
+    catch(e){ alert(e.message + '\n\nExcel akan disimpan dengan format standar (tanpa warna).'); return false; }
+    const r = R, SO2 = r.SO2 || SO, n = SO2.length;
+    const head = s1BuildHead(SO2);
+    const rows = (r.s1 || []).map(x => s1BuildRow(x, n));
+    const foot = s1BuildFoot(r, SO2);
+    const nc = head.length;
+    const FIRST = 2, HEAD_ROW = 5;                       // kolom A = pembatas kosong; judul di baris 3, subjudul baris 4, header baris 5
+    const idxQtyTotal = 2*n + 1, idxProfitProduk = 2*n + 2, idxSatuan = 2*n + 3, idxHB = 2*n + 4, idxHJ = 2*n + 5;
+    const kindOf = i => {
+      if (i === 0) return 'text';
+      if (i <= 2*n) return (i % 2 === 1) ? 'qty' : 'money';
+      if (i === idxQtyTotal) return 'qty';
+      if (i === idxProfitProduk) return 'money';
+      if (i === idxSatuan) return 'center';
+      if (i === idxHB || i === idxHJ) return 'text';
+      return 'money';                                      // BELI X QTY, JUAL X QTY
+    };
+    const isIntCol = i => rows.every(rw => Number.isInteger(Number(rw[i]) || 0));
+    const thin = { style:'thin', color:{ argb:'FF7F7F7F' } };
+    const border = { top:thin, left:thin, bottom:thin, right:thin };
+
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'Rekap Penjualan'; wb.created = new Date();
+    const ws = wb.addWorksheet('Produk', {
+      views: [{ state:'frozen', xSplit:2, ySplit:HEAD_ROW, showGridLines:false }],
+      pageSetup: { paperSize:9, orientation:'landscape', fitToPage:true, fitToWidth:1, fitToHeight:0, printTitlesRow: HEAD_ROW + ':' + HEAD_ROW,
+                   margins:{ left:0.4, right:0.4, top:0.5, bottom:0.5, header:0.25, footer:0.25 } },
+      headerFooter: { oddFooter: 'Halaman &P dari &N' }
+    });
+
+    // Judul + subjudul
+    ws.getCell(3, FIRST).value = 'Ringkasan penjualan per sales per produk';
+    ws.getCell(3, FIRST).font = { name:'Calibri', size:13, bold:true };
+    ws.getCell(4, FIRST).value = reportSubtitle();
+    ws.getCell(4, FIRST).font = { name:'Calibri', size:10 };
+
+    // Header
+    const hr = ws.getRow(HEAD_ROW);
+    head.forEach((h, i) => {
+      const c = hr.getCell(FIRST + i);
+      c.value = h;
+      c.font = { name:'Calibri', size:10, bold:true };
+      c.alignment = { horizontal:'center', vertical:'middle', wrapText:true };
+      c.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FFBDD7EE' } };
+      c.border = border;
+    });
+    hr.height = 24;
+
+    // Data
+    rows.forEach((rw, ri) => {
+      const row = ws.getRow(HEAD_ROW + 1 + ri);
+      rw.forEach((v, i) => {
+        const c = row.getCell(FIRST + i);
+        const k = kindOf(i);
+        if (k === 'qty' || k === 'money') {
+          c.value = Number(v) || 0;
+          c.numFmt = k === 'money' ? (isIntCol(i) ? '#,##0;[Red]-#,##0' : '#,##0.00;[Red]-#,##0.00') : (isIntCol(i) ? '#,##0' : '#,##0.##');
+          c.alignment = { horizontal:'right', vertical:'middle' };
+        } else {
+          c.value = (v === undefined || v === null) ? '' : v;
+          c.alignment = { horizontal: k === 'center' ? 'center' : 'left', vertical:'middle' };
+        }
+        c.font = { name:'Calibri', size:10 };
+        c.border = border;
+      });
+    });
+
+    // Baris TOTAL
+    const tr = ws.getRow(HEAD_ROW + 1 + rows.length);
+    foot.forEach((v, i) => {
+      const c = tr.getCell(FIRST + i);
+      const k = kindOf(i);
+      if ((k === 'qty' || k === 'money') && v !== '' && v !== undefined) {
+        c.value = Number(v) || 0;
+        c.numFmt = k === 'money' ? '#,##0;[Red]-#,##0' : '#,##0';
+        c.alignment = { horizontal:'right', vertical:'middle' };
+      } else {
+        c.value = (v === undefined || v === null) ? '' : v;
+        c.alignment = { horizontal: i === 0 ? 'left' : 'center', vertical:'middle' };
+      }
+      c.font = { name:'Calibri', size:10, bold:true };
+      c.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FFDDEBF7' } };
+      c.border = border;
+    });
+
+    // Lebar kolom
+    ws.getColumn(1).width = 2;
+    head.forEach((h, i) => {
+      const k = kindOf(i);
+      let w;
+      if (i === 0) w = Math.min(42, Math.max(26, ...rows.map(rw => String(rw[0] ?? '').length + 3)));
+      else if (i === idxHB || i === idxHJ) w = Math.min(28, Math.max(16, ...rows.map(rw => String(rw[i] ?? '').length + 3)));
+      else if (i === idxSatuan) w = 9;
+      else if (k === 'qty') w = Math.max(10, String(h).length + 3);
+      else w = Math.max(15, String(h).length + 3, String(Math.round(Math.abs(Number(foot[i]) || 0)).toLocaleString('en-US')).length + 4);
+      ws.getColumn(FIRST + i).width = w;
+    });
+
+    const buf = await wb.xlsx.writeBuffer();
+    const name = 'Laporan_Produk' + (filters.month ? '_' + filters.month : '') + '.xlsx';
+    downloadBlob(new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), name);
+    setStatus('Laporan Produk tersimpan: ' + name);
+    return true;
+  }
   function reportBar(tab, label){ return ''; }
   function reportMetaRows(title){ return []; }
   function styleReportSheet(ws, data, freezeRow){
@@ -2747,6 +2887,7 @@ self.onmessage = function(e){
   }
   async function saveExcelTab(tab){
     if (!R || !R.s1) return alert('Belum ada data untuk disimpan.');
+    if (tab === 's1') { try { if (await saveStyledProduk()) return; } catch(e){ console.error('saveStyledProduk', e); alert('Laporan bergaya gagal dibuat: ' + (e.message||e) + '\n\nExcel akan disimpan dengan format standar.'); } }
     try { await loadXLSX(); } catch(e){ alert(e.message); return; }
     const wb=XLSX.utils.book_new();
     const r=R, SO2=r.SO2||SO, n=SO2.length;
