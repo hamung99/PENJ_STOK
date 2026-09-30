@@ -7359,6 +7359,17 @@ self.onmessage = function(e){
       if(tab==='cek-uang-masuk') ceuShowTab();
     });
     ['cekUmMonth','cekUmPayment','cekUmStatus'].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('change',ceuRender);});
+    // Delegasi event supaya filter tetap aktif walaupun elemen select dibuat ulang oleh render/tab lain.
+    if(!document._ceuFilterWired){
+      document._ceuFilterWired=true;
+      document.addEventListener('change',function(e){
+        const id=e.target && e.target.id;
+        if(id==='cekUmMonth' || id==='cekUmPayment' || id==='cekUmStatus') ceuRender();
+      });
+      document.addEventListener('input',function(e){
+        if(e.target && e.target.id==='cekUmSearch') ceuRender();
+      });
+    }
     const q=document.getElementById('cekUmSearch'); if(q)q.addEventListener('input',ceuRender);
     const rb=document.getElementById('cekUmRefresh'); if(rb)rb.addEventListener('click',async()=>{cekUmReady=false;await ceuLoad();});
   }
