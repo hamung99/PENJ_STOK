@@ -35,6 +35,20 @@
   }
   .menu-btn:hover { background: #dfe6f4; }
 
+  /* ===== KOTAK PENCARIAN CEPAT ===== */
+  .search-wrap { flex: 0 1 340px; padding: 0 8px 6px; min-width: 180px; }
+  .search-wrap input {
+    width: 100%; padding: 6px 10px 6px 30px; font-size: 13px;
+    border: 1px solid #d8deea; border-radius: 6px; background: #fff; color: #222;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><line x1='21' y1='21' x2='16.65' y2='16.65'/></svg>");
+    background-repeat: no-repeat; background-position: 9px center;
+  }
+  .search-wrap input:focus {
+    outline: none; border-color: #1f3b73;
+    box-shadow: 0 0 0 2px rgba(31,59,115,.15);
+  }
+  .search-wrap input::placeholder { color: #8892a6; }
+
   .menu-dropdown {
     position: absolute; top: calc(100% + 4px); right: 0;
     background: #fff; color: #222;
@@ -142,6 +156,7 @@
 
   @media (max-width: 720px) {
     .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .search-wrap { flex-basis: 200px; }
   }
   /* ===== MODE GELAP (mengikuti index.html) ===== */
   html.dark { color-scheme: dark; }
@@ -162,6 +177,12 @@
   html.dark .tab.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
   html.dark .menu-btn { background: #334155; border-color: #475569; color: #e2e8f0; }
   html.dark .menu-btn:hover { background: #475569; }
+  html.dark .search-wrap input {
+    background-color: #0f172a; color: #e2e8f0; border-color: #475569;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><line x1='21' y1='21' x2='16.65' y2='16.65'/></svg>");
+  }
+  html.dark .search-wrap input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,.25); }
+  html.dark .search-wrap input::placeholder { color: #64748b; }
   html.dark .menu-dropdown { background: #1e293b; color: #e2e8f0; border-color: #475569; box-shadow: 0 8px 24px rgba(0,0,0,.55); }
   html.dark .menu-dropdown .item label { color: #93c5fd; }
   html.dark .menu-dropdown .item input[type=file],
@@ -213,6 +234,9 @@
 
 <div class="tabbar">
   <div class="tabs" id="tabs"></div>
+  <div class="search-wrap">
+    <input type="search" id="searchInput" placeholder="Cari no faktur / toko / sales / alamat…" autocomplete="off">
+  </div>
   <div class="menu-wrap">
     <button class="menu-btn" id="menuBtn" title="Menu">&#8942;</button>
 <div class="menu-dropdown" id="menuDropdown">
@@ -258,7 +282,6 @@ const TABS = [
   { id: "harian",    label: "Rekap Harian",                cols: ["tanggal","jml_transaksi","total_tagihan","minyak_cash","minyak_transfer","rupa_cash","rupa_transfer","total_pembayaran"] },
   { id: "piutang",   label: "Piutang Tempo",               cols: ["tanggal","sales","no_faktur","nama_toko","alamat","tagihan_nominal","minyak_cash","minyak_transfer","rupa_cash","rupa_transfer","total_pembayaran","ket"] },
   { id: "dropping",  label: "Cash Dropping",               cols: ["tanggal","sales","no_faktur","nama_toko","alamat","tagihan_nominal","minyak_cash","minyak_transfer","rupa_cash","rupa_transfer","total_pembayaran","ket"] },
-  { id: "minyak",    label: "Rekap Minyak & Rupa2",        cols: ["tanggal","minyak_cash","minyak_transfer","rupa_cash","rupa_transfer","total_minyak","total_rupa","total_cash","total_transfer"] },
   { id: "tokoleng",  label: "Rekap Toko+Sales+Tanggal",    cols: ["tanggal","sales","nama_toko","alamat","section","jml_transaksi","total_tagihan","minyak_cash","minyak_transfer","rupa_cash","rupa_transfer","total_pembayaran"] },
   { id: "bulanan",   label: "Data Bulanan",                cols: ["bulan","jml_transaksi","piutang_tempo","cash_dropping","total_tagihan","total_cash","total_transfer","total_pembayaran"] },
 ];
@@ -268,10 +291,37 @@ const NUM_COLS = new Set(["tagihan_nominal","minyak_cash","minyak_transfer","rup
 /* Label header khusus tab Data Bulanan */
 const BULANAN_LABEL = { bulan:"BULAN", jml_transaksi:"JML FAKTUR", piutang_tempo:"PIUTANG TEMPO", cash_dropping:"CASH DROPPING", total_tagihan:"TAGIHAN", total_cash:"BAYAR CASH", total_transfer:"BAYAR TF", total_pembayaran:"TOTAL BAYAR" };
 
+/* ===== LABEL HEADER TABEL (menggantikan nama kolom mentah) ===== */
+const COL_LABEL = {
+  tanggal:"Tanggal", section:"Pembayaran", sales:"Sales", no_faktur:"No Faktur",
+  nama_toko:"Toko", alamat:"Alamat", tagihan_nominal:"Nominal Tagihan",
+  minyak_cash:"Minyak Cash", minyak_transfer:"Minyak Trf",
+  rupa_cash:"Rupa Cash", rupa_transfer:"Rupa Trf",
+  total_pembayaran:"Total", ket:"Ket",
+  jml_transaksi:"Jml Faktur", total_tagihan:"Total Tagihan",
+  bulan:"Bulan", piutang_tempo:"Piutang Tempo", cash_dropping:"Cash Dropping",
+  total_minyak:"Total Minyak", total_rupa:"Total Rupa",
+  total_cash:"Total Cash", total_transfer:"Total Transfer",
+  jml_toko:"Jml Toko", jml_hari:"Jml Hari", daftar_toko:"Daftar Toko"
+};
+
+/* Penyesuaian label per tab (menimpa COL_LABEL) */
+const TAB_COL_LABEL = {
+  detail:   { tanggal:"Tgl", total_pembayaran:"Total" },
+  tokoleng: { jml_transaksi:"Jml Faktur" }
+};
+
+function colLabel(tabId, c) {
+  if (tabId === "bulanan" && BULANAN_LABEL[c]) return BULANAN_LABEL[c];
+  const t = TAB_COL_LABEL[tabId];
+  if (t && t[c]) return t[c];
+  return COL_LABEL[c] || c;
+}
+
 /* Peta tabId -> key pada state.views */
 const VIEW_KEY = {
   detail: "detail", harian: "harian", piutang: "piutang", dropping: "dropping",
-  minyak: "minyak", tokoleng: "tokoSalesTgl",
+  tokoleng: "tokoSalesTgl",
   bulanan: "bulanan"
 };
 
@@ -282,7 +332,8 @@ const state = {
   views: null,
   rendered: {},   // { tabId: true/false }
   dirty: {},      // { tabId: true/false }
-  page: {}        // { tabId: pageNumber }
+  page: {},       // { tabId: pageNumber }
+  search: ""      // teks pencarian cepat
 };
 
 function num(v) {
@@ -458,24 +509,6 @@ function buildViews(records) {
   const piutang = records.filter(r => r.section === "PIUTANG TEMPO").sort((a,b)=> a.tglSort-b.tglSort);
   const dropping = records.filter(r => r.section === "CASH DROPPING").sort((a,b)=> a.tglSort-b.tglSort);
 
-  const minyakMap = {};
-  for (const r of records) {
-    const k = r.bulan + "|" + r.tanggal;
-    if (!minyakMap[k]) minyakMap[k] = { tanggal: r.tanggal, bulan: r.bulan, tglSort: r.tglSort, minyak_cash: 0, minyak_transfer: 0, rupa_cash: 0, rupa_transfer: 0 };
-    const o = minyakMap[k];
-    o.minyak_cash += r.minyak_cash;
-    o.minyak_transfer += r.minyak_transfer;
-    o.rupa_cash += r.rupa_cash;
-    o.rupa_transfer += r.rupa_transfer;
-  }
-  const minyak = Object.values(minyakMap).map(o => ({
-    ...o,
-    total_minyak: o.minyak_cash + o.minyak_transfer,
-    total_rupa: o.rupa_cash + o.rupa_transfer,
-    total_cash: o.minyak_cash + o.rupa_cash,
-    total_transfer: o.minyak_transfer + o.rupa_transfer,
-  })).sort((a,b)=> a.tglSort-b.tglSort);
-
   const tokoMap = {};
   for (const r of records) {
     const k = (r.nama_toko || "") + "|||" + (r.alamat || "");
@@ -575,15 +608,29 @@ function buildViews(records) {
     total_pembayaran: o.total_pembayaran,
   })).sort((a,b)=> a.bulanNum - b.bulanNum);
 
-  return { detail, harian, piutang, dropping, minyak, toko, tokoSalesTgl, salesList, bulanan };
+  return { detail, harian, piutang, dropping, toko, tokoSalesTgl, salesList, bulanan };
+}
+
+/* Cari cepat: no faktur, toko, sales, alamat, ket, section */
+function matchSearch(r, q) {
+  if (!q) return true;
+  const s = q.toLowerCase();
+  return (String(r.no_faktur ?? "").toLowerCase().includes(s))
+      || (String(r.nama_toko ?? "").toLowerCase().includes(s))
+      || (String(r.sales ?? "").toLowerCase().includes(s))
+      || (String(r.alamat ?? "").toLowerCase().includes(s))
+      || (String(r.ket ?? "").toLowerCase().includes(s))
+      || (String(r.section ?? "").toLowerCase().includes(s));
 }
 
 function applyFilter(records) {
   const fBulan = document.getElementById("filterBulan").value;
   const fTanggal = document.getElementById("filterTanggal").value;
+  const q = state.search || "";
   return records.filter(r => {
     if (fBulan && r.bulan !== fBulan) return false;
     if (fTanggal && r.tanggal !== fTanggal) return false;
+    if (q && !matchSearch(r, q)) return false;
     return true;
   });
 }
@@ -694,7 +741,7 @@ function renderTable(tabId, cols, rows) {
 
   /* Header */
   const thead = "<thead><tr>" +
-    cols.map(c => `<th class="${NUM_COLS.has(c) ? "num" : ""}">${tabId === "bulanan" ? (BULANAN_LABEL[c] || c) : (tabId === "tokoleng" && c === "jml_transaksi") ? "jml_faktur" : c}</th>`).join("") +
+    cols.map(c => `<th class="${NUM_COLS.has(c) ? "num" : ""}">${colLabel(tabId, c)}</th>`).join("") +
     "</tr></thead>";
 
   /* Body — pakai array + join (lebih cepat dari string concat berulang) */
@@ -813,7 +860,8 @@ function renderAll() {
   document.getElementById("btnExport").disabled = false;
   const fB = document.getElementById("filterBulan").value || "Semua";
   const fT = document.getElementById("filterTanggal").value || "Semua";
-  updateStatus(`${fmt(filtered.length)} transaksi (Bulan: ${fB}, Tanggal: ${fT})`);
+  const q = state.search ? `, Cari: "${state.search}"` : "";
+  updateStatus(`${fmt(filtered.length)} transaksi (Bulan: ${fB}, Tanggal: ${fT}${q})`);
 }
 
 function processFile(file) {
@@ -855,7 +903,6 @@ function exportExcel() {
     ["Rekap Harian", "harian"],
     ["Piutang Tempo", "piutang"],
     ["Cash Dropping", "dropping"],
-    ["Rekap Minyak & Rupa2", "minyak"],
     ["Rekap Toko+Sales+Tanggal", "tokoSalesTgl"],
     ["Data Bulanan", "bulanan"],
   ];
@@ -896,8 +943,30 @@ document.getElementById("filterBulan").addEventListener("change", () => {
   renderAll();
 });
 document.getElementById("filterTanggal").addEventListener("change", renderAll);
+
+/* Pencarian cepat: debounce 200ms */
+const searchInput = document.getElementById("searchInput");
+let searchTimer = null;
+searchInput.addEventListener("input", () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    state.search = searchInput.value.trim();
+    renderAll();
+  }, 200);
+});
+/* Enter langsung eksekusi */
+searchInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    clearTimeout(searchTimer);
+    state.search = searchInput.value.trim();
+    renderAll();
+  }
+});
+
 document.getElementById("btnReset").addEventListener("click", () => {
   document.getElementById("filterBulan").value = "";
+  searchInput.value = "";
+  state.search = "";
   refreshTanggalOptions(state.records);
   renderAll();
 });
