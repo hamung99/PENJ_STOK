@@ -367,21 +367,23 @@ function parseWorkbook(wb) {
         /* Baris header: cari posisi kolom faktur / nama toko / alamat */
         const cm = {};
         vals.forEach((h, idx) => {
-          const t = String(h ?? "").toUpperCase();
+          const t = String(h ?? "").toUpperCase().trim();
           if (!t) return;
-          if (/FAKTUR/.test(t) && cm.faktur === undefined) cm.faktur = idx;
+          if (/SALES/.test(t) && cm.sales === undefined) cm.sales = idx;
+          else if (/^NO\.?\s*FAKTUR|^FAKTUR/.test(t) && cm.faktur === undefined) cm.faktur = idx;
           else if (/ALAMAT/.test(t) && cm.alamat === undefined) cm.alamat = idx;
           else if (/TOKO|CUSTOMER|PELANGGAN|OUTLET/.test(t) && !/KODE|CODE/.test(t) && cm.toko === undefined) cm.toko = idx;
         });
         if (cm.toko !== undefined) colMap = cm;
         continue;
       }
-      if (String(vals[0] ?? "").trim().toUpperCase() === "TOTAL") continue;
-      if (!vals[2] && !vals[3] && !vals[8]) continue;
+      if (String(vals[0] ?? "").trim().toUpperCase() === "TOTAL" || b === "TOTAL") continue;
+      if (!vals[2] && !vals[3] && !vals[4] && !vals[8]) continue;
 
-      if (vals[1] && !["", "NAN"].includes(b) && !["SALES","DROPPING/SALES"].includes(b)) {
-        currentSales = String(vals[1]).trim();
-      }
+      /* Nama sales: kolom SALES (atau DROPPING/SALES) dari baris header; biasanya hanya terisi di baris pertama tiap kelompok */
+      const salesIdx = (colMap && colMap.sales !== undefined) ? colMap.sales : 2;
+      const sv = String(vals[salesIdx] ?? "").trim();
+      if (sv && !["NAN", "SALES", "DROPPING/SALES"].includes(sv.toUpperCase())) currentSales = sv;
 
       /* Faktur / toko / alamat */
       let noFaktur, namaToko, alamat;
@@ -752,7 +754,7 @@ function renderTable(tabId, cols, rows) {
   });
 }
 
-const APP_VER = "v5";
+const APP_VER = "v6";
 function updateStatus(msg) { document.getElementById("status").textContent = "[" + APP_VER + "] " + msg; }
 
 function renderCards(records) {
