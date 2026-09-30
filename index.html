@@ -5443,6 +5443,25 @@ self.onmessage = function(e){
   function extractUmArrays(umData) {
     const out = { cash: [], tempo: [] };
     if (!umData || typeof umData !== 'object') return out;
+    /* Format UMfix: { records:[{section, tanggal:'dd/mm', bulanNum, sales, no_faktur, nama_toko, alamat, total_pembayaran,...}] } */
+    if (Array.isArray(umData.records) && umData.records.length && umData.records[0] &&
+        (umData.records[0].section !== undefined || umData.records[0].nama_toko !== undefined)) {
+      const ref = new Date(umData.savedAt || Date.now());
+      const refY = ref.getFullYear(), refM = ref.getMonth() + 1;
+      umData.records.forEach(r => {
+        const bn = Number(r.bulanNum) || 0;
+        const yr = bn ? (bn > refM ? refY - 1 : refY) : 0;   // tahun tidak tersimpan di UMfix -> ditebak dari savedAt
+        const row = {
+          _month: bn ? (yr + '-' + String(bn).padStart(2, '0')) : '',
+          tanggal: r.tanggal, sales: r.sales || '', toko: r.nama_toko || '', alamat: r.alamat || '',
+          faktur: String(r.no_faktur ?? '').trim(), total: N(r.total_pembayaran), ket: r.ket
+        };
+        const sec = String(r.section || '').toUpperCase();
+        if (sec.includes('TEMPO')) out.tempo.push(row);
+        else if (sec.includes('CASH')) out.cash.push(row);
+      });
+      return out;
+    }
     const findFirst = (names) => { for (const n of names) if (Array.isArray(umData[n])) return umData[n]; return null; };
     let arr = findFirst(['cashDropping','cashdropping','cash_dropping','cash','cd']);
     if (arr) out.cash = arr;
@@ -5465,6 +5484,7 @@ self.onmessage = function(e){
     return out;
   }
   function umRowMonth(r) {
+    if (r._month !== undefined) return r._month;
     const t = r.tanggal ?? r.Tanggal ?? r.date ?? r.Date ?? '';
     return monthKey(t) || '';
   }
@@ -5634,6 +5654,13 @@ self.onmessage = function(e){
       });
       return by;
     };
+    const buildFakturIndex = (arr) => {
+      const idx = new Map();
+      arr.forEach(r => { const f = String(r.faktur || '').trim(); if (f.length >= 9) { if (!idx.has(f)) idx.set(f, []); idx.get(f).push(r); } });
+      return idx;
+    };
+    const cashFak  = buildFakturIndex(cash);
+    const tempoFak = buildFakturIndex(tempo);
     const cashBucket  = buildSalesBucket(cash);
     const tempoBucket = buildSalesBucket(tempo);
 
@@ -5682,7 +5709,13 @@ self.onmessage = function(e){
       let matchType = 'none';
       let fuzzyInfo = null;
 
-      if (exactIdx) {
+      const fakIdx = isCash ? cashFak : (isTempo ? tempoFak : null);
+      if (fakIdx && fakIdx.has(String(g.faktur).trim())) {
+        matches = fakIdx.get(String(g.faktur).trim()).slice();
+        matchType = 'exact';
+      }
+
+      if (!matches.length && exactIdx) {
         const exactKey = [g.sales, g.month, U(g.cust), U(g.alamat)].join('||');
         if (exactIdx.has(exactKey)) {
           matches = exactIdx.get(exactKey).slice();
