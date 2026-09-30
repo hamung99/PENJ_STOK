@@ -732,6 +732,13 @@ body.dark #page-gudang .gudang-subtabs .gudang-view-toggle select{
 #page-cekum .cek-refresh-btn{padding:4px 8px;font-size:12px;min-width:30px}
 #page-cekum .cek-search{padding:6px 12px;border:1px solid #cbd5e1;border-radius:7px;font-size:12px;width:220px;background:#fff;color:#172033}
 #page-cekum .tablebox{max-height:72vh}
+/* Mode gelap: filter Cek Uang Masuk (redup, tidak menyilaukan) */
+body.dark #page-cekum .cek-card-actions select,body.dark #page-cekum .cek-search{background:#0f172a;color:#cbd5e1;border-color:#334155}
+body.dark #page-cekum .cek-search::placeholder{color:#64748b}
+body.dark #page-cekum .cek-card-actions select option{background:#0f172a;color:#cbd5e1}
+body.dark #page-cekum .cek-card-actions label{color:#94a3b8}
+body.dark #page-cekum .cek-card-title{color:#93c5fd}
+body.dark #page-cekum .cek-card-actions select:focus,body.dark #page-cekum .cek-search:focus{outline:none;border-color:#3b82f6}
 #page-cekum .kpis{grid-template-columns:repeat(5,1fr)}
 @media(max-width:1100px){#page-cekum .kpis{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:900px){#page-cekum .kpis{grid-template-columns:repeat(2,1fr)}}
