@@ -119,6 +119,9 @@
   th, td { border: 1px solid #e0e0e0; padding: 6px 8px; text-align: left; vertical-align: top; white-space: nowrap; }
   th { background: #f0f3fa; position: sticky; top: 0; z-index: 1; }
   td.num, th.num { text-align: right; }
+  .bln-cap { display:flex; justify-content:space-between; align-items:center; padding:8px 4px; font-size:13px; }
+  .bln-cap span { font-size:12px; opacity:.7; font-weight:600; }
+  tr.tot-row td { font-weight:800; border-top:2px solid #94a3b8; }
   tbody tr:nth-child(even) { background: #fafbfe; }
   .table-wrap { max-height: 70vh; overflow: auto; border: 1px solid #e0e0e0; border-radius: 6px; }
   .empty { padding: 32px; text-align: center; color: #888; font-size: 13px; }
@@ -259,10 +262,13 @@ const TABS = [
   { id: "toko",      label: "Rekap per Toko",              cols: ["nama_toko","alamat","jml_transaksi","total_tagihan","minyak_cash","minyak_transfer","rupa_cash","rupa_transfer","total_pembayaran"] },
   { id: "tokoleng",  label: "Rekap Toko+Sales+Tanggal",    cols: ["tanggal","bulan","sales","nama_toko","alamat","section","jml_transaksi","total_tagihan","minyak_cash","minyak_transfer","rupa_cash","rupa_transfer","total_pembayaran"] },
   { id: "saleslst",  label: "Daftar Toko per Sales",       cols: ["tanggal","bulan","sales","daftar_toko","jml_toko","total_pembayaran"] },
-  { id: "bulanan",   label: "Data Bulanan",                cols: ["bulan","jml_transaksi","jml_hari","jml_toko","total_tagihan","minyak_cash","minyak_transfer","rupa_cash","rupa_transfer","total_minyak","total_rupa","total_cash","total_transfer","total_pembayaran"] },
+  { id: "bulanan",   label: "Data Bulanan",                cols: ["bulan","jml_transaksi","piutang_tempo","cash_dropping","total_tagihan","total_cash","total_transfer","total_pembayaran"] },
 ];
 
-const NUM_COLS = new Set(["tagihan_nominal","minyak_cash","minyak_transfer","rupa_cash","rupa_transfer","total_pembayaran","jml_transaksi","total_tagihan","total_minyak","total_rupa","total_cash","total_transfer","jml_toko","jml_hari"]);
+const NUM_COLS = new Set(["tagihan_nominal","minyak_cash","minyak_transfer","rupa_cash","rupa_transfer","total_pembayaran","jml_transaksi","total_tagihan","total_minyak","total_rupa","total_cash","total_transfer","jml_toko","jml_hari","piutang_tempo","cash_dropping"]);
+
+/* Label header khusus tab Data Bulanan */
+const BULANAN_LABEL = { bulan:"BULAN", jml_transaksi:"JML FAKTUR", piutang_tempo:"PIUTANG TEMPO", cash_dropping:"CASH DROPPING", total_tagihan:"TAGIHAN", total_cash:"BAYAR CASH", total_transfer:"BAYAR TF", total_pembayaran:"TOTAL BAYAR" };
 
 /* Peta tabId -> key pada state.views */
 const VIEW_KEY = {
@@ -486,9 +492,12 @@ function buildViews(records) {
       bulan: r.bulan, bulanNum: r.bulanNum,
       jml_transaksi: 0, _hariSet: new Set(), _tokoSet: new Set(),
       total_tagihan: 0, minyak_cash: 0, minyak_transfer: 0,
-      rupa_cash: 0, rupa_transfer: 0, total_pembayaran: 0
+      rupa_cash: 0, rupa_transfer: 0, total_pembayaran: 0,
+      piutang_tempo: 0, cash_dropping: 0
     };
     const o = bulanMap[k];
+    if (r.section === "PIUTANG TEMPO") o.piutang_tempo += r.total_pembayaran;
+    else if (r.section === "CASH DROPPING") o.cash_dropping += r.total_pembayaran;
     o.jml_transaksi++;
     o._hariSet.add(r.tanggal);
     if (r.nama_toko) o._tokoSet.add(r.nama_toko);
@@ -504,6 +513,8 @@ function buildViews(records) {
     jml_transaksi: o.jml_transaksi,
     jml_hari: o._hariSet.size,
     jml_toko: o._tokoSet.size,
+    piutang_tempo: o.piutang_tempo,
+    cash_dropping: o.cash_dropping,
     total_tagihan: o.total_tagihan,
     minyak_cash: o.minyak_cash,
     minyak_transfer: o.minyak_transfer,
@@ -635,7 +646,7 @@ function renderTable(tabId, cols, rows) {
 
   /* Header */
   const thead = "<thead><tr>" +
-    cols.map(c => `<th class="${NUM_COLS.has(c) ? "num" : ""}">${c}</th>`).join("") +
+    cols.map(c => `<th class="${NUM_COLS.has(c) ? "num" : ""}">${tabId === "bulanan" ? (BULANAN_LABEL[c] || c) : c}</th>`).join("") +
     "</tr></thead>";
 
   /* Body — pakai array + join (lebih cepat dari string concat berulang) */
@@ -654,6 +665,14 @@ function renderTable(tabId, cols, rows) {
     parts.push("</tr>");
   }
   parts.push("</tbody>");
+  if (tabId === "bulanan") {
+    parts.push('<tfoot><tr class="tot-row">');
+    for (const c of cols) {
+      if (c === "bulan") parts.push("<td>TOTAL</td>");
+      else parts.push(`<td class="num">${fmt(rows.reduce((a, r) => a + (r[c] || 0), 0))}</td>`);
+    }
+    parts.push("</tr></tfoot>");
+  }
 
   /* Pager */
   let pager = "";
@@ -670,7 +689,9 @@ function renderTable(tabId, cols, rows) {
     pager = `<div class="pager"><span class="info">${fmt(rows.length)} baris</span></div>`;
   }
 
-  wrap.innerHTML = `<table>${thead}${parts.join("")}</table>${pager}`;
+  const cap = (tabId === "bulanan")
+    ? `<div class="bln-cap"><b>DATA BULANAN — UANG MASUK</b><span>Semua Bulan (perbandingan)</span></div>` : "";
+  wrap.innerHTML = `${cap}<table>${thead}${parts.join("")}</table>${pager}`;
 
   /* Event pager */
   wrap.querySelectorAll("button[data-pg]").forEach(b => {
@@ -724,6 +745,8 @@ function renderAll() {
 
   /* Bangun ulang seluruh views — cepat, tidak sentuh DOM */
   state.views = buildViews(filtered);
+  /* Data Bulanan = perbandingan SEMUA bulan, tidak ikut filter bulan/tanggal */
+  state.views.bulanan = buildViews(all.filter(r => r.bulanNum)).bulanan;
   renderCards(filtered);
 
   /* Tandai semua tab dirty, reset paginasi */
