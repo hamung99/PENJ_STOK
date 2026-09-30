@@ -313,6 +313,17 @@ function parseSheetDate(sheetName) {
   return { tanggal: label, bulanNum: mo, bulanLabel, tglSort: mo*100 + d };
 }
 
+/* Kunci unik per sheet/hari: bulan+tanggal (dari nama sheet). Sheet non-tanggal pakai nama sheet. */
+function recKey(r) {
+  return r.tglSort ? "T" + r.tglSort : "S" + r.sheet;
+}
+function mergeRecords(lama, baru) {
+  if (!Array.isArray(lama) || !lama.length) return baru;
+  const keyBaru = new Set(baru.map(recKey));
+  const sisa = lama.filter(r => !keyBaru.has(recKey(r)));
+  return sisa.concat(baru);
+}
+
 function parseWorkbook(wb) {
   const records = [];
   for (const sheetName of wb.SheetNames) {
@@ -739,16 +750,19 @@ function processFile(file) {
   reader.onload = e => {
     try {
       const wb = XLSX.read(e.target.result, { type: "array", cellDates: false });
-      state.records = parseWorkbook(wb);
+      const baru = parseWorkbook(wb);
+      /* GABUNGKAN dengan data lama (jangan ditimpa): sheet/tanggal yang sama diganti,
+         tanggal lain (mis. September) tetap dipertahankan. */
+      state.records = mergeRecords(state.records, baru);
       /* Default: pilih bulan terakhir dari data yang ada */
       refreshFilterOptions(state.records, true);
       renderAll();
       /* Simpan ke halaman induk (index.html) -> database lokal + cloud */
       state.savedAt = Date.now();
-      state.fileName = file.name;
+      state.fileName = file.name + " (digabung dengan data sebelumnya)";
       if (IN_FRAME) {
         setStoreStatus("Menyimpan data…");
-        postParent({ type: "um:save", payload: { records: state.records, savedAt: state.savedAt, fileName: file.name } });
+        postParent({ type: "um:save", payload: { records: state.records, savedAt: state.savedAt, fileName: state.fileName } });
       }
     } catch (err) {
       console.error(err);
