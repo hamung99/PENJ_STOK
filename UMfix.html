@@ -3,6 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <title>Rekap Uang Masuk Harian</title>
+<script>
+/* Ikuti mode gelap index.html (sama origin). Dibuka sendirian: ikut pilihan tersimpan bila ada. */
+(function () {
+  try {
+    var dark = false;
+    if (window.parent && window.parent !== window) {
+      dark = window.parent.document.documentElement.getAttribute("data-theme") === "dark";
+    } else {
+      dark = localStorage.getItem("rekap-theme") === "dark";
+    }
+    if (dark) document.documentElement.classList.add("dark");
+  } catch (e) {}
+})();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   * { box-sizing: border-box; }
@@ -126,6 +140,45 @@
   @media (max-width: 720px) {
     .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
+  /* ===== MODE GELAP (mengikuti index.html) ===== */
+  html.dark { color-scheme: dark; }
+  html.dark body { background: #0f172a; color: #e2e8f0; }
+  html.dark .cards { background: #0f172a; }
+  html.dark .card { background: #1e293b; border-color: #334155; border-left-color: #5b9bd5; color: #e2e8f0; }
+  html.dark .card .label { color: #94a3b8; }
+  html.dark .card .value { color: #93c5fd; }
+  html.dark .card .sub { color: #94a3b8; }
+  html.dark .card.c-minyak { border-left-color: #4ade80; }
+  html.dark .card.c-minyak .value { color: #4ade80; }
+  html.dark .card.c-rupa { border-left-color: #fb923c; }
+  html.dark .card.c-rupa .value { color: #fb923c; }
+  html.dark .card.c-grand { border-left-color: #f87171; background: #2a1c25; }
+  html.dark .card.c-grand .value { color: #f87171; }
+  html.dark .tabbar { background: #0f172a; border-bottom-color: #334155; }
+  html.dark .tab { background: #334155; border-color: #475569; color: #cbd5e1; }
+  html.dark .tab.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+  html.dark .menu-btn { background: #334155; border-color: #475569; color: #e2e8f0; }
+  html.dark .menu-btn:hover { background: #475569; }
+  html.dark .menu-dropdown { background: #1e293b; color: #e2e8f0; border-color: #475569; box-shadow: 0 8px 24px rgba(0,0,0,.55); }
+  html.dark .menu-dropdown .item label { color: #93c5fd; }
+  html.dark .menu-dropdown .item input[type=file],
+  html.dark .menu-dropdown .item select { background: #0f172a; color: #e2e8f0; border-color: #475569; }
+  html.dark .menu-dropdown .divider { background: #334155; }
+  html.dark .menu-dropdown .btn.primary { background: #3b82f6; color: #fff; }
+  html.dark .menu-dropdown .btn.primary:disabled { background: #475569; color: #94a3b8; }
+  html.dark .menu-dropdown .btn.ghost { background: #334155; color: #e2e8f0; border-color: #475569; }
+  html.dark .menu-dropdown .status { color: #94a3b8; border-top-color: #334155; }
+  html.dark .panel .summary { color: #94a3b8; }
+  html.dark table { background: #1e293b; color: #e2e8f0; }
+  html.dark th, html.dark td { border-color: #334155; }
+  html.dark th { background: #1e3a5f; color: #fff; }
+  html.dark tbody tr:nth-child(even) { background: #1a2538; }
+  html.dark .table-wrap { border-color: #334155; }
+  html.dark .empty { color: #94a3b8; }
+  html.dark .pager { background: #1e293b; border-top-color: #334155; color: #e2e8f0; }
+  html.dark .pager button { background: #334155; border-color: #475569; color: #e2e8f0; }
+  html.dark .pager button:hover:not(:disabled) { background: #475569; }
+  html.dark .pager .info { color: #94a3b8; }
 </style>
 </head>
 <body>
@@ -801,6 +854,7 @@ if (IN_FRAME) {
       else setStoreStatus("Gagal menyimpan data (penyimpanan penuh atau tidak tersedia).");
     }
     else if (d.type === "um:cleared") location.reload();
+    else if (d.type === "um:theme") document.documentElement.classList.toggle("dark", !!d.dark);
   });
 }
 

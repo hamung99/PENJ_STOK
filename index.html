@@ -438,6 +438,7 @@ body.dark #page-gudang tr.gudang-saldo-row td{color:#f1f5f9;font-weight:700;bord
 #analisaTableWrap table thead tr:first-child th:nth-child(4){min-width:130px}
 #analisaRupaTableWrap table thead tr:first-child th{background:#1f4e78;color:#fff}
 body.dark{background:#0f172a;color:#e2e8f0}
+body.dark #umfixFrame{background:#0f172a}
 body.dark header{background:#1e3a5f}
 body.dark .card{background:#1e293b;box-shadow:0 2px 10px #0006;color:#e2e8f0}
 body.dark .kpi{background:linear-gradient(145deg,#1e293b 0%,#1a2744 100%);box-shadow:0 0 0 1px rgba(91,155,213,.18),0 4px 16px rgba(0,0,0,.25)}
@@ -5284,6 +5285,10 @@ self.onmessage = function(e){
   }
   function umFrame(){ const f = document.getElementById('umfixFrame'); return (f && f.getAttribute('src') && f.contentWindow) ? f : null; }
   function umTarget(){ return location.origin === 'null' ? '*' : location.origin; }
+  function umSendTheme(){
+    const f = umFrame(); if (!f) return;
+    f.contentWindow.postMessage({ type:'um:theme', dark: document.body.classList.contains('dark') }, umTarget());
+  }
   async function umNotifyFrame(){
     const f = umFrame(); if (!f) return;
     const stored = await umReadStored();
@@ -5293,7 +5298,7 @@ self.onmessage = function(e){
     if (e.origin !== location.origin) return;
     const f = umFrame(); if (!f || e.source !== f.contentWindow) return;
     const d = e.data; if (!d || typeof d.type !== 'string' || d.type.indexOf('um:') !== 0) return;
-    if (d.type === 'um:ready') { await umNotifyFrame(); }
+    if (d.type === 'um:ready') { umSendTheme(); await umNotifyFrame(); }
     else if (d.type === 'um:save' && d.payload) {
       const ok = await umWriteStored(d.payload);
       f.contentWindow.postMessage({ type:'um:saved', ok, cloud: !!sbClient }, umTarget());
@@ -6897,6 +6902,7 @@ self.onmessage = function(e){
     const btn = document.getElementById('themeBtn'); if (btn) btn.textContent = dark ? '☀️' : '🌙';
     const meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.setAttribute('content', dark ? '#1e3a5f' : '#1f4e78');
     try { localStorage.setItem('rekap-theme', dark ? 'dark' : 'light'); } catch(e){}
+    try { umSendTheme(); } catch(e){}
   }
   function toggleTheme(){ applyTheme(document.body.classList.contains('dark') ? 'light' : 'dark'); }
   function initTheme(){
