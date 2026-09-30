@@ -904,7 +904,6 @@ body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#
           <button onclick="show('s2',this)">Profit Per Pembayaran</button>
           <button onclick="show('s3',this)">Profit Penjualan per Produk</button>
           <button onclick="show('s4',this)">Rekap per Sales</button>
-          <button onclick="show('s5',this)">Margin % per Produk</button>
           <button onclick="show('s9',this)">Data Harga</button>
           <button onclick="show('s10',this)">Data Bulanan</button>
         </div>
@@ -992,7 +991,6 @@ body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#
       <div id="panel_s2" class="view" style="display:none"></div>
       <div id="panel_s3" class="view" style="display:none"></div>
       <div id="panel_s4" class="view" style="display:none"></div>
-      <div id="panel_s5" class="view" style="display:none"></div>
       <div id="panel_s9" class="view" style="display:none"></div>
       <div id="panel_s10" class="view" style="display:none"></div>
     </div>
@@ -2626,7 +2624,7 @@ self.onmessage = function(e){
       }
     });
     const faktur = fakturSet.size, SO2 = SO.filter(s => salesQty[s] > 0);
-    const s1 = [], s2 = [], s3 = [], s5 = [], s9 = [];
+    const s1 = [], s2 = [], s3 = [], s9 = [];
     byProd.forEach((st, p) => {
       if (st.bmin === Infinity) { st.bmin = 0; st.bmax = 0; }
       if (st.jmin === Infinity) { st.jmin = 0; st.jmax = 0; }
@@ -2634,7 +2632,6 @@ self.onmessage = function(e){
       s1.push([p, ...SO2.map(s => st.qBySales[s] || 0), st.qq, st.sat, range(st.bmin,st.bmax), range(st.jmin,st.jmax), st.h, st.v, pr, ...SO2.map(s => st.pBySales[s] || 0)]);
       s2.push([p, st.jc, st.jt, st.pt, st.pc, st.jc+st.jt, st.pc+st.pt]);
       s3.push([p, st.qq, st.v, st.h, range(st.jmin,st.jmax), range(st.bmin,st.bmax), pr]);
-      s5.push([p, st.qq, st.sat, st.v, st.h, pr, st.v ? (pr/st.v*100) : 0]);
       let hbChange = null;
       if (st.bmin !== st.bmax && st.hbLog.length){
         const log = st.hbLog.slice().sort((a,b) => a.ts - b.ts);
@@ -2644,12 +2641,10 @@ self.onmessage = function(e){
       }
       s9.push([p, st.sat, st.bmin, st.bmax, st.jmin, st.jmax, hbChange]);
     });
-    s9.sort((a,b) => String(a[0]).localeCompare(String(b[0]), 'id'));
-    const qtyIdx = 1 + SO2.length;
-    s1.sort((a,b) => b[qtyIdx] - a[qtyIdx]);
-    s2.sort((a,b) => b[5] - a[5]);
-    s3.sort((a,b) => b[1] - a[1]);
-    s5.sort((a,b) => b[6] - a[6]);
+    s1.sort(sortByProdukOrder);
+    s2.sort(sortByProdukOrder);
+    s3.sort(sortByProdukOrder);
+    s9.sort(sortByProdukOrder);
     const s4fitri = [], s4rupa = [];
     SO.forEach(s => {
       const af = salesAggFitri[s], ar = salesAggRupa[s];
@@ -2658,14 +2653,14 @@ self.onmessage = function(e){
     });
     s4fitri.sort((a,b) => SO.indexOf(a[0]) - SO.indexOf(b[0]));
     s4rupa.sort((a,b) => SO.indexOf(a[0]) - SO.indexOf(b[0]));
-    R = { s1, s2, s3, s4fitri, s4rupa, s5, s9, qty, sales, hpp, profit, cs, ts, cp, tp, SO2, faktur, fitriQty, fitriSales, fitriProfit, rupaQty, rupaSales, rupaProfit };
-    rekapPage = { s1:0, s2:0, s3:0, s5:0, s6:0, s8:0, s9:0 };
+    R = { s1, s2, s3, s4fitri, s4rupa, s9, qty, sales, hpp, profit, cs, ts, cp, tp, SO2, faktur, fitriQty, fitriSales, fitriProfit, rupaQty, rupaSales, rupaProfit };
+    rekapPage = { s1:0, s2:0, s3:0, s6:0, s8:0, s9:0 };
   }
   function filterSignature(){ return JSON.stringify(filters); }
   function buildCached(data){
     const sig = filterSignature();
     const cached = buildCache.get(sig);
-    if (cached){ R = cached; dataVersion++; rekapPage = { s1:0, s2:0, s3:0, s5:0, s6:0, s8:0, s9:0 }; return; }
+    if (cached){ R = cached; dataVersion++; rekapPage = { s1:0, s2:0, s3:0, s6:0, s8:0, s9:0 }; return; }
     build(data);
     buildCache.set(sig, R);
     if (buildCache.size > BUILD_CACHE_MAX) buildCache.delete(buildCache.keys().next().value);
@@ -2743,6 +2738,20 @@ self.onmessage = function(e){
     'ZEN JUNIPERBERRIES','ZEN REFF JUNIPERBERIS','ZEN REFF SANDALWOOD','ZEN REFF SEASALT','ZEN REFF TEATREE','ZEN SANDALWOOD','ZEN SULPHUR'
   ];
   function normProduk(s){ return String(s || '').trim().replace(/\s+/g, ' ').toUpperCase(); }
+  const PRODUK_ORDER_INDEX = (() => {
+    const m = new Map(); let idx = 0;
+    PRODUK_ACUAN.forEach(nm => { if (nm !== null) m.set(normProduk(nm), idx++); });
+    return m;
+  })();
+  function produkOrderIndex(p){ const k = normProduk(p); return PRODUK_ORDER_INDEX.has(k) ? PRODUK_ORDER_INDEX.get(k) : Infinity; }
+  /* Comparator urutan produk mengikuti PRODUK_ACUAN (Laporan_Produk-Saless.xlsx). Produk yang
+     tidak terdaftar diletakkan di akhir (diurutkan alfabet), dipakai untuk tab Produk, Profit
+     Per Pembayaran, Profit Penjualan per Produk, dan Data Harga. */
+  function sortByProdukOrder(a, b){
+    const ia = produkOrderIndex(a[0]), ib = produkOrderIndex(b[0]);
+    if (ia !== ib) return ia - ib;
+    return String(a[0]).localeCompare(String(b[0]), 'id');
+  }
   function orderProdukRows(list){
     const byName = new Map();
     list.forEach(x => { const k = normProduk(x[0]); if (k && !byName.has(k)) byName.set(k, x); });
@@ -3056,9 +3065,6 @@ self.onmessage = function(e){
       const tot=a=>['TOTAL',a.reduce((q,x)=>q+x[1],0),a.reduce((q,x)=>q+x[2],0),a.reduce((q,x)=>q+x[3],0),a.reduce((q,x)=>q+x[4],0),a.reduce((q,x)=>q+x[5],0)];
       addReportSheet(wb,'MINYAK FITRI','Rekap per Sales - MINYAK FITRI',head,rowsFitri,tot(r.s4fitri||[]));
       addReportSheet(wb,'RUPA RUPA','Rekap per Sales - RUPA RUPA',head,rowsRupa,tot(r.s4rupa||[]));
-    } else if(tab==='s5'){
-      const avgM=r.sales?(r.profit/r.sales*100):0;
-      addReportSheet(wb,'Margin Produk','Margin % per Produk',['NO','PRODUK','QTY','SATUAN','TOTAL PENJUALAN','TOTAL HPP','PROFIT','MARGIN %'],(r.s5||[]).map((x,i)=>[i+1,x[0],x[1],x[2],x[3],x[4],x[5],Math.round(x[6]*100)/100]),['TOTAL','',r.qty,'',r.sales,r.hpp,r.profit,Math.round(avgM*100)/100]);
     } else if(tab==='s6'){
       const fRows=buildFakturRows();
       const head=['NO','TANGGAL','NO. FAKTUR','SALES','PRODUK','QTY','SATUAN','HARGA JUAL','DISC','TOTAL','NOMINAL FAKTUR','PROFIT PER FAKTUR','PEMBAYARAN','CUSTOMER'];
@@ -3106,7 +3112,7 @@ self.onmessage = function(e){
       const tot=rows.reduce((a,x)=>[a[0]+x[1],a[1]+x[2],a[2]+x[3],a[3]+x[4],a[4]+x[5],a[5]+x[6],a[6]+x[7],a[7]+x[8]],[0,0,0,0,0,0,0,0]);
       addReportSheet(wb,'Data Bulanan','Rekap Data Bulanan',head,rows,['TOTAL',...tot]);
     }
-    const name='Laporan_'+({s0:'Transaksi',s1:'Produk',s2:'Profit_Pembayaran',s3:'Profit_Produk',s4:'Rekap_Sales',s5:'Margin_Produk',s6:'Faktur',s7:'Sales_per_Produk',s8:'Profit_Faktur',s9:'Data_Harga',s10:'Data_Bulanan'}[tab]||'Penjualan')+'.xlsx';
+    const name='Laporan_'+({s0:'Transaksi',s1:'Produk',s2:'Profit_Pembayaran',s3:'Profit_Produk',s4:'Rekap_Sales',s6:'Faktur',s7:'Sales_per_Produk',s8:'Profit_Faktur',s9:'Data_Harga',s10:'Data_Bulanan'}[tab]||'Penjualan')+'.xlsx';
     XLSX.writeFile(wb,name);
   }
 
@@ -3285,7 +3291,7 @@ self.onmessage = function(e){
   }
   function closeMarginDetail(){ const el = document.getElementById('marginDetailWrap'); if (el) el.remove(); }
 
-  let rekapPage = { s1:0, s2:0, s3:0, s5:0, s6:0, s8:0, s9:0 };
+  let rekapPage = { s1:0, s2:0, s3:0, s6:0, s8:0, s9:0 };
   const REKAP_PAGE_SIZE = 60;
   function rekapPagerHtml(tab, total){
     const pages = Math.max(1, Math.ceil(total / REKAP_PAGE_SIZE));
@@ -3600,13 +3606,6 @@ self.onmessage = function(e){
       const totProfit = groups.reduce((a,g)=>a+g.profit,0);
       const avgM = totNominal ? (totProfit/totNominal*100) : 0;
       return reportBar('s8','Profit per Faktur') + rekapPagerHtml('s8', groups.length) + tbl(h, d, ['TOTAL','','','','','', rp(totNominal), rp(totProfit), (Math.round(avgM*100)/100).toLocaleString('id-ID') + ' %']);
-    } else if (t === 's5'){
-      const h = ['NO','PRODUK','QTY','SATUAN','TOTAL PENJUALAN','TOTAL HPP','PROFIT','MARGIN %'];
-      const pageRows = sliceRekap('s5', R.s5 || []);
-      const base = (rekapPage.s5 || 0) * REKAP_PAGE_SIZE;
-      const d = pageRows.map((x,i) => [base+i+1, x[0], x[1], x[2], rp(x[3]), rp(x[4]), rp(x[5]), (Math.round(x[6]*100)/100).toLocaleString('id-ID') + ' %']);
-      const avgM = R.sales ? (R.profit/R.sales*100) : 0;
-      return reportBar('s5','Margin % per Produk') + rekapPagerHtml('s5', (R.s5||[]).length) + tbl(h, d, ['TOTAL', '', R.qty, '', rp(R.sales), rp(R.hpp), rp(R.profit), (Math.round(avgM*100)/100).toLocaleString('id-ID') + ' %']);
     } else if (t === 's9'){ return renderS9();
     } else if (t === 's10'){ return renderDataBulanan(); }
   }
@@ -4132,8 +4131,6 @@ self.onmessage = function(e){
     const s4Tot = arr => ['TOTAL', arr.reduce((a,x)=>a+x[1],0), arr.reduce((a,x)=>a+x[2],0), arr.reduce((a,x)=>a+x[3],0), arr.reduce((a,x)=>a+x[4],0), arr.reduce((a,x)=>a+x[5],0)];
     add('MINYAK FITRI - Rekap per Sales', s4Head, r.s4fitri||[], s4Tot(r.s4fitri||[]));
     add('RUPA RUPA - Rekap per Sales', s4Head, r.s4rupa||[], s4Tot(r.s4rupa||[]));
-    const avgM = r.sales ? (r.profit / r.sales * 100) : 0;
-    add('Margin % per Produk', ['NO','PRODUK','QTY','SATUAN','TOTAL PENJUALAN','TOTAL HPP','PROFIT','MARGIN %'], r.s5.map((x,i) => [i+1, x[0], x[1], x[2], x[3], x[4], x[5], Math.round(x[6]*100)/100]), ['TOTAL','',r.qty,'',r.sales,r.hpp,r.profit,Math.round(avgM*100)/100]);
     { const fRows = buildFakturRows(); const fHead = ['NO','TANGGAL','NO. FAKTUR','SALES','PRODUK','QTY','SATUAN','HARGA JUAL','DISC','TOTAL','NOMINAL FAKTUR','PROFIT PER FAKTUR','PEMBAYARAN','CUSTOMER'];
       const fData = fRows.map((row,i) => { const x = row.x; return [i+1, fmtTgl(x.Tanggal), row.faktur, x.Sales || row.sales || '', x.Produk || '', N(x.Jumlah), x.Satuan || '', N(x['Harga Jual']), N(x.Discount), N(x.Total), row.isFirst ? row.nominal : '', row.isFirst ? row.profit : '', x.Pembayaran || row.bayar || '', x.Customer || row.customer || '']; });
       add('Rekap per Faktur', fHead, fData, ['TOTAL','','','','', r.qty, '', '', '', r.sales, r.sales, r.profit, '', '']);
@@ -7094,6 +7091,7 @@ self.onmessage = function(e){
   document.getElementById('installBtn')?.addEventListener('click', async () => { if (!_deferredInstallPrompt) return; _deferredInstallPrompt.prompt(); await _deferredInstallPrompt.userChoice; _deferredInstallPrompt = null; document.getElementById('installBtn').style.display = 'none'; });
   window.addEventListener('appinstalled', () => { const btn = document.getElementById('installBtn'); if (btn) btn.style.display = 'none'; });
 </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
