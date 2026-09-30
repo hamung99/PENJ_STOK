@@ -6422,6 +6422,61 @@ self.onmessage = function(e){
     XLSX.writeFile(wb, 'Analisa_Fitri.xlsx');
   }
 
+  // ===== Data Stok Gudang (Ethoz, Mie, Nissin, Sabun, Sarisedap) untuk Analisa Rupa Rupa =====
+  // Ringkasan (produk x tanggal -> masuk/keluar/stok) diterbitkan oleh halaman stok-*.html lewat postMessage + localStorage.
+  const STOK_RUPA_KATS = ['ethoz','mie','nissin','sabun','sarisedap'];
+  let stokSummaries = {};
+  let _stokSumLoading = false, _stokSumLast = 0, _stokSumRefreshTimer = null;
+  STOK_RUPA_KATS.forEach(k => {
+    try { const raw = localStorage.getItem('stokSummary-' + k); if (raw) stokSummaries[k] = JSON.parse(raw); } catch(e){}
+  });
+  window.addEventListener('message', function(e){
+    if (e.origin !== location.origin) return;
+    const d = e.data;
+    if (!d || d.type !== 'stok-summary' || !d.summary || STOK_RUPA_KATS.indexOf(d.kat) === -1) return;
+    stokSummaries[d.kat] = d.summary;
+    clearTimeout(_stokSumRefreshTimer);
+    _stokSumRefreshTimer = setTimeout(function(){ if (_analisaSub === 'rupa') refreshAnalisaIfVisible(); }, 400);
+  });
+  function getStokRupaData(){
+    const kats = Object.keys(stokSummaries).filter(k => stokSummaries[k] && stokSummaries[k].products && stokSummaries[k].products.length);
+    if (!kats.length) return null;
+    const keyToName = new Map(), products = [], byTs = new Map();
+    kats.forEach(k => {
+      const sm = stokSummaries[k];
+      sm.products.forEach(n => { const key = productMatchKey(n); if (!keyToName.has(key)) { keyToName.set(key, n); products.push(n); } });
+      sm.rows.forEach(r => {
+        let rec = byTs.get(r.ts);
+        if (!rec) { rec = { ts: r.ts, tanggal: new Date(r.ts), values: {} }; byTs.set(r.ts, rec); }
+        Object.keys(r.values || {}).forEach(n => { rec.values[keyToName.get(productMatchKey(n))] = r.values[n]; });
+      });
+    });
+    const rows = Array.from(byTs.values()).sort((a,b) => a.ts - b.ts);
+    return { products, saldoAwal: {}, rows };
+  }
+  // Muat ulang ringkasan dari halaman stok (iframe tersembunyi satu per satu; tiap halaman ikut sinkron dari cloud)
+  async function ensureStokSummaries(force){
+    if (_stokSumLoading) return;
+    if (!force && Date.now() - _stokSumLast < 120000) return;
+    _stokSumLoading = true;
+    try {
+      for (const k of STOK_RUPA_KATS){
+        await new Promise(function(resolve){
+          const fr = document.createElement('iframe');
+          fr.style.cssText = 'position:absolute;width:1px;height:1px;left:-9999px;top:0;border:0;visibility:hidden';
+          fr.setAttribute('aria-hidden', 'true');
+          let done = false;
+          const finish = function(){ if (done) return; done = true; window.removeEventListener('message', onMsg); setTimeout(function(){ try{ fr.remove(); }catch(e){} }, 300); resolve(); };
+          const onMsg = function(e){ if (e.origin === location.origin && e.data && e.data.type === 'stok-summary' && e.data.kat === k) finish(); };
+          window.addEventListener('message', onMsg);
+          setTimeout(finish, 25000);
+          fr.src = 'stok-' + k + '.html';
+          document.body.appendChild(fr);
+        });
+      }
+      _stokSumLast = Date.now();
+    } finally { _stokSumLoading = false; }
+  }
   let _analisaRupaLastData = null;
   let _analisaRupaMonthInit = false;
   async function populateAnalisaRupaMonths(){
@@ -6436,7 +6491,9 @@ self.onmessage = function(e){
     _analisaRupaMonthInit = true;
   }
   async function renderGudangAnalisaRupa(){
+    ensureStokSummaries();
     await populateAnalisaRupaMonths();
+    const gd = getStokRupaData() || gudangData;
     const month = document.getElementById('analisaRupaMonth')?.value || '';
     const sourceRows = await fetchCekRawRows(month, { mode: 'rupa' });
     const penjualanMap = new Map();
@@ -6455,17 +6512,17 @@ self.onmessage = function(e){
       if (ts >= agg.latestTs) { agg.latestTs = ts; agg.latestHargaBeli = hb; }
     }
     const gudangMap = new Map();
-    if (gudangData && gudangData.products) {
-      for (const p of gudangData.products) {
+    if (gd && gd.products) {
+      for (const p of gd.products) {
         if (isFitriProduct(p)) continue;
         const key = productMatchKey(p);
         if (!gudangMap.has(key)) gudangMap.set(key, { name: p, keluar: 0, stokAkhir: null });
       }
-      for (let i = 0; i < gudangData.rows.length; i++) {
-        const r = gudangData.rows[i];
+      for (let i = 0; i < gd.rows.length; i++) {
+        const r = gd.rows[i];
         const mk = monthKeyUTC(r.tanggal);
         if (month && mk !== month) continue;
-        for (const p of gudangData.products) {
+        for (const p of gd.products) {
           if (isFitriProduct(p)) continue;
           const key = productMatchKey(p);
           const v = r.values[p];
@@ -6476,11 +6533,11 @@ self.onmessage = function(e){
         }
       }
       const stokMap = new Map();
-      for (let i = 0; i < gudangData.rows.length; i++) {
-        const r = gudangData.rows[i];
+      for (let i = 0; i < gd.rows.length; i++) {
+        const r = gd.rows[i];
         const mk = monthKeyUTC(r.tanggal);
         if (month && mk > month) break;
-        for (const p of gudangData.products) {
+        for (const p of gd.products) {
           if (isFitriProduct(p)) continue;
           const key = productMatchKey(p);
           const v = r.values[p];
@@ -6532,9 +6589,9 @@ self.onmessage = function(e){
     }).join('');
     const totalKetHtml = (tot.outputPenjualan === tot.outputGudang) ? '<span class="ket-badge ok">✅ Cocok</span>' : '';
     const foot = '<tr><td></td><td>TOTAL</td><td class="num">' + nfQty(tot.outputPenjualan) + '</td><td class="num">' + nfQty(tot.outputGudang) + '</td><td>' + totalKetHtml + '</td><td class="num">' + rp(tot.totalPenjualan) + '</td><td class="num">' + rp(tot.hpp) + '</td><td class="num">' + rp(tot.profit) + '</td><td class="num">' + nfQty(tot.stokAkhir) + '</td><td class="num">-</td><td class="num">' + rp(tot.nominalStokAkhir) + '</td></tr>';
-    const hasRupaGudang = !!(gudangData && gudangData.products && gudangData.products.some(p => !isFitriProduct(p)));
+    const hasRupaGudang = !!(gd && gd.products && gd.products.some(p => !isFitriProduct(p)));
     const hint = !hasRupaGudang
-      ? '<div style="font-size:11px;color:#b45309;background:#fff8e8;border:1px solid #f1dfb2;border-radius:8px;padding:8px 10px;margin-bottom:10px">⚠ Data Gudang belum memuat produk Rupa Rupa — kolom Output Gudang / Stok Akhir akan 0. Upload lewat <b>Data Gudang</b> → tab <b>Fitri</b> (file stok yang memuat kolom produk Rupa Rupa).</div>'
+      ? '<div style="font-size:11px;color:#b45309;background:#fff8e8;border:1px solid #f1dfb2;border-radius:8px;padding:8px 10px;margin-bottom:10px">⚠ Data stok Rupa Rupa belum ada — kolom Output Gudang / Stok Akhir akan 0. Upload Excel lewat <b>Data Gudang</b> → <b>Stok Gudang</b> (Ethoz, Mie, Nissin, Sabun, Sarisedap).</div>'
       : '';
     const tableHtml = hint + '<div class="tablebox"><table><thead><tr>' + head.map(h => '<th>' + h + '</th>').join('') + '</tr></thead><tbody>' + (list.length ? body : '<tr><td colspan="11" style="text-align:center;padding:24px;color:#64748b">Belum ada data.</td></tr>') + '</tbody>' + (list.length ? '<tfoot>' + foot + '</tfoot>' : '') + '</table></div>';
     const wrap = document.getElementById('analisaRupaTableWrap');

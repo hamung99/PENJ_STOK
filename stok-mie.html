@@ -1395,6 +1395,7 @@
         function removeFile(keys) {
             const set = new Set(Array.isArray(keys) ? keys : [keys]);
             set.forEach(k => dbDelete(k).catch(err => console.error(err)));
+            setTimeout(publishSummary, 0);
 
             const activeEntry = files[activeFile];
             const firstIdx = files.findIndex(f => set.has(f.fileKey));
@@ -1458,6 +1459,49 @@
         function dbDelete(key) { return dbTx('readwrite', s => s.delete(key)).then(r => { cloudDelete(key); return r; }); }
         function dbClear() { return dbTx('readwrite', s => s.clear()); }
         function dbLoadAll() { return dbTx('readonly', s => s.getAll()); }
+
+        // ============================================================
+        // RINGKASAN untuk tab Analisa (dibaca index.html): produk x tanggal -> masuk/keluar/stok
+        // ============================================================
+        function buildSummary() {
+            const prodSet = [];
+            const byTs = new Map();
+            const ordered = files.slice().sort((a, b) => (a.seq || 0) - (b.seq || 0));
+            ordered.forEach(f => {
+                let st = null;
+                try { st = parseStruct(tableToGrid(f.table)); } catch (e) { st = null; }
+                if (!st) return;
+                st.products.forEach(p => { if (prodSet.indexOf(p.name) === -1) prodSet.push(p.name); });
+                st.dateRows.forEach(row => {
+                    const d = parseDateText(row[st.dateCol]);
+                    if (!d) return;
+                    const ts = Date.UTC(d.y, d.mo - 1, d.d);
+                    let rec = byTs.get(ts);
+                    if (!rec) { rec = { ts: ts, values: {} }; byTs.set(ts, rec); }
+                    st.products.forEach(p => {
+                        let k = 0;
+                        p.outs.forEach(x => { k += toNum(row[x]); });
+                        const sv = row[p.s] || '';
+                        rec.values[p.name] = {
+                            masuk: toNum(row[p.c]),
+                            keluar: k,
+                            stok: sv !== '' ? toNum(sv) : null
+                        };
+                    });
+                });
+            });
+            const rows = Array.from(byTs.values()).sort((a, b) => a.ts - b.ts);
+            return { kat: KATEGORI_ID, label: KATEGORI, updatedAt: Date.now(), products: prodSet, rows: rows };
+        }
+        function publishSummary() {
+            try {
+                const sum = buildSummary();
+                try { localStorage.setItem('stokSummary-' + KATEGORI_ID, JSON.stringify(sum)); } catch (e) {}
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({ type: 'stok-summary', kat: KATEGORI_ID, summary: sum }, location.origin);
+                }
+            } catch (e) { console.warn('publishSummary gagal', e); }
+        }
 
         // ============================================================
         // SINKRON CLOUD (Supabase) - satu baris per file Excel di tabel app_sync
@@ -1717,6 +1761,7 @@
                 selectFile(firstAdded >= 0 ? firstAdded : Math.max(activeFile, 0));
             }
             if (!saveFailed) updateSaveText();
+            publishSummary();
         }
 
         fileInput.addEventListener('change', async function (event) {
@@ -2005,6 +2050,7 @@
                 console.warn('IndexedDB tidak tersedia:', err);
             } finally {
                 loading.classList.add('hidden');
+                publishSummary();
             }
         }
 
