@@ -752,7 +752,8 @@ function renderTable(tabId, cols, rows) {
   });
 }
 
-function updateStatus(msg) { document.getElementById("status").textContent = msg; }
+const APP_VER = "v5";
+function updateStatus(msg) { document.getElementById("status").textContent = "[" + APP_VER + "] " + msg; }
 
 function renderCards(records) {
   let totalFaktur = 0;
