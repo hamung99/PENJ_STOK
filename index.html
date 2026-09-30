@@ -808,7 +808,7 @@ body.dark .cek-um-kpi b{color:#f1f5f9}
 body.dark #cekUmTable tfoot td{background:#1e3a5f;color:#f1f5f9}
 @media(max-width:900px){.cek-um-summary{grid-template-columns:repeat(2,1fr)}.cek-um-tools input{width:180px}}
 </style>
-</head>
+<style>.cek-um-pay{display:inline-block;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap}.cek-um-pay.cash{background:#dcfce7;color:#166534}.cek-um-pay.tempo{background:#dbeafe;color:#1d4ed8}.cek-um-pay.unknown{background:#f1f5f9;color:#64748b}</style></head>
 <body>
 <header>
   <div class="wrap header-row">
@@ -904,6 +904,7 @@ body.dark #cekUmTable tfoot td{background:#1e3a5f;color:#f1f5f9}
       </div>
       <div class="cek-um-tools">
         <select id="cekUmMonth" title="Filter bulan"><option value="">Semua bulan</option></select>
+        <select id="cekUmPayment" title="Filter pembayaran"><option value="">Semua pembayaran</option><option value="cash">Cash</option><option value="tempo">Tempo</option></select>
         <select id="cekUmStatus" title="Filter status">
           <option value="">Semua status</option>
           <option value="BELUM ADA UANG MASUK">Belum Ada Uang Masuk</option>
@@ -918,9 +919,9 @@ body.dark #cekUmTable tfoot td{background:#1e3a5f;color:#f1f5f9}
     <div class="tablebox cek-um-tablebox">
       <table id="cekUmTable">
         <thead><tr>
-          <th>No Faktur</th><th>Tanggal</th><th>Sales</th><th>Customer</th><th>Alamat</th><th>Kategori</th><th>Tagihan</th><th>Uang Masuk (Cash)</th><th>Uang Masuk (Tempo)</th><th>Status</th>
+          <th>No Faktur</th><th>Pembayaran</th><th>Tanggal</th><th>Sales</th><th>Customer</th><th>Alamat</th><th>Kategori</th><th>Tagihan</th><th>Uang Masuk (Cash)</th><th>Uang Masuk (Tempo)</th><th>Status</th>
         </tr></thead>
-        <tbody id="cekUmBody"><tr><td colspan="10" style="text-align:center;padding:28px;color:#64748b">Memuat data...</td></tr></tbody>
+        <tbody id="cekUmBody"><tr><td colspan="11" style="text-align:center;padding:28px;color:#64748b">Memuat data...</td></tr></tbody>
         <tfoot id="cekUmFoot"></tfoot>
       </table>
     </div>
@@ -7246,14 +7247,14 @@ self.onmessage = function(e){
       if(!x) return;
       const nf=String(ceuCol(x,['No. Faktur','No.Faktur','No Faktur','faktur'])||'').trim();
       if(!nf || /^NO[. ]?FAKTUR$/i.test(nf)) return;
-      const g=map.get(nf)||{faktur:nf,items:[],tanggal:x.Tanggal,sales:ceuCol(x,['Sales','sales']),customer:ceuCol(x,['Customer','Pelanggan','customer']),alamat:ceuCol(x,['Alamat','alamat']),tagihan:0,pembayaran:ceuCol(x,['Pembayaran','pembayaran'])};
+      const rawPay=ceuCol(x,['Pembayaran','pembayaran','Jenis Pembayaran','Jenis Pembayaran Penjualan','Tipe Penjualan','paymentType','type']); const pay=/TEMPO|PIUTANG|KREDIT|CREDIT/i.test(String(rawPay||''))?'tempo':(/CASH|TUNAI|DROPPING/i.test(String(rawPay||''))?'cash':''); const g=map.get(nf)||{faktur:nf,items:[],tanggal:x.Tanggal,sales:ceuCol(x,['Sales','sales']),customer:ceuCol(x,['Customer','Pelanggan','customer']),alamat:ceuCol(x,['Alamat','alamat']),tagihan:0,pembayaran:pay};
       g.items.push(x);
       g.tagihan+=ceuNum(ceuCol(x,['Total','TOTAL','Nominal','Nominal Faktur']));
       if(!g.tanggal) g.tanggal=ceuCol(x,['Tanggal','tanggal','Tgl']);
       if(!g.sales) g.sales=ceuCol(x,['Sales','sales']);
       if(!g.customer) g.customer=ceuCol(x,['Customer','Pelanggan','customer']);
       if(!g.alamat) g.alamat=ceuCol(x,['Alamat','alamat']);
-      if(!g.pembayaran) g.pembayaran=ceuCol(x,['Pembayaran','pembayaran']);
+      if(!g.pembayaran) g.pembayaran=pay;
       map.set(nf,g);
     });
     return Array.from(map.values()).filter(g=>g.tagihan>0).sort((a,b)=>{ const ad=ceuDateKey(a.tanggal),bd=ceuDateKey(b.tanggal); return bd.localeCompare(ad)||String(a.faktur).localeCompare(String(b.faktur)); });
@@ -7307,12 +7308,12 @@ self.onmessage = function(e){
         }
         const total=cash+tempo;
         const st=ceuStatus(total,g.tagihan);
-        return {...g,kategori:ceuCategory(g.items),cash,tempo,totalMasuk:total,status:st[0],statusClass:st[1],bulan:ceuDateKey(g.tanggal).slice(0,7)};
+        return {...g,pembayaran:(g.pembayaran==='tempo'?'Tempo':(g.pembayaran==='cash'?'Cash':'-')),kategori:ceuCategory(g.items),cash,tempo,totalMasuk:total,status:st[0],statusClass:st[1],bulan:ceuDateKey(g.tanggal).slice(0,7)};
       });
       ceuFillMonth(); ceuRender(); cekUmReady=true;
     }catch(e){
       console.error('Cek Uang Masuk:',e);
-      body.innerHTML='<tr><td colspan="10" style="text-align:center;padding:28px;color:#b42318">Gagal membaca data: '+ceuEsc(e.message||e)+'</td></tr>';
+      body.innerHTML='<tr><td colspan="11" style="text-align:center;padding:28px;color:#b42318">Gagal membaca data: '+ceuEsc(e.message||e)+'</td></tr>';
     }
   }
   function ceuFillMonth(){
@@ -7326,19 +7327,21 @@ self.onmessage = function(e){
     if(!body) return;
     const month=(document.getElementById('cekUmMonth')||{}).value||'';
     const status=(document.getElementById('cekUmStatus')||{}).value||'';
+    const payment=(document.getElementById('cekUmPayment')||{}).value||'';
     const q=String((document.getElementById('cekUmSearch')||{}).value||'').trim().toUpperCase();
     const list=cekUmRows.filter(r=>{
       if(month && r.bulan!==month) return false;
       if(status && r.status!==status) return false;
-      if(q){ const hay=[r.faktur,r.sales,r.customer,r.alamat,r.kategori].join(' ').toUpperCase(); if(!hay.includes(q)) return false; }
+      if(payment && ((payment==='cash' && r.pembayaran!=='Cash') || (payment==='tempo' && r.pembayaran!=='Tempo'))) return false;
+      if(q){ const hay=[r.faktur,r.pembayaran,r.sales,r.customer,r.alamat,r.kategori].join(' ').toUpperCase(); if(!hay.includes(q)) return false; }
       return true;
     });
     let tag=0,cash=0,tempo=0; list.forEach(r=>{tag+=r.tagihan;cash+=r.cash;tempo+=r.tempo;});
     const total= cash+tempo;
     const lunas=list.filter(r=>r.status==='LUNAS').length, sebagian=list.filter(r=>r.status==='UANG MASUK SEBAGIAN').length, belum=list.filter(r=>r.status==='BELUM ADA UANG MASUK').length;
     if(sum) sum.innerHTML=[['FAKTUR',list.length.toLocaleString('id-ID')],['TAGIHAN',ceuRp(tag)],['UANG MASUK',ceuRp(total)],['STATUS',lunas+' Lunas · '+sebagian+' Sebagian · '+belum+' Belum']].map(a=>'<div class="cek-um-kpi"><small>'+a[0]+'</small><b>'+a[1]+'</b></div>').join('');
-    body.innerHTML=list.length?list.map(r=>'<tr><td>'+ceuEsc(r.faktur)+'</td><td>'+ceuEsc(ceuDateText(r.tanggal))+'</td><td>'+ceuEsc(r.sales)+'</td><td>'+ceuEsc(r.customer)+'</td><td title="'+ceuEsc(r.alamat)+'">'+ceuEsc(r.alamat)+'</td><td>'+ceuEsc(r.kategori)+'</td><td class="num">'+ceuRp(r.tagihan)+'</td><td class="num">'+(r.cash?ceuRp(r.cash):'')+'</td><td class="num">'+(r.tempo?ceuRp(r.tempo):'')+'</td><td><span class="cek-um-status '+r.statusClass+'">'+ceuEsc(r.status)+'</span></td></tr>').join(''):'<tr><td colspan="10" style="text-align:center;padding:28px;color:#64748b">Tidak ada data sesuai filter.</td></tr>';
-    if(foot) foot.innerHTML=list.length?'<tr><td colspan="6">TOTAL</td><td class="num">'+ceuRp(tag)+'</td><td class="num">'+ceuRp(cash)+'</td><td class="num">'+ceuRp(tempo)+'</td><td></td></tr>':'';
+    body.innerHTML=list.length?list.map(r=>'<tr><td>'+ceuEsc(r.faktur)+'</td><td><span class="cek-um-pay '+(r.pembayaran==='Cash'?'cash':(r.pembayaran==='Tempo'?'tempo':'unknown'))+'">'+ceuEsc(r.pembayaran)+'</span></td><td>'+ceuEsc(ceuDateText(r.tanggal))+'</td><td>'+ceuEsc(r.sales)+'</td><td>'+ceuEsc(r.customer)+'</td><td title="'+ceuEsc(r.alamat)+'">'+ceuEsc(r.alamat)+'</td><td>'+ceuEsc(r.kategori)+'</td><td class="num">'+ceuRp(r.tagihan)+'</td><td class="num">'+(r.cash?ceuRp(r.cash):'')+'</td><td class="num">'+(r.tempo?ceuRp(r.tempo):'')+'</td><td><span class="cek-um-status '+r.statusClass+'">'+ceuEsc(r.status)+'</span></td></tr>').join(''):'<tr><td colspan="11" style="text-align:center;padding:28px;color:#64748b">Tidak ada data sesuai filter.</td></tr>';
+    if(foot) foot.innerHTML=list.length?'<tr><td colspan="7">TOTAL</td><td class="num">'+ceuRp(tag)+'</td><td class="num">'+ceuRp(cash)+'</td><td class="num">'+ceuRp(tempo)+'</td><td></td></tr>':'';
   }
   function ceuShowTab(){
     const nav=document.getElementById('mainTabs');
@@ -7355,7 +7358,7 @@ self.onmessage = function(e){
       const page=document.getElementById('page-cek-uang-masuk'); if(page) page.style.display=(tab==='cek-uang-masuk')?'block':'none';
       if(tab==='cek-uang-masuk') ceuShowTab();
     });
-    ['cekUmMonth','cekUmStatus'].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('change',ceuRender);});
+    ['cekUmMonth','cekUmPayment','cekUmStatus'].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('change',ceuRender);});
     const q=document.getElementById('cekUmSearch'); if(q)q.addEventListener('input',ceuRender);
     const rb=document.getElementById('cekUmRefresh'); if(rb)rb.addEventListener('click',async()=>{cekUmReady=false;await ceuLoad();});
   }
