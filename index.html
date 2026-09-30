@@ -3066,9 +3066,9 @@ self.onmessage = function(e){
       addReportSheet(wb,'RUPA RUPA','Rekap per Sales - RUPA RUPA',head,rowsRupa,tot(r.s4rupa||[]));
     } else if(tab==='s6'){
       const fRows=buildFakturRows();
-      const head=['NO','TANGGAL','NO. FAKTUR','SALES','PRODUK','QTY','SATUAN','HARGA JUAL','DISC','TOTAL','NOMINAL FAKTUR','PROFIT PER FAKTUR','PEMBAYARAN','CUSTOMER'];
-      const rows=fRows.map((row,i)=>{const x=row.x;return [i+1,fmtTgl(x.Tanggal),row.faktur,x.Sales||row.sales||'',x.Produk||'',N(x.Jumlah),x.Satuan||'',N(x['Harga Jual']),N(x.Discount),N(x.Total),row.isFirst?row.nominal:'',row.isFirst?row.profit:'',x.Pembayaran||row.bayar||'',x.Customer||row.customer||''];});
-      addReportSheet(wb,'Faktur','Rekap per Faktur',head,rows,['TOTAL','','','','',r.qty,'','','',r.sales,r.sales,r.profit,'','']);
+      const head=['NO','TANGGAL','NO. FAKTUR','SALES','PRODUK','QTY','SATUAN','HARGA JUAL','DISC','TOTAL','NOMINAL FAKTUR','PROFIT PER FAKTUR','PEMBAYARAN','CUSTOMER','ALAMAT'];
+      const rows=fRows.map((row,i)=>{const x=row.x;return [i+1,fmtTgl(x.Tanggal),row.faktur,x.Sales||row.sales||'',x.Produk||'',N(x.Jumlah),x.Satuan||'',N(x['Harga Jual']),N(x.Discount),N(x.Total),row.isFirst?row.nominal:'',row.isFirst?row.profit:'',x.Pembayaran||row.bayar||'',x.Customer||row.customer||'',x.Alamat||row.alamat||''];});
+      addReportSheet(wb,'Faktur','Rekap per Faktur',head,rows,['TOTAL','','','','',r.qty,'','','',r.sales,r.sales,r.profit,'','','']);
     } else if(tab==='s8'){
       const groups=buildFakturGroups();
       const head=['NO','TANGGAL','NO. FAKTUR','SALES','CUSTOMER','PEMBAYARAN','NOMINAL FAKTUR','PROFIT FAKTUR','MARGIN %'];
@@ -3990,7 +3990,7 @@ self.onmessage = function(e){
       const total = N(x.Total);
       const pr = total - N(x.Jumlah) * N(x['Harga Beli']);
       let g = groups.get(nf);
-      if (!g){ g = { faktur: nf, items: [], nominal: 0, profit: 0, tgl: x.Tanggal, ts: x._ts || 0, sales: x.Sales || '', bayar: x.Pembayaran || '', customer: x.Customer || '', isBatal: isBatalFaktur(nf), hasMinus: false, hasLineBatal: false }; groups.set(nf, g); }
+      if (!g){ g = { faktur: nf, items: [], nominal: 0, profit: 0, tgl: x.Tanggal, ts: x._ts || 0, sales: x.Sales || '', bayar: x.Pembayaran || '', customer: x.Customer || '', alamat: x.Alamat || '', isBatal: isBatalFaktur(nf), hasMinus: false, hasLineBatal: false }; groups.set(nf, g); }
       g.items.push(x);
       const lineBatal = !g.isBatal && batalLineSet.has(lineKeyOf(x));
       if (lineBatal) g.hasLineBatal = true;
@@ -4000,10 +4000,11 @@ self.onmessage = function(e){
       if (!g.sales && x.Sales) g.sales = x.Sales;
       if (!g.bayar && x.Pembayaran) g.bayar = x.Pembayaran;
       if (!g.customer && x.Customer) g.customer = x.Customer;
+      if (!g.alamat && x.Alamat) g.alamat = x.Alamat;
     }
     const list = [...groups.values()].sort((a,b) => { if (a.ts !== b.ts) return (b.ts||0) - (a.ts||0); return String(a.faktur).localeCompare(String(b.faktur)); });
     const rows = [];
-    list.forEach(g => { g.items.forEach((x, idx) => { rows.push({ x, isFirst: idx === 0, span: g.items.length, nominal: g.nominal, profit: g.profit, faktur: g.faktur, sales: g.sales, bayar: g.bayar, customer: g.customer, isBatal: g.isBatal, hasMinus: g.hasMinus, hasLineBatal: g.hasLineBatal, lineBatal: !g.isBatal && batalLineSet.has(lineKeyOf(x)) }); }); });
+    list.forEach(g => { g.items.forEach((x, idx) => { rows.push({ x, isFirst: idx === 0, span: g.items.length, nominal: g.nominal, profit: g.profit, faktur: g.faktur, sales: g.sales, bayar: g.bayar, customer: g.customer, alamat: g.alamat, isBatal: g.isBatal, hasMinus: g.hasMinus, hasLineBatal: g.hasLineBatal, lineBatal: !g.isBatal && batalLineSet.has(lineKeyOf(x)) }); }); });
     return rows;
   }
   let fakturViewMode = 'card';
@@ -4024,7 +4025,7 @@ self.onmessage = function(e){
       const total = N(x.Total);
       const pr = total - N(x.Jumlah) * N(x['Harga Beli']);
       let g = groups.get(nf);
-      if (!g){ g = { faktur: nf, items: [], nominal: 0, profit: 0, tgl: x.Tanggal, ts: x._ts || 0, sales: x.Sales || '', bayar: x.Pembayaran || '', customer: x.Customer || '', isBatal: isBatalFaktur(nf), hasMinus: false, hasLineBatal: false }; groups.set(nf, g); }
+      if (!g){ g = { faktur: nf, items: [], nominal: 0, profit: 0, tgl: x.Tanggal, ts: x._ts || 0, sales: x.Sales || '', bayar: x.Pembayaran || '', customer: x.Customer || '', alamat: x.Alamat || '', isBatal: isBatalFaktur(nf), hasMinus: false, hasLineBatal: false }; groups.set(nf, g); }
       g.items.push(x);
       const lineBatal = !g.isBatal && batalLineSet.has(lineKeyOf(x));
       if (lineBatal) g.hasLineBatal = true;
@@ -4034,6 +4035,7 @@ self.onmessage = function(e){
       if (!g.sales && x.Sales) g.sales = x.Sales;
       if (!g.bayar && x.Pembayaran) g.bayar = x.Pembayaran;
       if (!g.customer && x.Customer) g.customer = x.Customer;
+      if (!g.alamat && x.Alamat) g.alamat = x.Alamat;
     }
     return [...groups.values()].sort((a,b) => { if (a.ts !== b.ts) return (b.ts||0) - (a.ts||0); return String(a.faktur).localeCompare(String(b.faktur)); });
   }
@@ -4076,7 +4078,7 @@ self.onmessage = function(e){
     const totalLines = allRows.length;
     const pageRows = sliceRekap('s6', allRows);
     const base = (rekapPage.s6 || 0) * REKAP_PAGE_SIZE;
-    const head = ['NO','TANGGAL','NO. FAKTUR','SALES','PRODUK','QTY','SATUAN','HARGA JUAL','DISC','TOTAL','NOMINAL FAKTUR','PROFIT PER FAKTUR','PEMBAYARAN','CUSTOMER'];
+    const head = ['NO','TANGGAL','NO. FAKTUR','SALES','PRODUK','QTY','SATUAN','HARGA JUAL','DISC','TOTAL','NOMINAL FAKTUR','PROFIT PER FAKTUR','PEMBAYARAN','CUSTOMER','ALAMAT'];
     let body = '';
     const shownFaktur = new Set();
     pageRows.forEach((row, i) => {
@@ -4092,8 +4094,15 @@ self.onmessage = function(e){
       const sales = x.Sales || row.sales || '';
       const bayar = x.Pembayaran || row.bayar || '';
       const cust = x.Customer || row.customer || '';
-      const showAgg = row.isFirst || !shownFaktur.has(row.faktur);
+      const alamat = row.alamat || x.Alamat || '';
+      const isFirstOfFaktur = !shownFaktur.has(row.faktur);
+      const showAgg = row.isFirst || isFirstOfFaktur;
       shownFaktur.add(row.faktur);
+      const tglCell = isFirstOfFaktur ? tgl : '';
+      const salesCell = isFirstOfFaktur ? sales : '';
+      const bayarCell = isFirstOfFaktur ? bayar : '';
+      const custCell = isFirstOfFaktur ? cust : '';
+      const alamatCell = isFirstOfFaktur ? alamat : '';
       const nomCell = showAgg ? ('<td class="num" style="font-weight:700">' + rp(row.nominal) + '</td>') : '<td class="num"></td>';
       const prCell  = showAgg ? ('<td class="num" style="font-weight:700">' + rp(row.profit) + '</td>') : '<td class="num"></td>';
       const fkClickable = row.hasMinus || row.isBatal || row.hasLineBatal;
@@ -4105,11 +4114,12 @@ self.onmessage = function(e){
       } else {
         fkCell = fkCell.replace(/</g,'&lt;');
       }
+      const fkOut = isFirstOfFaktur ? fkCell : '';
       const rowStyle = row.isBatal ? ' style="opacity:.7;background:#fef2f2"' : (row.lineBatal ? ' style="opacity:.65;background:#f1f5f9;text-decoration:line-through"' : (qty < 0 ? ' style="background:#fef2f2"' : ''));
-      body += '<tr' + rowStyle + '><td class="num">' + no + '</td><td>' + tgl + '</td><td>' + fkCell + '</td><td>' + sales + '</td><td title="' + String(produk).replace(/"/g,'&quot;') + '">' + produk + '</td><td class="num">' + qty + '</td><td>' + satuan + '</td><td class="num">' + hj + '</td><td class="num">' + disc + '</td><td class="num">' + total + '</td>' + nomCell + prCell + '<td>' + bayar + '</td><td title="' + String(cust).replace(/"/g,'&quot;') + '">' + cust + '</td></tr>';
+      body += '<tr' + rowStyle + '><td class="num">' + no + '</td><td>' + tglCell + '</td><td>' + fkOut + '</td><td>' + salesCell + '</td><td title="' + String(produk).replace(/"/g,'&quot;') + '">' + produk + '</td><td class="num">' + qty + '</td><td>' + satuan + '</td><td class="num">' + hj + '</td><td class="num">' + disc + '</td><td class="num">' + total + '</td>' + nomCell + prCell + '<td>' + bayarCell + '</td><td title="' + String(custCell).replace(/"/g,'&quot;') + '">' + custCell + '</td><td title="' + String(alamatCell).replace(/"/g,'&quot;') + '">' + alamatCell + '</td></tr>';
     });
-    const foot = '<tr><td class="num">TOTAL</td><td></td><td></td><td></td><td></td><td class="num">' + (R.qty || 0) + '</td><td></td><td></td><td></td><td class="num">' + rp(R.sales) + '</td><td class="num">' + rp(R.sales) + '</td><td class="num">' + rp(R.profit) + '</td><td></td><td></td></tr>';
-    if (!totalLines){ return '<div class="tablebox"><table><thead><tr>' + head.map(h => '<th>'+h+'</th>').join('') + '</tr></thead><tbody><tr><td colspan="14" style="text-align:center;padding:28px;color:#64748b">Belum ada data.</td></tr></tbody></table></div>'; }
+    const foot = '<tr><td class="num">TOTAL</td><td></td><td></td><td></td><td></td><td class="num">' + (R.qty || 0) + '</td><td></td><td></td><td></td><td class="num">' + rp(R.sales) + '</td><td class="num">' + rp(R.sales) + '</td><td class="num">' + rp(R.profit) + '</td><td></td><td></td><td></td></tr>';
+    if (!totalLines){ return '<div class="tablebox"><table><thead><tr>' + head.map(h => '<th>'+h+'</th>').join('') + '</tr></thead><tbody><tr><td colspan="15" style="text-align:center;padding:28px;color:#64748b">Belum ada data.</td></tr></tbody></table></div>'; }
     return rekapPagerHtml('s6', totalLines) + '<div class="tablebox"><table><thead><tr>' + head.map(h => '<th>'+h+'</th>').join('') + '</tr></thead><tbody>' + body + '</tbody><tfoot>' + foot + '</tfoot></table></div>';
   }
   async function saveExcel(){
@@ -4130,9 +4140,9 @@ self.onmessage = function(e){
     const s4Tot = arr => ['TOTAL', arr.reduce((a,x)=>a+x[1],0), arr.reduce((a,x)=>a+x[2],0), arr.reduce((a,x)=>a+x[3],0), arr.reduce((a,x)=>a+x[4],0), arr.reduce((a,x)=>a+x[5],0)];
     add('MINYAK FITRI - Rekap per Sales', s4Head, r.s4fitri||[], s4Tot(r.s4fitri||[]));
     add('RUPA RUPA - Rekap per Sales', s4Head, r.s4rupa||[], s4Tot(r.s4rupa||[]));
-    { const fRows = buildFakturRows(); const fHead = ['NO','TANGGAL','NO. FAKTUR','SALES','PRODUK','QTY','SATUAN','HARGA JUAL','DISC','TOTAL','NOMINAL FAKTUR','PROFIT PER FAKTUR','PEMBAYARAN','CUSTOMER'];
-      const fData = fRows.map((row,i) => { const x = row.x; return [i+1, fmtTgl(x.Tanggal), row.faktur, x.Sales || row.sales || '', x.Produk || '', N(x.Jumlah), x.Satuan || '', N(x['Harga Jual']), N(x.Discount), N(x.Total), row.isFirst ? row.nominal : '', row.isFirst ? row.profit : '', x.Pembayaran || row.bayar || '', x.Customer || row.customer || '']; });
-      add('Rekap per Faktur', fHead, fData, ['TOTAL','','','','', r.qty, '', '', '', r.sales, r.sales, r.profit, '', '']);
+    { const fRows = buildFakturRows(); const fHead = ['NO','TANGGAL','NO. FAKTUR','SALES','PRODUK','QTY','SATUAN','HARGA JUAL','DISC','TOTAL','NOMINAL FAKTUR','PROFIT PER FAKTUR','PEMBAYARAN','CUSTOMER','ALAMAT'];
+      const fData = fRows.map((row,i) => { const x = row.x; return [i+1, fmtTgl(x.Tanggal), row.faktur, x.Sales || row.sales || '', x.Produk || '', N(x.Jumlah), x.Satuan || '', N(x['Harga Jual']), N(x.Discount), N(x.Total), row.isFirst ? row.nominal : '', row.isFirst ? row.profit : '', x.Pembayaran || row.bayar || '', x.Customer || row.customer || '', x.Alamat || row.alamat || '']; });
+      add('Rekap per Faktur', fHead, fData, ['TOTAL','','','','', r.qty, '', '', '', r.sales, r.sales, r.profit, '', '', '']);
     }
     XLSX.writeFile(w, 'Rekap_Penjualan_Hasil.xlsx');
   }
