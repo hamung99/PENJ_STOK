@@ -85,6 +85,38 @@ body.dark #s7FakturOverlay th{background:#1e3a5f}
 body.dark #s7FakturOverlay td{border-color:#334155}
 body.dark #s7FakturOverlay .s7-fk-group{color:#93c5fd}
 body.dark #s7FakturOverlay .s7-fk-group span{color:#94a3b8}
+/* ===== Detail Faktur di tab Cek Uang Masuk ===== */
+.fak-link{cursor:pointer;color:#1f4e78;font-weight:700;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:2px}
+.fak-link:hover{color:#0f172a;background:#e8f1ff;border-radius:4px}
+body.dark .fak-link{color:#93c5fd}
+body.dark .fak-link:hover{color:#fff;background:#334155}
+#cekUmFakturOverlay .gmodal-box{max-width:880px;width:100%;max-height:90vh;display:flex;flex-direction:column;padding:18px 20px 16px}
+#cekUmFakturOverlay h3{margin:0 0 4px;font-size:16px;color:#1f4e78}
+#cekUmFakturOverlay .gmodal-sub{font-size:12px;color:#64748b;margin-bottom:6px;line-height:1.5}
+#cekUmFkBody{overflow:auto;flex:1;min-height:0;margin:6px 0 10px}
+.cekum-fk-sec{margin-bottom:14px}
+.cekum-fk-h{font-size:12px;font-weight:800;color:#1f4e78;letter-spacing:.02em;margin:0 0 6px;display:flex;align-items:center;gap:8px}
+.cekum-fk-h span{font-weight:600;color:#64748b;font-size:11px}
+.cekum-fk-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.cekum-fk-tbl th{background:#1f4e78;color:#fff;padding:6px 8px;text-align:left;position:sticky;top:0;z-index:1}
+.cekum-fk-tbl td{padding:6px 8px;border-bottom:1px solid #e2e8f0;vertical-align:top}
+.cekum-fk-tbl td.num{text-align:right;white-space:nowrap}
+.cekum-fk-tbl tr.fk-batal{opacity:.6}
+.cekum-fk-ket{font-weight:700;color:#0f172a}
+.cekum-fk-empty{padding:14px;text-align:center;color:#64748b;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:8px;font-size:12px}
+.cekum-fk-sum{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:#475569;background:#f0f6ff;border:1px solid #dbe6f5;border-radius:8px;padding:8px 10px;margin-bottom:12px}
+.cekum-fk-sum b{color:#0f172a}
+body.dark #cekUmFakturOverlay .gmodal-box{background:#1e293b;color:#e2e8f0}
+body.dark #cekUmFakturOverlay h3{color:#93c5fd}
+body.dark #cekUmFakturOverlay .gmodal-sub{color:#94a3b8}
+body.dark .cekum-fk-tbl th{background:#1e3a5f}
+body.dark .cekum-fk-tbl td{border-color:#334155}
+body.dark .cekum-fk-h{color:#93c5fd}
+body.dark .cekum-fk-h span{color:#94a3b8}
+body.dark .cekum-fk-ket{color:#e2e8f0}
+body.dark .cekum-fk-empty{background:#0f172a;border-color:#334155;color:#94a3b8}
+body.dark .cekum-fk-sum{background:#0f172a;border-color:#334155;color:#cbd5e1}
+body.dark .cekum-fk-sum b{color:#f1f5f9}
 .month-quick label{font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.04em}
 .month-quick select{width:auto;min-width:150px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:7px;font-size:12px;background:#fff;color:#172033}
 .month-quick .filter-btn{width:30px;height:30px;padding:0;display:inline-flex;align-items:center;justify-content:center;font-size:15px;border-radius:7px;position:relative}
@@ -1382,6 +1414,17 @@ body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#
     <div class="fk-modal-body" id="s7FkBody" style="overflow:auto;flex:1;min-height:0;margin:8px 0 12px"></div>
     <div class="gmodal-actions">
       <button type="button" class="gmodal-ghost" onclick="closeS7FakturModal()">Tutup</button>
+    </div>
+  </div>
+</div>
+
+<div class="gmodal-overlay" id="cekUmFakturOverlay" onclick="if(event.target===this) closeCekUmFakturModal()">
+  <div class="gmodal-box">
+    <h3>Detail Faktur — <span id="cekUmFkTitle">-</span></h3>
+    <div class="gmodal-sub" id="cekUmFkSub">-</div>
+    <div id="cekUmFkBody"></div>
+    <div class="gmodal-actions">
+      <button type="button" class="gmodal-ghost" onclick="closeCekUmFakturModal()">Tutup</button>
     </div>
   </div>
 </div>
@@ -5628,6 +5671,7 @@ self.onmessage = function(e){
 
   let _cekUmFuzzyEnabled   = false;
   let _cekUmFuzzyThreshold = 0.82;
+  let _cekUmLastList       = [];
   try {
     const f = localStorage.getItem('cekUmFuzzy');
     if (f === '1') _cekUmFuzzyEnabled = true;
@@ -5847,7 +5891,7 @@ self.onmessage = function(e){
         ket += ' · cocok lintas bulan';
       }
 
-      list.push(Object.assign({}, g, { category: targetCategory, umTotal, selisih, status, ket, umMatches: matches.length, matchType, fuzzyInfo }));
+      list.push(Object.assign({}, g, { category: targetCategory, umTotal, selisih, status, ket, umMatches: matches.length, umRows: matches, matchType, fuzzyInfo }));
     });
 
     list.sort((a, b) => (b.ts || 0) - (a.ts || 0));
@@ -5889,6 +5933,7 @@ self.onmessage = function(e){
     if (paymentF) list = list.filter(g => g.pay === paymentF);
     if (statusF)  list = list.filter(g => g.status === statusF);
     if (q) list = list.filter(g => U(g.faktur).includes(q) || U(g.cust).includes(q) || U(g.alamat).includes(q));
+    _cekUmLastList = list;
 
     const totalFaktur = list.length;
     const totalLunas  = list.filter(g => g.status === 'LUNAS').length;
@@ -5935,7 +5980,7 @@ self.onmessage = function(e){
       body += '<tr>';
       body += '<td class="num">' + (i + 1) + '</td>';
       body += '<td>' + fmtTgl(g.tgl) + '</td>';
-      body += '<td>' + escHtml(g.faktur) + '</td>';
+      body += '<td><span class="fak-link" role="button" tabindex="0" data-faktur="' + escHtml(g.faktur) + '" title="Klik untuk melihat detail penjualan &amp; keterangan uang masuk">' + escHtml(g.faktur) + '</span></td>';
       body += '<td>' + escHtml(g.sales) + '</td>';
       body += '<td>' + escHtml(g.cust) + '</td>';
       body += '<td>' + escHtml(g.alamat) + '</td>';
@@ -6025,6 +6070,160 @@ self.onmessage = function(e){
   window.downloadCekUangMasuk = downloadCekUangMasuk;
   window.onCekUmFuzzyChange = onCekUmFuzzyChange;
   window.onCekUmFuzzyThresholdChange = onCekUmFuzzyThresholdChange;
+
+  /* ===================== DETAIL FAKTUR (CEK UANG MASUK) ===================== */
+  function _cekUmFkNorm(v){ return String(v ?? '').trim().toUpperCase(); }
+  function _cekUmFkGet(r, keys){
+    for (let i = 0; i < keys.length; i++){
+      const k = keys[i];
+      if (r && r[k] !== undefined && r[k] !== null && r[k] !== '') return r[k];
+    }
+    return '';
+  }
+  function _cekUmFkKategori(r){
+    const c = umRowCategory(r);
+    if (c === 'MINYAK' || c === 'RUPA-RUPA' || c === 'CAMPURAN') return c;
+    const t = String((r && (r.type || r.jenis || r.kategori || r.section)) || '').toUpperCase();
+    if (t.indexOf('CASH') >= 0) return 'CASH DROPPING';
+    if (t.indexOf('TEMPO') >= 0) return 'PIUTANG TEMPO';
+    return '—';
+  }
+  function _cekUmFkBadge(s){
+    if (s === 'LUNAS') return '<span class="ket-badge ok">✅ LUNAS</span>';
+    if (s === 'SEBAGIAN') return '<span class="ket-badge warn">⚠ SEBAGIAN</span>';
+    return '<span class="ket-badge alert">🚨 BELUM ADA UANG MASUK</span>';
+  }
+  function closeCekUmFakturModal(){
+    const ov = document.getElementById('cekUmFakturOverlay');
+    if (ov) ov.classList.remove('show');
+  }
+  async function openCekUmFakturModal(faktur){
+    const ov    = document.getElementById('cekUmFakturOverlay');
+    const body  = document.getElementById('cekUmFkBody');
+    const title = document.getElementById('cekUmFkTitle');
+    const sub   = document.getElementById('cekUmFkSub');
+    if (!ov || !body) { console.warn('cekUmFakturOverlay missing'); return; }
+    const key = _cekUmFkNorm(faktur);
+    if (title) title.textContent = String(faktur ?? '').trim() || '(Tanpa Faktur)';
+    if (sub) sub.textContent = 'Menggabungkan data Penjualan dengan keterangan Uang Masuk…';
+    body.innerHTML = '<div class="cekum-fk-empty">Memuat detail…</div>';
+    ov.classList.add('show');
+
+    let g = (_cekUmLastList || []).find(x => _cekUmFkNorm(x.faktur) === key) || null;
+    if (!g) {
+      try {
+        const full = await buildFakturReconciliation();
+        g = full.find(x => _cekUmFkNorm(x.faktur) === key) || null;
+      } catch(e){ console.warn('detail faktur', e); }
+    }
+
+    let allSales = [];
+    try { allSales = await getAllSalesRowsForCekUm(); } catch(e){ allSales = []; }
+    const salesRows = (allSales || []).filter(r => _cekUmFkNorm(r.faktur ?? r['No. Faktur']) === key);
+    const umRows = (g && Array.isArray(g.umRows)) ? g.umRows.slice() : [];
+
+    const tagihan = g ? g.tagihan : salesRows.reduce((a, r) => a + N(r.total ?? r.Total), 0);
+    const umTotal = g ? g.umTotal : umRows.reduce((a, r) => a + umRowTotal(r), 0);
+    const selisih = umTotal - tagihan;
+    const status  = g ? g.status : (umTotal === 0 ? 'BELUM' : (umTotal + 1 >= tagihan ? 'LUNAS' : 'SEBAGIAN'));
+    const first   = salesRows[0] || {};
+    const salesName = g ? g.sales : normSales(first.sales ?? first.Sales);
+    const cust    = g ? g.cust   : String(first.customer ?? first.Customer ?? '').trim();
+    const alamat  = g ? g.alamat : String(first.alamat ?? first.Alamat ?? '').trim();
+    const pay     = g ? g.pay    : U(first.pembayaran ?? first.Pembayaran);
+    const tgl     = g ? g.tgl    : (first.tanggal ?? first.Tanggal);
+    const ketSys  = g ? g.ket    : '';
+
+    const parts = [];
+    parts.push('Tanggal: <b>' + escHtml(fmtTgl(tgl)) + '</b>');
+    parts.push('Sales: <b>' + escHtml(salesName || '—') + '</b>');
+    parts.push('Customer: <b>' + escHtml(cust || '—') + '</b>');
+    if (alamat) parts.push('Alamat: <b>' + escHtml(alamat) + '</b>');
+    parts.push('Pembayaran: <b>' + escHtml(pay || '—') + '</b>');
+    if (sub) sub.innerHTML = parts.join(' · ');
+
+    const selColor = selisih === 0 ? '#166534' : (selisih > 0 ? '#1d4ed8' : '#dc2626');
+    let html = '<div class="cekum-fk-sum">'
+      + '<div>Nominal Tagihan: <b>' + rp(tagihan) + '</b></div>'
+      + '<div>Total Uang Masuk: <b>' + rp(umTotal) + '</b></div>'
+      + '<div>Selisih: <b style="color:' + selColor + '">' + (selisih > 0 ? '+' : '') + rp(selisih) + '</b></div>'
+      + '<div>Status: ' + _cekUmFkBadge(status) + '</div>'
+      + (ketSys ? '<div>Keterangan sistem: <b>' + escHtml(ketSys) + '</b></div>' : '')
+      + '</div>';
+
+    /* ---- 1. Data Penjualan ---- */
+    html += '<div class="cekum-fk-sec"><div class="cekum-fk-h">🧾 Data Penjualan<span>' + salesRows.length + ' baris</span></div>';
+    if (!salesRows.length) {
+      html += '<div class="cekum-fk-empty">Tidak ada baris penjualan yang cocok untuk No. Faktur ini.</div>';
+    } else {
+      html += '<table class="cekum-fk-tbl"><thead><tr><th>TANGGAL</th><th>PRODUK</th><th>QTY</th><th>SATUAN</th><th>HARGA JUAL</th><th>DISC</th><th>TOTAL</th><th>SALES</th><th>CUSTOMER</th><th>BAYAR</th></tr></thead><tbody>';
+      salesRows.forEach(r => {
+        const batal = isBatalLine(r);
+        html += '<tr' + (batal ? ' class="fk-batal"' : '') + '>'
+          + '<td>' + escHtml(fmtTgl(r.tanggal ?? r.Tanggal)) + '</td>'
+          + '<td>' + escHtml(String(r.produk ?? r.Produk ?? '').trim() || '—') + (batal ? ' <span class="ket-badge bad" style="font-size:10px">BATAL</span>' : '') + '</td>'
+          + '<td class="num">' + N(r.jumlah ?? r.Jumlah).toLocaleString('id-ID') + '</td>'
+          + '<td>' + escHtml(String(r.satuan ?? r.Satuan ?? '').trim() || '—') + '</td>'
+          + '<td class="num">' + rp(r['Harga Jual'] ?? r.hargaJual) + '</td>'
+          + '<td class="num">' + rp(r.Discount ?? r.discount) + '</td>'
+          + '<td class="num" style="font-weight:700">' + rp(r.total ?? r.Total) + '</td>'
+          + '<td>' + escHtml(normSales(r.sales ?? r.Sales) || '—') + '</td>'
+          + '<td>' + escHtml(String(r.customer ?? r.Customer ?? '').trim() || '—') + '</td>'
+          + '<td>' + escHtml(U(r.pembayaran ?? r.Pembayaran) || '—') + '</td>'
+          + '</tr>';
+      });
+      html += '</tbody></table>';
+    }
+    html += '</div>';
+
+    /* ---- 2. Keterangan Uang Masuk ---- */
+    html += '<div class="cekum-fk-sec"><div class="cekum-fk-h">💰 Uang Masuk<span>' + umRows.length + ' baris cocok</span></div>';
+    if (!umRows.length) {
+      html += '<div class="cekum-fk-empty">Belum ada data uang masuk yang cocok dengan faktur ini'
+        + (pay ? ' (' + escHtml(pay) + ')' : '') + '.</div>';
+    } else {
+      html += '<table class="cekum-fk-tbl"><thead><tr><th>TANGGAL</th><th>SALES</th><th>TOKO / CUSTOMER</th><th>ALAMAT</th><th>KATEGORI</th><th>MINYAK CASH</th><th>MINYAK TRF</th><th>RUPA CASH</th><th>RUPA TRF</th><th>TOTAL</th><th>KETERANGAN</th></tr></thead><tbody>';
+      umRows.forEach(r => {
+        const ketRow = _cekUmFkGet(r, ['ket','keterangan','Keterangan','catatan','Catatan','note','Note']);
+        html += '<tr>'
+          + '<td>' + escHtml(String(r.tanggal ?? r.Tanggal ?? '').trim() || '—') + '</td>'
+          + '<td>' + escHtml(umRowSales(r) || '—') + '</td>'
+          + '<td>' + escHtml(umRowCustomer(r) || '—') + '</td>'
+          + '<td>' + escHtml(umRowAlamat(r) || '—') + '</td>'
+          + '<td>' + escHtml(_cekUmFkKategori(r)) + '</td>'
+          + '<td class="num">' + rp(_cekUmFkGet(r, ['minyakCash','Minyak Cash'])) + '</td>'
+          + '<td class="num">' + rp(_cekUmFkGet(r, ['minyakTrf','minyakTf','Minyak Trf','Minyak Transfer'])) + '</td>'
+          + '<td class="num">' + rp(_cekUmFkGet(r, ['rupaCash','Rupa Cash'])) + '</td>'
+          + '<td class="num">' + rp(_cekUmFkGet(r, ['rupaTrf','rupaTf','Rupa Trf','Rupa Transfer'])) + '</td>'
+          + '<td class="num" style="font-weight:700">' + rp(umRowTotal(r)) + '</td>'
+          + '<td class="cekum-fk-ket">' + (ketRow ? escHtml(ketRow) : '—') + '</td>'
+          + '</tr>';
+      });
+      html += '</tbody></table>';
+    }
+    html += '</div>';
+
+    body.innerHTML = html;
+  }
+  window.openCekUmFakturModal = openCekUmFakturModal;
+  window.closeCekUmFakturModal = closeCekUmFakturModal;
+
+  if (!window._cekUmFakClickBound) {
+    window._cekUmFakClickBound = true;
+    document.addEventListener('click', function(ev){
+      const el = ev.target && ev.target.closest ? ev.target.closest('#cekUmTbody .fak-link') : null;
+      if (!el) return;
+      ev.preventDefault();
+      openCekUmFakturModal(el.getAttribute('data-faktur') || '');
+    });
+    document.addEventListener('keydown', function(ev){
+      if (ev.key === 'Escape') { closeCekUmFakturModal(); return; }
+      if ((ev.key === 'Enter' || ev.key === ' ') && document.activeElement && document.activeElement.classList && document.activeElement.classList.contains('fak-link')) {
+        ev.preventDefault();
+        openCekUmFakturModal(document.activeElement.getAttribute('data-faktur') || '');
+      }
+    });
+  }
 
   async function umReadStored(){
     try {
@@ -7697,5 +7896,6 @@ self.onmessage = function(e){
   document.getElementById('installBtn')?.addEventListener('click', async () => { if (!_deferredInstallPrompt) return; _deferredInstallPrompt.prompt(); await _deferredInstallPrompt.userChoice; _deferredInstallPrompt = null; document.getElementById('installBtn').style.display = 'none'; });
   window.addEventListener('appinstalled', () => { const btn = document.getElementById('installBtn'); if (btn) btn.style.display = 'none'; });
 </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 </body>
 </html>
