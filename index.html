@@ -2598,13 +2598,13 @@ self.onmessage = function(e){
       if (SO.includes(salesName)) salesQty[salesName] = (salesQty[salesName] || 0) + j;
       if (nf) fakturSet.add(nf);
       let st = byProd.get(produk);
-      if (!st) { st = { qq:0, v:0, h:0, sat:'', bmin:Infinity, bmax:-Infinity, jmin:Infinity, jmax:-Infinity, qBySales:{}, jc:0, jt:0, pc:0, pt:0, hbLog:[] }; byProd.set(produk, st); }
+      if (!st) { st = { qq:0, v:0, h:0, sat:'', bmin:Infinity, bmax:-Infinity, jmin:Infinity, jmax:-Infinity, qBySales:{}, pBySales:{}, jc:0, jt:0, pc:0, pt:0, hbLog:[] }; byProd.set(produk, st); }
       st.qq += j; st.v += t; st.h += hLine;
       if (sat && !st.sat) st.sat = sat;
       if (!isNaN(hb)) { if (hb < st.bmin) st.bmin = hb; if (hb > st.bmax) st.bmax = hb; }
       if (!isNaN(hj)) { if (hj < st.jmin) st.jmin = hj; if (hj > st.jmax) st.jmax = hj; }
       if (st.hbLog.length < 500) st.hbLog.push({ts: x._ts || 0, hb});
-      if (SO.includes(salesName)) st.qBySales[salesName] = (st.qBySales[salesName] || 0) + j;
+      if (SO.includes(salesName)) { st.qBySales[salesName] = (st.qBySales[salesName] || 0) + j; st.pBySales[salesName] = (st.pBySales[salesName] || 0) + rp0; }
       if (pay === 'CASH'){ st.jc += t; st.pc += rp0 }
       if (pay === 'TEMPO'){ st.jt += t; st.pt += rp0 }
       if (SO.includes(salesName)) {
@@ -2619,7 +2619,7 @@ self.onmessage = function(e){
       if (st.bmin === Infinity) { st.bmin = 0; st.bmax = 0; }
       if (st.jmin === Infinity) { st.jmin = 0; st.jmax = 0; }
       const pr = st.v - st.h;
-      s1.push([p, ...SO2.map(s => st.qBySales[s] || 0), st.qq, st.sat, range(st.bmin,st.bmax), range(st.jmin,st.jmax), st.h, st.v, pr]);
+      s1.push([p, ...SO2.map(s => st.qBySales[s] || 0), st.qq, st.sat, range(st.bmin,st.bmax), range(st.jmin,st.jmax), st.h, st.v, pr, ...SO2.map(s => st.pBySales[s] || 0)]);
       s2.push([p, st.jc, st.jt, st.pt, st.pc, st.jc+st.jt, st.pc+st.pt]);
       s3.push([p, st.qq, st.v, st.h, range(st.jmin,st.jmax), range(st.bmin,st.bmax), pr]);
       s5.push([p, st.qq, st.sat, st.v, st.h, pr, st.v ? (pr/st.v*100) : 0]);
@@ -2686,6 +2686,32 @@ self.onmessage = function(e){
     return '<div style="margin-bottom:6px;font-weight:bold;color:#1f4e78">Penjualan CASH</div>' + tbl(head1, data1, total1) +
            '<div style="margin:16px 0 6px;font-weight:bold;color:#1f4e78">Penjualan TEMPO</div>' + tbl(head2, data2, total2);
   }
+  /* ===== Tabel Produk (s1): tata letak baru =====
+     Data R.s1 per baris: [0]=produk, [1..n]=qty per sales, [n+1]=total qty, [n+2]=satuan,
+     [n+3]=harga beli, [n+4]=harga jual, [n+5]=beli x qty, [n+6]=jual x qty, [n+7]=profit produk,
+     [n+8..]=profit per sales (urutan sama dengan SO2)
+     Tampilan: PRODUK | (SALES | PROFIT/SALES) x n | TOTAL QTY | PROFIT/PRODUK | SATUAN | HARGA BELI | HARGA JUAL | BELI X QTY | JUAL X QTY */
+  function s1BuildHead(SO2){
+    const h = ['PRODUK'];
+    SO2.forEach(s => { h.push(s, 'PROFIT/SALES'); });
+    h.push('TOTAL QTY','PROFIT/PRODUK','SATUAN','HARGA BELI','HARGA JUAL','BELI X QTY','JUAL X QTY');
+    return h;
+  }
+  function s1BuildRow(x, n, f){
+    const fm = f || (v => v);
+    const row = [x[0]];
+    for (let i = 0; i < n; i++) row.push(x[1+i], fm(x[n+8+i] || 0));
+    row.push(x[n+1], fm(x[n+7]), x[n+2], x[n+3], x[n+4], fm(x[n+5]), fm(x[n+6]));
+    return row;
+  }
+  function s1BuildFoot(Rx, SO2, f){
+    const fm = f || (v => v);
+    const n = SO2.length, list = Rx.s1 || [];
+    const foot = ['TOTAL'];
+    for (let i = 0; i < n; i++) foot.push(list.reduce((a,x) => a + (x[1+i] || 0), 0), fm(list.reduce((a,x) => a + (x[n+8+i] || 0), 0)));
+    foot.push(Rx.qty, fm(Rx.profit), '', '', '', fm(Rx.hpp), fm(Rx.sales));
+    return foot;
+  }
   function reportBar(tab, label){ return ''; }
   function reportMetaRows(title){ return []; }
   function styleReportSheet(ws, data, freezeRow){
@@ -2718,9 +2744,9 @@ self.onmessage = function(e){
       const rows=filteredRows.map((_,i)=>{const x=getUiRow(i); const pr=N(x.Total)-N(x.Jumlah)*N(x['Harga Beli']); return [i+1,fmtTgl(x.Tanggal),x['No. Faktur'],x.Produk,x.Jumlah,x.Satuan||'',N(x['Harga Jual']),N(x['Harga Beli']),N(x.Discount),N(x.Total),N(x.Jumlah)*N(x['Harga Beli']),pr,x.Sales,x.Pembayaran,x.Customer||'',x['Kd Customer']||'',x.Alamat||''];});
       addReportSheet(wb,'Transaksi','Transaksi Penjualan',head,rows,['TOTAL','','','',r.qty,'','','','','',r.hpp,r.profit,'','','','','']);
     } else if(tab==='s1'){
-      const head=['PRODUK',...SO2,'TOTAL QTY','SATUAN','HARGA BELI','HARGA JUAL','BELI X QTY','JUAL X QTY','PROFIT'];
-      const rows=(r.s1||[]).map(x=>{const row=[x[0]];for(let i=1;i<=n;i++)row.push(x[i]);row.push(x[n+1],x[n+2],x[n+3],x[n+4],x[n+5],x[n+6],x[n+7]);return row;});
-      addReportSheet(wb,'Produk','Rekap per Produk',head,rows,['TOTAL',...SO2.map((s,i)=>(r.s1||[]).reduce((a,x)=>a+(x[1+i]||0),0)),r.qty,'','','',r.hpp,r.sales,r.profit]);
+      const head=s1BuildHead(SO2);
+      const rows=(r.s1||[]).map(x=>s1BuildRow(x,n));
+      addReportSheet(wb,'Produk','Rekap per Produk',head,rows,s1BuildFoot(r,SO2));
     } else if(tab==='s2'){
       addReportSheet(wb,'Profit Pembayaran','Profit Per Pembayaran',['PRODUK','NOMINAL PENJUALAN CASH','NOMINAL PENJUALAN TEMPO','PROFIT TEMPO','PROFIT CASH','TOTAL NOMINAL PENJUALAN','TOTAL PROFIT'],r.s2||[],['TOTAL',r.cs,r.ts,r.tp,r.cp,r.sales,r.profit]);
     } else if(tab==='s3'){
@@ -3242,11 +3268,11 @@ self.onmessage = function(e){
     if (t === 's7'){ return renderS7(); }
     else if (t === 's1'){
       const n = SO2.length;
-      const h = ['PRODUK', ...SO2, 'TOTAL QTY','SATUAN','HARGA BELI','HARGA JUAL','BELI X QTY','JUAL X QTY','PROFIT'];
+      const h = s1BuildHead(SO2);
       const pageRows = sliceRekap('s1', R.s1 || []);
-      const d = pageRows.map(x => { const row = [x[0]]; for (let i = 1; i <= n; i++) row.push(x[i]); row.push(x[n+1],x[n+2],x[n+3],x[n+4],rp(x[n+5]),rp(x[n+6]),rp(x[n+7])); return row });
-      const sums = SO2.map((s,i) => (R.s1||[]).reduce((a,x) => a + (x[1+i]||0), 0));
-      return reportBar('s1','Rekap per Produk') + rekapPagerHtml('s1', (R.s1||[]).length) + tbl(h, d, ['TOTAL', ...sums, R.qty, '', '', '', rp(R.hpp), rp(R.sales), rp(R.profit)]);
+      const d = pageRows.map(x => s1BuildRow(x, n, rp));
+      const foot = s1BuildFoot(R, SO2, rp);
+      return reportBar('s1','Rekap per Produk') + rekapPagerHtml('s1', (R.s1||[]).length) + tbl(h, d, foot);
     } else if (t === 's2'){
       const h = ['PRODUK','NOMINAL PENJUALAN CASH','NOMINAL PENJUALAN TEMPO','PROFIT TEMPO','PROFIT CASH','TOTAL NOMINAL PENJUALAN','TOTAL PROFIT'];
       const pageRows = sliceRekap('s2', R.s2 || []);
@@ -3797,9 +3823,9 @@ self.onmessage = function(e){
     const s0Head = ['NO','TANGGAL','NO. FAKTUR','PRODUK','QTY','SATUAN','HARGA JUAL','HARGA BELI','DISC','TOTAL','HPP','PROFIT','SALES','PEMBAYARAN','CUSTOMER','KODE CUSTOMER','ALAMAT'];
     const s0Data = filteredRows.map((_,i) => { const x = getUiRow(i); const pr = N(x.Total) - N(x.Jumlah) * N(x['Harga Beli']); return [i+1, fmtTgl(x.Tanggal), x['No. Faktur'], x.Produk, x.Jumlah, x.Satuan||'', x['Harga Jual'], x['Harga Beli'], x.Discount, x.Total, N(x.Jumlah) * N(x['Harga Beli']), pr, x.Sales, x.Pembayaran, x.Customer||'', x['Kd Customer']||'', x.Alamat||'']; });
     add('Transaksi', s0Head, s0Data, ['TOTAL', '', '', '', r.qty, '', '', '', '', r.sales, r.hpp, r.profit, '', '', '', '', '']);
-    const s1Head = ['PRODUK', ...SO2, 'TOTAL QTY','SATUAN','HARGA BELI','HARGA JUAL','BELI X QTY','JUAL X QTY','PROFIT'];
-    const s1Data = r.s1.map(x => { const row = [x[0]]; for (let i = 1; i <= n; i++) row.push(x[i]); row.push(x[n+1],x[n+2],x[n+3],x[n+4],x[n+5],x[n+6],x[n+7]); return row });
-    add('Rekap per Produk', s1Head, s1Data, ['TOTAL', ...SO2.map((s,i) => r.s1.reduce((a,x) => a + (x[1+i]||0), 0)), r.qty, '', '', '', r.hpp, r.sales, r.profit]);
+    const s1Head = s1BuildHead(SO2);
+    const s1Data = r.s1.map(x => s1BuildRow(x, n));
+    add('Rekap per Produk', s1Head, s1Data, s1BuildFoot(r, SO2));
     add('Profit Per Pembayaran', ['PRODUK','NOMINAL PENJUALAN CASH','NOMINAL PENJUALAN TEMPO','PROFIT TEMPO','PROFIT CASH','TOTAL NOMINAL PENJUALAN','TOTAL PROFIT'], r.s2, ['TOTAL',r.cs,r.ts,r.tp,r.cp,r.sales,r.profit]);
     add('Profit Penjualan per Produk', ['NO','PRODUK','QTY','TOTAL PENJUALAN','TOTAL HPP','HARGA JUAL','HARGA BELI','PROFIT'], r.s3.map((x,i) => [i+1, ...x]), ['TOTAL','',r.qty,r.sales,r.hpp,'','',r.profit]);
     const s4Head = ['SALES','JUMLAH FAKTUR','TOTAL QTY','TOTAL PENJUALAN','TOTAL HPP','TOTAL PROFIT'];
