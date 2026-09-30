@@ -773,6 +773,40 @@ body.dark .rr-app .dd-upload .field label{color:#94a3b8}
 body.dark .rr-app .dd-upload .field input[type=file]{background:#0f172a;border-color:#475569;color:#e2e8f0}
 body.dark .rr-app .dd-upload .field input[type=text],
 body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#e2e8f0;border-color:#475569}
+
+/* ===== Cek Uang Masuk ===== */
+#page-cek-uang-masuk{padding-top:8px}
+.cek-um-card{margin-top:8px;padding:12px}
+.cek-um-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.cek-um-title{font-size:15px;font-weight:800;color:#1f4e78}
+.cek-um-sub{font-size:11px;color:#64748b;margin-top:3px;line-height:1.45}
+.cek-um-tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-left:auto}
+.cek-um-tools select,.cek-um-tools input{height:30px;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:7px;background:#fff;color:#172033;font-size:11px;padding:5px 8px}
+.cek-um-tools select{min-width:145px}
+.cek-um-tools input{width:235px}
+.cek-um-refresh{width:30px;height:30px;padding:0;border-radius:7px;font-size:17px;line-height:1}
+.cek-um-summary{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:7px;margin:8px 0 10px}
+.cek-um-kpi{background:#f8fafc;border:1px solid #dbe4ef;border-radius:8px;padding:7px 10px}
+.cek-um-kpi small{display:block;font-size:9px;color:#64748b;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.cek-um-kpi b{display:block;margin-top:3px;font-size:13px;color:#0f172a}
+.cek-um-tablebox{max-height:calc(100vh - 190px)}
+#cekUmTable{min-width:1250px}
+#cekUmTable th,#cekUmTable td{font-size:11px}
+#cekUmTable td:nth-child(1){font-weight:800;color:#1f4e78}
+#cekUmTable td:nth-child(7),#cekUmTable td:nth-child(8),#cekUmTable td:nth-child(9){text-align:right;font-variant-numeric:tabular-nums}
+.cek-um-status{display:inline-block;padding:3px 7px;border-radius:999px;font-size:10px;font-weight:800;white-space:nowrap}
+.cek-um-status.lunas{background:#dcfce7;color:#166534}
+.cek-um-status.sebagian{background:#fef3c7;color:#92400e}
+.cek-um-status.belum{background:#fee2e2;color:#b42318}
+#cekUmTable tfoot td{background:#eef2fb;font-weight:800}
+body.dark #page-cek-uang-masuk .cek-um-title{color:#93c5fd}
+body.dark #page-cek-uang-masuk .cek-um-sub{color:#94a3b8}
+body.dark .cek-um-tools select,body.dark .cek-um-tools input{background:#0f172a;color:#e2e8f0;border-color:#475569}
+body.dark .cek-um-kpi{background:#1e293b;border-color:#334155}
+body.dark .cek-um-kpi small{color:#94a3b8}
+body.dark .cek-um-kpi b{color:#f1f5f9}
+body.dark #cekUmTable tfoot td{background:#1e3a5f;color:#f1f5f9}
+@media(max-width:900px){.cek-um-summary{grid-template-columns:repeat(2,1fr)}.cek-um-tools input{width:180px}}
 </style>
 </head>
 <body>
@@ -784,6 +818,7 @@ body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#
     <nav class="main-tabs" role="tablist" id="mainTabs">
       <button type="button" class="main-tab" data-tab="penjualan">Penjualan</button>
       <button type="button" class="main-tab" data-tab="umfix">💰 Uang Masuk</button>
+      <button type="button" class="main-tab" data-tab="cek-uang-masuk">🔎 Cek Uang Masuk</button>
       <button type="button" class="main-tab active" data-tab="gudang">Data Gudang</button>
       <button type="button" class="main-tab" data-tab="analisa">📊 Analisa stok&amp;Customer</button>
     </nav>
@@ -860,6 +895,37 @@ body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#
   </div>
 </header>
 <main class="wrap"><div id="page-umfix" style="display:none"><iframe id="umfixFrame" data-src="./UMfix.html?v=6" title="Uang Masuk Harian" style="width:100%;height:calc(100vh - 46px);border:0;display:block;background:#f5f6fa"></iframe></div>
+<div id="page-cek-uang-masuk" style="display:none">
+  <div class="card cek-um-card">
+    <div class="cek-um-head">
+      <div>
+        <div class="cek-um-title">🔎 Cek Uang Masuk</div>
+        <div class="cek-um-sub">Penjualan dari <b>📑 Faktur</b> dibandingkan dengan Uang Masuk berdasarkan <b>Sales + Customer + Alamat</b>. No Faktur tidak dijadikan kunci utama.</div>
+      </div>
+      <div class="cek-um-tools">
+        <select id="cekUmMonth" title="Filter bulan"><option value="">Semua bulan</option></select>
+        <select id="cekUmStatus" title="Filter status">
+          <option value="">Semua status</option>
+          <option value="BELUM ADA UANG MASUK">Belum Ada Uang Masuk</option>
+          <option value="UANG MASUK SEBAGIAN">Uang Masuk Sebagian</option>
+          <option value="LUNAS">Lunas</option>
+        </select>
+        <input id="cekUmSearch" type="search" placeholder="🔍 Cari faktur / customer / sales..." autocomplete="off">
+        <button type="button" id="cekUmRefresh" class="cek-um-refresh" title="Refresh data">↻</button>
+      </div>
+    </div>
+    <div class="cek-um-summary" id="cekUmSummary"></div>
+    <div class="tablebox cek-um-tablebox">
+      <table id="cekUmTable">
+        <thead><tr>
+          <th>No Faktur</th><th>Tanggal</th><th>Sales</th><th>Customer</th><th>Alamat</th><th>Kategori</th><th>Tagihan</th><th>Uang Masuk (Cash)</th><th>Uang Masuk (Tempo)</th><th>Status</th>
+        </tr></thead>
+        <tbody id="cekUmBody"><tr><td colspan="10" style="text-align:center;padding:28px;color:#64748b">Memuat data...</td></tr></tbody>
+        <tfoot id="cekUmFoot"></tfoot>
+      </table>
+    </div>
+  </div>
+</div>
 <div id="page-penjualan" style="display:none">
   <div id="summary" style="display:none">
     <div class="kpis">
@@ -7096,6 +7162,207 @@ self.onmessage = function(e){
   document.getElementById('installBtn')?.addEventListener('click', async () => { if (!_deferredInstallPrompt) return; _deferredInstallPrompt.prompt(); await _deferredInstallPrompt.userChoice; _deferredInstallPrompt = null; document.getElementById('installBtn').style.display = 'none'; });
   window.addEventListener('appinstalled', () => { const btn = document.getElementById('installBtn'); if (btn) btn.style.display = 'none'; });
 </script>
+<script>
+/* ===== TAB CEK UANG MASUK =====
+   Sumber Penjualan: data Faktur yang tersimpan di aplikasi.
+   Sumber Uang Masuk: state uangMasuk yang dibagikan oleh UMfix.
+   Kunci pencocokan utama: Sales + Customer + Alamat. No Faktur hanya informasi.
+*/
+(function(){
+  'use strict';
+  let cekUmRows = [];
+  let cekUmReady = false;
+
+  function ceuEsc(v){
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]); });
+  }
+  function ceuNum(v){
+    if (typeof v === 'number' && isFinite(v)) return v;
+    if (v == null || v === '') return 0;
+    let s=String(v).trim().replace(/[^0-9,.-]/g,'');
+    if (s.indexOf(',')>=0 && s.indexOf('.')>=0) s=s.replace(/\./g,'').replace(',','.');
+    else if (s.indexOf(',')>=0) s=s.replace(/,/g,'.');
+    const n=Number(s);
+    return isFinite(n) ? n : 0;
+  }
+  function ceuRp(v){ return 'Rp ' + Math.round(ceuNum(v)).toLocaleString('id-ID'); }
+  function ceuNorm(v){ return String(v == null ? '' : v).toUpperCase().replace(/[^A-Z0-9]+/g,'').trim(); }
+  function ceuDate(v){
+    if (v instanceof Date && !isNaN(v.getTime())) return v;
+    if (typeof v === 'number' && v > 20000 && v < 70000) return new Date(Math.round((v-25569)*86400000));
+    const s=String(v == null ? '' : v).trim();
+    if (!s) return null;
+    let m=s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+    if(m){ const d=new Date(Number(m[3]),Number(m[2])-1,Number(m[1])); return isNaN(d.getTime())?null:d; }
+    const d=new Date(s); return isNaN(d.getTime())?null:d;
+  }
+  function ceuDateKey(v){ const d=ceuDate(v); return d ? d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0') : ''; }
+  function ceuDateText(v){ const d=ceuDate(v); return d ? String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear() : String(v||''); }
+  function ceuMonthLabel(k){ if(!k) return ''; const [y,m]=k.split('-').map(Number); if(!y||!m) return k; return new Date(y,m-1,1).toLocaleDateString('id-ID',{month:'long',year:'numeric'}); }
+  function ceuCol(o,names){
+    for(const n of names){ if(o && o[n] !== undefined && o[n] !== null && String(o[n]).trim() !== '') return o[n]; }
+    return '';
+  }
+  function ceuPaymentType(r){
+    const s=String(ceuCol(r,['Tipe','Section','Jenis','Jenis UM','Pembayaran','paymentType','type'])||'').toUpperCase();
+    if(/TEMPO|PIUTANG|KREDIT|CREDIT/.test(s)) return 'tempo';
+    if(/CASH|DROPPING|TUNAI/.test(s)) return 'cash';
+    return '';
+  }
+  function ceuGetUMRows(payload){
+    if(!payload) return [];
+    if(Array.isArray(payload)) return payload;
+    // Prioritaskan sumber transaksi utama agar ringkasan + detail tidak terhitung dua kali.
+    const primary=[payload.rows,payload.allRows,payload.ringkasan,payload.cashInflow];
+    for(const a of primary) if(Array.isArray(a) && a.length) return a;
+    if(payload.data && typeof payload.data==='object'){
+      const a=payload.data.rows||payload.data.allRows||payload.data.ringkasan||payload.data.cashInflow;
+      if(Array.isArray(a) && a.length) return a;
+    }
+    const out=[];
+    if(Array.isArray(payload.cash)) payload.cash.forEach(x=>out.push(x));
+    if(Array.isArray(payload.piutang)) payload.piutang.forEach(x=>out.push(x));
+    return out;
+  }
+  function ceuInvoiceRows(){
+    let src=[];
+    try{
+      if(typeof useIDB!=='undefined' && useIDB && typeof db!=='undefined' && db && db.tx) return db.tx.toArray();
+    }catch(e){}
+    const base=(typeof rows!=='undefined' && Array.isArray(rows) ? rows : []);
+    return Promise.resolve(base);
+  }
+  function ceuMaterialise(x){
+    try{ return (typeof materialiseOne==='function' && x && x.Produk===undefined) ? materialiseOne(x) : x; }catch(e){ return x; }
+  }
+  function ceuCategory(items){
+    const vals=items.map(x=>String(ceuCol(x,['Produk','produk','PRODUK'])||''));
+    const fitri=vals.some(p=>{ try{ return typeof isFitriProduct==='function' ? isFitriProduct(p) : /FITRI/i.test(p); }catch(e){ return /FITRI/i.test(p); }});
+    return fitri ? 'Minyak' : 'Rupa Rupa';
+  }
+  function ceuInvoiceGroups(src){
+    const map=new Map();
+    (src||[]).map(ceuMaterialise).forEach(x=>{
+      if(!x) return;
+      const nf=String(ceuCol(x,['No. Faktur','No.Faktur','No Faktur','faktur'])||'').trim();
+      if(!nf || /^NO[. ]?FAKTUR$/i.test(nf)) return;
+      const g=map.get(nf)||{faktur:nf,items:[],tanggal:x.Tanggal,sales:ceuCol(x,['Sales','sales']),customer:ceuCol(x,['Customer','Pelanggan','customer']),alamat:ceuCol(x,['Alamat','alamat']),tagihan:0,pembayaran:ceuCol(x,['Pembayaran','pembayaran'])};
+      g.items.push(x);
+      g.tagihan+=ceuNum(ceuCol(x,['Total','TOTAL','Nominal','Nominal Faktur']));
+      if(!g.tanggal) g.tanggal=ceuCol(x,['Tanggal','tanggal','Tgl']);
+      if(!g.sales) g.sales=ceuCol(x,['Sales','sales']);
+      if(!g.customer) g.customer=ceuCol(x,['Customer','Pelanggan','customer']);
+      if(!g.alamat) g.alamat=ceuCol(x,['Alamat','alamat']);
+      if(!g.pembayaran) g.pembayaran=ceuCol(x,['Pembayaran','pembayaran']);
+      map.set(nf,g);
+    });
+    return Array.from(map.values()).filter(g=>g.tagihan>0).sort((a,b)=>{ const ad=ceuDateKey(a.tanggal),bd=ceuDateKey(b.tanggal); return bd.localeCompare(ad)||String(a.faktur).localeCompare(String(b.faktur)); });
+  }
+  function ceuBuildUMIndex(raw){
+    const idx=new Map();
+    (raw||[]).forEach(r=>{
+      if(!r) return;
+      const sales=ceuCol(r,['Sales','sales']);
+      const customer=ceuCol(r,['Customer','Pelanggan','Toko','toko','customer']);
+      const alamat=ceuCol(r,['Alamat','alamat']);
+      const amount=ceuNum(ceuCol(r,['Amount','Uang Masuk','Total Masuk','Nominal','amount','total','Total']));
+      const type=ceuPaymentType(r);
+      if(!(amount>0) || !type) return;
+      const key=ceuNorm(sales)+'|'+ceuNorm(customer)+'|'+ceuNorm(alamat);
+      if(!key.replace(/\|/g,'')) return;
+      let g=idx.get(key); if(!g){g={cash:0,tempo:0,rows:[]};idx.set(key,g);}
+      g[type]+=amount; g.rows.push(r);
+    });
+    return idx;
+  }
+  function ceuStatus(total,tagihan){
+    if(total<=0) return ['BELUM ADA UANG MASUK','belum'];
+    if(total+0.5>=tagihan) return ['LUNAS','lunas'];
+    return ['UANG MASUK SEBAGIAN','sebagian'];
+  }
+  async function ceuLoad(){
+    const body=document.getElementById('cekUmBody'); if(!body) return;
+    body.innerHTML='<tr><td colspan="10" style="text-align:center;padding:28px;color:#64748b">Memuat data...</td></tr>';
+    try{
+      const src=await ceuInvoiceRows();
+      const invoices=ceuInvoiceGroups(src);
+      let payload=null;
+      try{ payload=typeof umReadStored==='function' ? await umReadStored() : null; }catch(e){ payload=null; }
+      const um=ceuBuildUMIndex(ceuGetUMRows(payload));
+      // Alokasikan UM per kunci Sales+Customer+Alamat agar satu setoran tidak muncul penuh di beberapa faktur.
+      const remain=new Map();
+      um.forEach((v,k)=>remain.set(k,{cash:v.cash,tempo:v.tempo}));
+      cekUmRows=invoices.map(g=>{
+        const key=ceuNorm(g.sales)+'|'+ceuNorm(g.customer)+'|'+ceuNorm(g.alamat);
+        const m=remain.get(key)||{cash:0,tempo:0};
+        const pay=String(g.pembayaran||'').toUpperCase();
+        let need=g.tagihan, cash=0, tempo=0;
+        const take=(field)=>{ const n=Math.min(need,Math.max(0,m[field]||0)); m[field]-=n; need-=n; return n; };
+        if(/TEMPO|KREDIT|CREDIT|PIUTANG/.test(pay)){
+          tempo=take('tempo'); if(need>0) cash=take('cash');
+        }else if(/CASH|TUNAI|DROPPING/.test(pay)){
+          cash=take('cash'); if(need>0) tempo=take('tempo');
+        }else{
+          cash=take('cash'); if(need>0) tempo=take('tempo');
+        }
+        const total=cash+tempo;
+        const st=ceuStatus(total,g.tagihan);
+        return {...g,kategori:ceuCategory(g.items),cash,tempo,totalMasuk:total,status:st[0],statusClass:st[1],bulan:ceuDateKey(g.tanggal).slice(0,7)};
+      });
+      ceuFillMonth(); ceuRender(); cekUmReady=true;
+    }catch(e){
+      console.error('Cek Uang Masuk:',e);
+      body.innerHTML='<tr><td colspan="10" style="text-align:center;padding:28px;color:#b42318">Gagal membaca data: '+ceuEsc(e.message||e)+'</td></tr>';
+    }
+  }
+  function ceuFillMonth(){
+    const el=document.getElementById('cekUmMonth'); if(!el) return;
+    const cur=el.value; const set=new Set(cekUmRows.map(r=>r.bulan).filter(Boolean));
+    el.innerHTML='<option value="">Semua bulan</option>'+Array.from(set).sort().reverse().map(k=>'<option value="'+k+'">'+ceuEsc(ceuMonthLabel(k))+'</option>').join('');
+    if(set.has(cur)) el.value=cur;
+  }
+  function ceuRender(){
+    const body=document.getElementById('cekUmBody'),foot=document.getElementById('cekUmFoot'),sum=document.getElementById('cekUmSummary');
+    if(!body) return;
+    const month=(document.getElementById('cekUmMonth')||{}).value||'';
+    const status=(document.getElementById('cekUmStatus')||{}).value||'';
+    const q=String((document.getElementById('cekUmSearch')||{}).value||'').trim().toUpperCase();
+    const list=cekUmRows.filter(r=>{
+      if(month && r.bulan!==month) return false;
+      if(status && r.status!==status) return false;
+      if(q){ const hay=[r.faktur,r.sales,r.customer,r.alamat,r.kategori].join(' ').toUpperCase(); if(!hay.includes(q)) return false; }
+      return true;
+    });
+    let tag=0,cash=0,tempo=0; list.forEach(r=>{tag+=r.tagihan;cash+=r.cash;tempo+=r.tempo;});
+    const total= cash+tempo;
+    const lunas=list.filter(r=>r.status==='LUNAS').length, sebagian=list.filter(r=>r.status==='UANG MASUK SEBAGIAN').length, belum=list.filter(r=>r.status==='BELUM ADA UANG MASUK').length;
+    if(sum) sum.innerHTML=[['FAKTUR',list.length.toLocaleString('id-ID')],['TAGIHAN',ceuRp(tag)],['UANG MASUK',ceuRp(total)],['STATUS',lunas+' Lunas · '+sebagian+' Sebagian · '+belum+' Belum']].map(a=>'<div class="cek-um-kpi"><small>'+a[0]+'</small><b>'+a[1]+'</b></div>').join('');
+    body.innerHTML=list.length?list.map(r=>'<tr><td>'+ceuEsc(r.faktur)+'</td><td>'+ceuEsc(ceuDateText(r.tanggal))+'</td><td>'+ceuEsc(r.sales)+'</td><td>'+ceuEsc(r.customer)+'</td><td title="'+ceuEsc(r.alamat)+'">'+ceuEsc(r.alamat)+'</td><td>'+ceuEsc(r.kategori)+'</td><td class="num">'+ceuRp(r.tagihan)+'</td><td class="num">'+(r.cash?ceuRp(r.cash):'')+'</td><td class="num">'+(r.tempo?ceuRp(r.tempo):'')+'</td><td><span class="cek-um-status '+r.statusClass+'">'+ceuEsc(r.status)+'</span></td></tr>').join(''):'<tr><td colspan="10" style="text-align:center;padding:28px;color:#64748b">Tidak ada data sesuai filter.</td></tr>';
+    if(foot) foot.innerHTML=list.length?'<tr><td colspan="6">TOTAL</td><td class="num">'+ceuRp(tag)+'</td><td class="num">'+ceuRp(cash)+'</td><td class="num">'+ceuRp(tempo)+'</td><td></td></tr>':'';
+  }
+  function ceuShowTab(){
+    const nav=document.getElementById('mainTabs');
+    if(nav) nav.querySelectorAll('.main-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab==='cek-uang-masuk'));
+    ['page-penjualan','page-umfix','page-gudang','page-analisa','page-cek','page-salescust'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+    const p=document.getElementById('page-cek-uang-masuk'); if(p)p.style.display='block';
+    if(!cekUmReady) ceuLoad(); else ceuRender();
+  }
+  function ceuWire(){
+    const nav=document.getElementById('mainTabs'); if(!nav || nav._ceuWired) return; nav._ceuWired=true;
+    nav.addEventListener('click',function(e){
+      const btn=e.target.closest('.main-tab'); if(!btn) return;
+      const tab=btn.dataset.tab;
+      const page=document.getElementById('page-cek-uang-masuk'); if(page) page.style.display=(tab==='cek-uang-masuk')?'block':'none';
+      if(tab==='cek-uang-masuk') ceuShowTab();
+    });
+    ['cekUmMonth','cekUmStatus'].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('change',ceuRender);});
+    const q=document.getElementById('cekUmSearch'); if(q)q.addEventListener('input',ceuRender);
+    const rb=document.getElementById('cekUmRefresh'); if(rb)rb.addEventListener('click',async()=>{cekUmReady=false;await ceuLoad();});
+  }
+  document.addEventListener('DOMContentLoaded',function(){ ceuWire(); });
+})();
+</script>
+
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
