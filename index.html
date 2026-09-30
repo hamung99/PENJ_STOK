@@ -2819,8 +2819,7 @@ self.onmessage = function(e){
     const ws = wb.addWorksheet('Produk', {
       views: [{ state:'frozen', xSplit:2, ySplit:SUB_HEAD_ROW, showGridLines:false }],
       pageSetup: { paperSize:9, orientation:'landscape', fitToPage:true, fitToWidth:1, fitToHeight:0, printTitlesRow: HEAD_ROW + ':' + SUB_HEAD_ROW,
-                   margins:{ left:0.4, right:0.4, top:0.5, bottom:0.5, header:0.25, footer:0.25 } },
-      headerFooter: { oddFooter: 'Halaman &P dari &N' }
+                   margins:{ left:0.4, right:0.4, top:0.5, bottom:0.5, header:0.25, footer:0.25 } }
     });
 
     // Judul + subjudul
@@ -2918,6 +2917,97 @@ self.onmessage = function(e){
     setStatus('Laporan Produk tersimpan: ' + name);
     return true;
   }
+  /* ===== Simpan Excel bergaya (laporan) — tab Profit Penjualan per Produk (s3).
+     MARGIN % ditulis sebagai sel numerik berformat persen (PROFIT ÷ TOTAL PENJUALAN). ===== */
+  async function saveStyledProfitProduk(){
+    try { setStatus('Menyiapkan laporan Excel…'); await loadExcelJS(); }
+    catch(e){ alert(e.message + '\n\nExcel akan disimpan dengan format standar (tanpa warna).'); return false; }
+    const r = R;
+    const list = r.s3 || [];
+    const head = ['NO','PRODUK','QTY','TOTAL PENJUALAN','TOTAL HPP','HARGA JUAL','HARGA BELI','PROFIT','MARGIN %'];
+    const marginOf = (p, s) => N(s) ? (p / s) : null;          // pecahan — ditampilkan sbg % lewat format sel
+    const rows = list.map((x, i) => [i+1, x[0] ?? '', N(x[1]), N(x[2]), N(x[3]), x[4] ?? '', x[5] ?? '', N(x[6]), marginOf(N(x[6]), N(x[2]))]);
+    const totMargin = N(r.sales) ? (r.profit / r.sales) : null;
+    const foot = ['TOTAL', '', N(r.qty), N(r.sales), N(r.hpp), '', '', N(r.profit), totMargin];
+    const FIRST = 1, HEAD_ROW = 5;
+    const thin = { style:'thin', color:{ argb:'FF7F7F7F' } };
+    const border = { top:thin, left:thin, bottom:thin, right:thin };
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'Rekap Penjualan'; wb.created = new Date();
+    const ws = wb.addWorksheet('Profit Produk', {
+      views: [{ state:'frozen', xSplit:2, ySplit:HEAD_ROW, showGridLines:false }],
+      pageSetup: { paperSize:9, orientation:'landscape', fitToPage:true, fitToWidth:1, fitToHeight:0, printTitlesRow: HEAD_ROW + ':' + HEAD_ROW,
+                   margins:{ left:0.4, right:0.4, top:0.5, bottom:0.5, header:0.25, footer:0.25 } }
+    });
+    ws.getCell(3, FIRST).value = 'Profit Penjualan per Produk';
+    ws.getCell(3, FIRST).font = { name:'Calibri', size:13, bold:true };
+    ws.getCell(4, FIRST).value = reportSubtitle();
+    ws.getCell(4, FIRST).font = { name:'Calibri', size:10 };
+    const hr = ws.getRow(HEAD_ROW);
+    head.forEach((h, i) => {
+      const c = hr.getCell(FIRST + i);
+      c.value = h;
+      c.font = { name:'Calibri', size:10, bold:true };
+      c.alignment = { horizontal:'center', vertical:'middle', wrapText:true };
+      c.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FFBDD7EE' } };
+      c.border = border;
+    });
+    hr.height = 24;
+    const moneyCols = [2, 3, 4, 7];                            // QTY, TOTAL PENJUALAN, TOTAL HPP, PROFIT
+    rows.forEach((rw, ri) => {
+      const row = ws.getRow(HEAD_ROW + 1 + ri);
+      rw.forEach((v, i) => {
+        const c = row.getCell(FIRST + i);
+        if (i === 8) {                                         // MARGIN % — sel numerik, format persen
+          if (v === null || v === undefined) c.value = '';
+          else { c.value = v; c.numFmt = '0.00%'; }
+          c.alignment = { horizontal:'right', vertical:'middle' };
+        } else if (moneyCols.includes(i)) {
+          c.value = N(v); c.numFmt = '#,##0;[Red]-#,##0';
+          c.alignment = { horizontal:'right', vertical:'middle' };
+        } else if (i === 0) {
+          c.value = v; c.alignment = { horizontal:'center', vertical:'middle' };
+        } else {
+          c.value = (v === undefined || v === null) ? '' : v;
+          c.alignment = { horizontal:'left', vertical:'middle' };
+        }
+        c.font = { name:'Calibri', size:10 };
+        c.border = border;
+      });
+    });
+    const tr = ws.getRow(HEAD_ROW + 1 + rows.length);
+    foot.forEach((v, i) => {
+      const c = tr.getCell(FIRST + i);
+      if (i === 8) {
+        if (v === null || v === undefined) c.value = '';
+        else { c.value = v; c.numFmt = '0.00%'; }
+        c.alignment = { horizontal:'right', vertical:'middle' };
+      } else if (moneyCols.includes(i)) {
+        c.value = N(v); c.numFmt = '#,##0;[Red]-#,##0';
+        c.alignment = { horizontal:'right', vertical:'middle' };
+      } else {
+        c.value = (v === undefined || v === null) ? '' : v;
+        c.alignment = { horizontal: i === 1 ? 'left' : 'center', vertical:'middle' };
+      }
+      c.font = { name:'Calibri', size:10, bold:true };
+      c.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FFDDEBF7' } };
+      c.border = border;
+    });
+    head.forEach((h, i) => {
+      let w;
+      if (i === 0) w = 6;
+      else if (i === 1) w = Math.min(42, Math.max(26, ...rows.map(rw => String(rw[1] ?? '').length + 3)));
+      else if (i === 5 || i === 6) w = Math.min(28, Math.max(16, ...rows.map(rw => String(rw[i] ?? '').length + 3)));
+      else if (i === 8) w = 12;
+      else w = Math.max(16, String(h).length + 3);
+      ws.getColumn(FIRST + i).width = w;
+    });
+    const buf = await wb.xlsx.writeBuffer();
+    const name = 'Laporan_Profit_Produk' + (filters.month ? '_' + filters.month : '') + '.xlsx';
+    downloadBlob(new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), name);
+    setStatus('Laporan Profit Produk tersimpan: ' + name);
+    return true;
+  }
   function reportBar(tab, label){ return ''; }
   function reportMetaRows(title){ return []; }
   function styleReportSheet(ws, data, freezeRow){
@@ -2943,6 +3033,7 @@ self.onmessage = function(e){
   async function saveExcelTab(tab){
     if (!R || !R.s1) return alert('Belum ada data untuk disimpan.');
     if (tab === 's1') { try { if (await saveStyledProduk()) return; } catch(e){ console.error('saveStyledProduk', e); alert('Laporan bergaya gagal dibuat: ' + (e.message||e) + '\n\nExcel akan disimpan dengan format standar.'); } }
+    if (tab === 's3') { try { if (await saveStyledProfitProduk()) return; } catch(e){ console.error('saveStyledProfitProduk', e); alert('Laporan bergaya gagal dibuat: ' + (e.message||e) + '\n\nExcel akan disimpan dengan format standar.'); } }
     try { await loadXLSX(); } catch(e){ alert(e.message); return; }
     const wb=XLSX.utils.book_new();
     const r=R, SO2=r.SO2||SO, n=SO2.length;
@@ -2957,7 +3048,7 @@ self.onmessage = function(e){
     } else if(tab==='s2'){
       addReportSheet(wb,'Profit Pembayaran','Profit Per Pembayaran',['PRODUK','NOMINAL PENJUALAN CASH','NOMINAL PENJUALAN TEMPO','PROFIT TEMPO','PROFIT CASH','TOTAL NOMINAL PENJUALAN','TOTAL PROFIT'],r.s2||[],['TOTAL',r.cs,r.ts,r.tp,r.cp,r.sales,r.profit]);
     } else if(tab==='s3'){
-      addReportSheet(wb,'Profit Produk','Profit Penjualan per Produk',['NO','PRODUK','QTY','TOTAL PENJUALAN','TOTAL HPP','HARGA JUAL','HARGA BELI','PROFIT'],(r.s3||[]).map((x,i)=>[i+1,...x]),['TOTAL','',r.qty,r.sales,r.hpp,'','',r.profit]);
+      addReportSheet(wb,'Profit Produk','Profit Penjualan per Produk',['NO','PRODUK','QTY','TOTAL PENJUALAN','TOTAL HPP','HARGA JUAL','HARGA BELI','PROFIT','MARGIN %'],(r.s3||[]).map((x,i)=>[i+1,...x,N(x[2])?Math.round(x[6]/x[2]*10000)/100:'']),['TOTAL','',r.qty,r.sales,r.hpp,'','',r.profit,N(r.sales)?Math.round(r.profit/r.sales*10000)/100:'']);
     } else if(tab==='s4'){
       const head=['SALES','JUMLAH FAKTUR','TOTAL QTY','TOTAL PENJUALAN','TOTAL HPP','TOTAL PROFIT'];
       const rowsFitri=(r.s4fitri||[]).map(x=>[x[0],x[1],x[2],x[3],x[4],x[5]]);
@@ -3486,11 +3577,13 @@ self.onmessage = function(e){
       const d = pageRows.map(x => [x[0],rp(x[1]),rp(x[2]),rp(x[3]),rp(x[4]),rp(x[5]),rp(x[6])]);
       return reportBar('s2','Profit Per Pembayaran') + rekapPagerHtml('s2', (R.s2||[]).length) + tbl(h, d, ['TOTAL', rp(R.cs), rp(R.ts), rp(R.tp), rp(R.cp), rp(R.sales), rp(R.profit)]);
     } else if (t === 's3'){
-      const h = ['NO','PRODUK','QTY','TOTAL PENJUALAN','TOTAL HPP','HARGA JUAL','HARGA BELI','PROFIT'];
+      const h = ['NO','PRODUK','QTY','TOTAL PENJUALAN','TOTAL HPP','HARGA JUAL','HARGA BELI','PROFIT','MARGIN %'];
       const pageRows = sliceRekap('s3', R.s3 || []);
       const base = (rekapPage.s3 || 0) * REKAP_PAGE_SIZE;
-      const d = pageRows.map((x,i) => [base+i+1, x[0], x[1], rp(x[2]), rp(x[3]), x[4], x[5], rp(x[6])]);
-      return reportBar('s3','Profit Penjualan per Produk') + rekapPagerHtml('s3', (R.s3||[]).length) + tbl(h, d, ['TOTAL', '', R.qty, rp(R.sales), rp(R.hpp), '', '', rp(R.profit)]);
+      const m3 = x => N(x[2]) ? (Math.round(x[6] / x[2] * 10000) / 100).toLocaleString('id-ID') + ' %' : '-';
+      const d = pageRows.map((x,i) => [base+i+1, x[0], x[1], rp(x[2]), rp(x[3]), x[4], x[5], rp(x[6]), m3(x)]);
+      const mTot = N(R.sales) ? (Math.round(R.profit / R.sales * 10000) / 100).toLocaleString('id-ID') + ' %' : '-';
+      return reportBar('s3','Profit Penjualan per Produk') + rekapPagerHtml('s3', (R.s3||[]).length) + tbl(h, d, ['TOTAL', '', R.qty, rp(R.sales), rp(R.hpp), '', '', rp(R.profit), mTot]);
     } else if (t === 's4'){
       const h = ['SALES','JUMLAH FAKTUR','TOTAL QTY','TOTAL PENJUALAN','TOTAL HPP','TOTAL PROFIT'];
       const pack = arr => arr.map(x => [x[0], x[1], x[2], rp(x[3]), rp(x[4]), rp(x[5])]);
@@ -4034,7 +4127,7 @@ self.onmessage = function(e){
     const s1Data = r.s1.map(x => s1BuildRow(x, n));
     add('Rekap per Produk', s1Head, s1Data, s1BuildFoot(r, SO2));
     add('Profit Per Pembayaran', ['PRODUK','NOMINAL PENJUALAN CASH','NOMINAL PENJUALAN TEMPO','PROFIT TEMPO','PROFIT CASH','TOTAL NOMINAL PENJUALAN','TOTAL PROFIT'], r.s2, ['TOTAL',r.cs,r.ts,r.tp,r.cp,r.sales,r.profit]);
-    add('Profit Penjualan per Produk', ['NO','PRODUK','QTY','TOTAL PENJUALAN','TOTAL HPP','HARGA JUAL','HARGA BELI','PROFIT'], r.s3.map((x,i) => [i+1, ...x]), ['TOTAL','',r.qty,r.sales,r.hpp,'','',r.profit]);
+    add('Profit Penjualan per Produk', ['NO','PRODUK','QTY','TOTAL PENJUALAN','TOTAL HPP','HARGA JUAL','HARGA BELI','PROFIT','MARGIN %'], r.s3.map((x,i) => [i+1, ...x, N(x[2]) ? Math.round(x[6]/x[2]*10000)/100 : '']), ['TOTAL','',r.qty,r.sales,r.hpp,'','',r.profit, N(r.sales) ? Math.round(r.profit/r.sales*10000)/100 : '']);
     const s4Head = ['SALES','JUMLAH FAKTUR','TOTAL QTY','TOTAL PENJUALAN','TOTAL HPP','TOTAL PROFIT'];
     const s4Tot = arr => ['TOTAL', arr.reduce((a,x)=>a+x[1],0), arr.reduce((a,x)=>a+x[2],0), arr.reduce((a,x)=>a+x[3],0), arr.reduce((a,x)=>a+x[4],0), arr.reduce((a,x)=>a+x[5],0)];
     add('MINYAK FITRI - Rekap per Sales', s4Head, r.s4fitri||[], s4Tot(r.s4fitri||[]));
