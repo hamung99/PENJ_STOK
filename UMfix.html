@@ -259,7 +259,6 @@ const TABS = [
   { id: "piutang",   label: "Piutang Tempo",               cols: ["tanggal","bulan","sales","no_faktur","nama_toko","alamat","tagihan_nominal","minyak_cash","minyak_transfer","rupa_cash","rupa_transfer","total_pembayaran","ket"] },
   { id: "dropping",  label: "Cash Dropping",               cols: ["tanggal","bulan","sales","no_faktur","nama_toko","alamat","tagihan_nominal","minyak_cash","minyak_transfer","rupa_cash","rupa_transfer","total_pembayaran","ket"] },
   { id: "minyak",    label: "Rekap Minyak & Rupa2",        cols: ["tanggal","bulan","minyak_cash","minyak_transfer","rupa_cash","rupa_transfer","total_minyak","total_rupa","total_cash","total_transfer"] },
-  { id: "toko",      label: "Rekap per Toko",              cols: ["nama_toko","alamat","jml_transaksi","total_tagihan","minyak_cash","minyak_transfer","rupa_cash","rupa_transfer","total_pembayaran"] },
   { id: "tokoleng",  label: "Rekap Toko+Sales+Tanggal",    cols: ["tanggal","bulan","sales","nama_toko","alamat","section","jml_transaksi","total_tagihan","minyak_cash","minyak_transfer","rupa_cash","rupa_transfer","total_pembayaran"] },
   { id: "saleslst",  label: "Daftar Toko per Sales",       cols: ["tanggal","bulan","sales","daftar_toko","jml_toko","total_pembayaran"] },
   { id: "bulanan",   label: "Data Bulanan",                cols: ["bulan","jml_transaksi","piutang_tempo","cash_dropping","total_tagihan","total_cash","total_transfer","total_pembayaran"] },
@@ -273,7 +272,7 @@ const BULANAN_LABEL = { bulan:"BULAN", jml_transaksi:"JML FAKTUR", piutang_tempo
 /* Peta tabId -> key pada state.views */
 const VIEW_KEY = {
   detail: "detail", harian: "harian", piutang: "piutang", dropping: "dropping",
-  minyak: "minyak", toko: "toko", tokoleng: "tokoSalesTgl",
+  minyak: "minyak", tokoleng: "tokoSalesTgl",
   saleslst: "salesList", bulanan: "bulanan"
 };
 
@@ -330,6 +329,19 @@ function mergeRecords(lama, baru) {
   return sisa.concat(baru);
 }
 
+/* Deretan angka panjang (>= 9 digit) = nomor faktur / kode, bukan nama toko */
+function isKode(v) { return /^\d{9,}$/.test(String(v ?? "").trim()); }
+
+/* Perbaiki data lama yang sudah tersimpan dengan kolom tergeser (nama_toko berisi nomor faktur) */
+function fixRecord(r) {
+  if (isKode(r.nama_toko) && r.alamat && !isKode(r.alamat)) {
+    if (!r.no_faktur) r.no_faktur = r.nama_toko;
+    r.nama_toko = r.alamat;
+    r.alamat = "";
+  }
+  return r;
+}
+
 function parseWorkbook(wb) {
   const records = [];
   for (const sheetName of wb.SheetNames) {
@@ -340,6 +352,7 @@ function parseWorkbook(wb) {
     const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null, blankrows: false });
     let section = null;
     let currentSales = null;
+    let colMap = null;   /* posisi kolom faktur/toko/alamat, dibaca dari baris header */
 
     for (const row of rows) {
       const vals = row || [];
@@ -351,12 +364,40 @@ function parseWorkbook(wb) {
       if (!section) continue;
 
       const b = String(vals[1] ?? "").trim().toUpperCase();
-      if (b === "NO" || b === "SALES" || b === "DROPPING/SALES") continue;
+      if (b === "NO" || b === "SALES" || b === "DROPPING/SALES") {
+        /* Baris header: cari posisi kolom faktur / nama toko / alamat */
+        const cm = {};
+        vals.forEach((h, idx) => {
+          const t = String(h ?? "").toUpperCase();
+          if (!t) return;
+          if (/FAKTUR/.test(t) && cm.faktur === undefined) cm.faktur = idx;
+          else if (/ALAMAT/.test(t) && cm.alamat === undefined) cm.alamat = idx;
+          else if (/TOKO|CUSTOMER|PELANGGAN|OUTLET/.test(t) && !/KODE|CODE/.test(t) && cm.toko === undefined) cm.toko = idx;
+        });
+        if (cm.toko !== undefined) colMap = cm;
+        continue;
+      }
       if (String(vals[0] ?? "").trim().toUpperCase() === "TOTAL") continue;
       if (!vals[2] && !vals[3] && !vals[8]) continue;
 
       if (vals[1] && !["", "NAN"].includes(b) && !["SALES","DROPPING/SALES"].includes(b)) {
         currentSales = String(vals[1]).trim();
+      }
+
+      /* Faktur / toko / alamat */
+      let noFaktur, namaToko, alamat;
+      if (colMap && colMap.toko !== undefined) {
+        noFaktur = colMap.faktur !== undefined ? vals[colMap.faktur] : vals[2];
+        namaToko = vals[colMap.toko];
+        alamat = colMap.alamat !== undefined ? vals[colMap.alamat] : vals[colMap.toko + 1];
+      } else {
+        noFaktur = vals[2]; namaToko = vals[3]; alamat = vals[4];
+        /* Fallback: kalau "nama toko" ternyata deretan angka panjang (nomor faktur/kode), geser kolom */
+        if (isKode(namaToko)) {
+          const teks = [3,4,5,6,7].map(i => vals[i]).filter(v => v !== null && v !== undefined && String(v).trim() !== "" && !isKode(v));
+          if (!vals[2]) noFaktur = namaToko;
+          namaToko = teks[0]; alamat = teks[1];
+        }
       }
 
       const tagihan = num(vals[8]);
@@ -373,9 +414,9 @@ function parseWorkbook(wb) {
         tglSort: info.tglSort,
         section,
         sales: currentSales,
-        no_faktur: vals[2] ?? "",
-        nama_toko: String(vals[3] ?? "").trim(),
-        alamat: String(vals[4] ?? "").trim(),
+        no_faktur: noFaktur ?? "",
+        nama_toko: String(namaToko ?? "").trim(),
+        alamat: String(alamat ?? "").trim(),
         tagihan_nominal: tagihan,
         minyak_cash: mc,
         minyak_transfer: mt,
@@ -807,7 +848,6 @@ function exportExcel() {
     ["Piutang Tempo", "piutang"],
     ["Cash Dropping", "dropping"],
     ["Rekap Minyak & Rupa2", "minyak"],
-    ["Rekap per Toko", "toko"],
     ["Rekap Toko+Sales+Tanggal", "tokoSalesTgl"],
     ["Daftar Toko per Sales", "salesList"],
     ["Data Bulanan", "bulanan"],
@@ -871,7 +911,7 @@ function describeStored(p, cloud) {
 function applyStored(p) {
   if (!p || !Array.isArray(p.records) || !p.records.length) return;
   if (state.savedAt && p.savedAt === state.savedAt) return;   /* sudah sama, jangan render ulang */
-  state.records = p.records;
+  state.records = p.records.map(fixRecord);
   state.savedAt = p.savedAt;
   state.fileName = p.fileName;
   refreshFilterOptions(state.records, true);
