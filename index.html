@@ -5491,6 +5491,27 @@ self.onmessage = function(e){
   function umRowSales(r)    { return normSales(r.sales ?? r.Sales ?? ''); }
   function umRowCustomer(r) { return U(r.toko ?? r.Toko ?? r.customer ?? r.Customer ?? ''); }
   function umRowAlamat(r)   { return U(r.alamat ?? r.Alamat ?? ''); }
+  // Kategori UM mengikuti struktur bisnis: MINYAK atau RUPA-RUPA.
+  // Satu baris UM dapat dikenali dari kolom nominalnya.
+  function umRowCategory(r) {
+    const minyak = N(r.minyakCash ?? r['Minyak Cash']) + N(r.minyakTrf ?? r['Minyak Trf']);
+    const rupa   = N(r.rupaCash  ?? r['Rupa Cash'])  + N(r.rupaTrf  ?? r['Rupa Trf']);
+    if (minyak > 0 && rupa <= 0) return 'MINYAK';
+    if (rupa > 0 && minyak <= 0) return 'RUPA-RUPA';
+    if (minyak > 0 && rupa > 0) return 'CAMPURAN';
+    return '';
+  }
+  // Penjualan FITRI -> Uang Masuk MINYAK; selain FITRI -> RUPA-RUPA.
+  function salesProductCategory(r) {
+    const produk = U(r.produk ?? r.Produk ?? r.product ?? r.Product ?? '');
+    return /\bFITRI\b/.test(produk) ? 'MINYAK' : (produk ? 'RUPA-RUPA' : '');
+  }
+  function mappedSalesCategory(products) {
+    const cats = new Set((products || []).map(x => salesProductCategory({ produk: x })).filter(Boolean));
+    if (cats.size === 1) return [...cats][0];
+    if (cats.size > 1) return 'CAMPURAN';
+    return '';
+  }
   function umRowTotal(r) {
     const t = r.total ?? r.Total;
     if (t != null && t !== '') return N(t);
@@ -5636,7 +5657,7 @@ self.onmessage = function(e){
     const buildExactIndex = (arr) => {
       const idx = new Map();
       arr.forEach(r => {
-        const k = [umRowSales(r), umRowMonth(r), umRowCustomer(r), umRowAlamat(r)].join('||');
+        const k = [umRowSales(r), umRowMonth(r), umRowCustomer(r), umRowAlamat(r), umRowCategory(r)].join('||');
         if (!idx.has(k)) idx.set(k, []);
         idx.get(k).push(r);
       });
@@ -5675,15 +5696,17 @@ self.onmessage = function(e){
       const sales = normSales(r.sales ?? r.Sales);
       const cust  = String(r.customer ?? r.Customer ?? '').trim();
       const alamat= String(r.alamat ?? r.Alamat ?? '').trim();
+      const produk= String(r.produk ?? r.Produk ?? r.product ?? r.Product ?? '').trim();
       const ts    = r._ts || 0;
       const mk    = r.bulan || (r.tanggal ? monthKey(r.tanggal) : '');
 
       let g = groups.get(nf);
       if (!g) {
         g = { faktur: nf, ts, tgl: r.tanggal ?? r.Tanggal, sales, cust, alamat, pay,
-              month: mk, tagihan: 0, isBatal, lineBatalCount: 0 };
+              month: mk, tagihan: 0, isBatal, lineBatalCount: 0, products: [] };
         groups.set(nf, g);
       }
+      if (produk && !g.products.includes(produk)) g.products.push(produk);
       if (lineBatal) g.lineBatalCount++;
       if (!isBatal && !lineBatal) g.tagihan += total;
       if (ts && (!g.ts || ts < g.ts)) { g.ts = ts; g.tgl = r.tanggal ?? r.Tanggal; }
@@ -5710,44 +5733,53 @@ self.onmessage = function(e){
       let fuzzyInfo = null;
 
       const fakIdx = isCash ? cashFak : (isTempo ? tempoFak : null);
-      if (fakIdx && fakIdx.has(String(g.faktur).trim())) {
-        matches = fakIdx.get(String(g.faktur).trim()).slice();
-        matchType = 'exact';
-      }
+      const targetCategory = mappedSalesCategory(g.products);
 
-      if (!matches.length && exactIdx) {
-        const exactKey = [g.sales, g.month, U(g.cust), U(g.alamat)].join('||');
-        if (exactIdx.has(exactKey)) {
-          matches = exactIdx.get(exactKey).slice();
+      // LEVEL 1: identitas utama WAJIB konsisten. No. Faktur tidak boleh
+      // berdiri sendiri; Customer, Alamat, Sales dan kategori juga harus cocok.
+      const identityOk = (r) => {
+        if (umRowSales(r) !== g.sales) return false;
+        if (umRowCustomer(r) !== U(g.cust)) return false;
+        if (umRowAlamat(r) !== U(g.alamat)) return false;
+        if (targetCategory && umRowCategory(r) !== targetCategory) return false;
+        const rMonth = umRowMonth(r);
+        // Untuk Cek Uang Masuk, pembayaran tidak boleh ditarik dari bulan lain.
+        if (g.month && rMonth && rMonth !== g.month) return false;
+        return true;
+      };
+
+      if (fakIdx && fakIdx.has(String(g.faktur).trim())) {
+        const byFaktur = fakIdx.get(String(g.faktur).trim()).filter(identityOk);
+        if (byFaktur.length) {
+          matches = byFaktur.slice();
           matchType = 'exact';
         }
       }
 
       if (!matches.length && exactIdx) {
-        const salesKey   = g.sales;
-        const custKey    = U(g.cust);
-        const alamatKey  = U(g.alamat);
-        exactIdx.forEach((arr, k) => {
-          const p = k.split('||');
-          if (p[0] === salesKey && p[2] === custKey && p[3] === alamatKey) matches.push(...arr);
-        });
-        if (matches.length) matchType = 'exact-no-month';
+        const exactKey = [g.sales, g.month, U(g.cust), U(g.alamat), targetCategory].join('||');
+        if (exactIdx.has(exactKey)) {
+          matches = exactIdx.get(exactKey).filter(identityOk).slice();
+          if (matches.length) matchType = 'exact';
+        }
       }
 
+      // Fuzzy hanya sebagai fallback. Kategori tetap WAJIB sama dan bulan
+      // tetap dibatasi; typo tidak boleh membuka pencocokan lintas kategori/bulan.
       if (!matches.length && _cekUmFuzzyEnabled && bucketMap) {
         const salesCands = findSalesBuckets(g.sales, bucketMap, thr);
         const seenKeys = new Set();
         for (const sc of salesCands) {
           const bucketRows = bucketMap.get(sc.key) || [];
           for (const r of bucketRows) {
-            const custScore  = fuzzySimilarityCached(g.cust,   umRowCustomer(r));
+            if (targetCategory && umRowCategory(r) !== targetCategory) continue;
+            const rMonth = umRowMonth(r);
+            if (g.month && rMonth && rMonth !== g.month) continue;
+
+            const custScore  = fuzzySimilarityCached(g.cust, umRowCustomer(r));
             if (custScore < thr) continue;
             const alamScore  = fuzzySimilarityCached(g.alamat, umRowAlamat(r));
             if (alamScore < thr) continue;
-
-            const rMonth = umRowMonth(r);
-            const monthOk = !g.month || !rMonth || rMonth >= g.month;
-            if (!monthOk) continue;
 
             const minScore = Math.min(sc.score, custScore, alamScore);
             const avgScore = (sc.score + custScore + alamScore) / 3;
@@ -5759,7 +5791,7 @@ self.onmessage = function(e){
 
             matches.push(r);
             if (!fuzzyInfo || minScore > fuzzyInfo.score) {
-              fuzzyInfo = { score: minScore, avg: avgScore, sales: umRowSales(r), cust: umRowCustomer(r), alamat: umRowAlamat(r), month: rMonth };
+              fuzzyInfo = { score: minScore, avg: avgScore, sales: umRowSales(r), cust: umRowCustomer(r), alamat: umRowAlamat(r), month: rMonth, category: umRowCategory(r) };
             }
           }
         }
@@ -5789,7 +5821,7 @@ self.onmessage = function(e){
         ket += ' · cocok lintas bulan';
       }
 
-      list.push(Object.assign({}, g, { umTotal, selisih, status, ket, umMatches: matches.length, matchType, fuzzyInfo }));
+      list.push(Object.assign({}, g, { category: targetCategory, umTotal, selisih, status, ket, umMatches: matches.length, matchType, fuzzyInfo }));
     });
 
     list.sort((a, b) => (b.ts || 0) - (a.ts || 0));
