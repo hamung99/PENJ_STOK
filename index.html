@@ -783,10 +783,9 @@ body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#
     <div style="display:flex;align-items:center;gap:10px">
     <nav class="main-tabs" role="tablist" id="mainTabs">
       <button type="button" class="main-tab" data-tab="penjualan">Penjualan</button>
-      <button type="button" class="main-tab" data-tab="salesproduk">📑 Sales/Produk</button>
-      <button type="button" class="main-tab active" data-tab="gudang">Data Gudang</button>
-      <button type="button" class="main-tab" data-tab="analisa">📊 Analisa</button>
       <button type="button" class="main-tab" data-tab="umfix">💰 Uang Masuk</button>
+      <button type="button" class="main-tab active" data-tab="gudang">Data Gudang</button>
+      <button type="button" class="main-tab" data-tab="analisa">📊 Analisa stok&amp;Customer</button>
     </nav>
     <button type="button" class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Mode gelap / terang">🌙</button>
     <div class="dd" id="menuDd">
@@ -4383,15 +4382,15 @@ self.onmessage = function(e){
       ? (' (' + entries.map(e => {
           if (e.key) {
             return '<span class="ket-date-link" role="button" tabindex="0" data-date="' + escHtml(e.key) + '"' + prodAttr
-              + ' title="Buka Sales/Produk tanggal ini">' + escHtml(e.label) + '</span>';
+              + ' title="Buka Sales per Produk tanggal ini">' + escHtml(e.label) + '</span>';
           }
           return escHtml(e.label);
         }).join(', ') + ')')
       : '';
     if (selisih > 0) {
-      return '<span class="ket-badge warn ket-badge-nav" title="Klik tanggal untuk buka Sales/Produk">🔷 Penjualan Lebih Banyak' + dateLinks + '</span>';
+      return '<span class="ket-badge warn ket-badge-nav" title="Klik tanggal untuk buka Sales per Produk">🔷 Penjualan Lebih Banyak' + dateLinks + '</span>';
     }
-    return '<span class="ket-badge alert ket-badge-nav" title="Klik tanggal untuk buka Sales/Produk">🚨 GUDANG LEBIH BANYAK!!' + dateLinks + '</span>';
+    return '<span class="ket-badge alert ket-badge-nav" title="Klik tanggal untuk buka Sales per Produk">🚨 GUDANG LEBIH BANYAK!!' + dateLinks + '</span>';
   }
   function ketText(selisih, dates){
     if (selisih === 0) return 'Cocok';
@@ -4406,10 +4405,10 @@ self.onmessage = function(e){
     const dk = String(dateKey || '').trim();
     const prod = String(produk || '').trim();
     if (!dk && !prod) return;
-    // Activate main tab Sales/Produk + show page penjualan
+    // Activate main tab Penjualan + show page penjualan
     const nav = document.getElementById('mainTabs');
     if (nav) {
-      nav.querySelectorAll('.main-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === 'salesproduk'));
+      nav.querySelectorAll('.main-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === 'penjualan'));
     }
     const pj = document.getElementById('page-penjualan');
     const gd = document.getElementById('page-gudang');
@@ -5464,7 +5463,7 @@ self.onmessage = function(e){
       const gd = document.getElementById('page-gudang');
       const ck = document.getElementById('page-cek');
       const an = document.getElementById('page-analisa');
-      const isPenjualanFamily = (tab === 'penjualan' || tab === 'salesproduk');
+      const isPenjualanFamily = (tab === 'penjualan');
       const um = document.getElementById('page-umfix');
       if (um) {
         um.style.display = (tab === 'umfix') ? 'block' : 'none';
@@ -5480,14 +5479,10 @@ self.onmessage = function(e){
       // Cek = sub-tab Data Gudang; Sales/Customer = sub-tab Analisa
       if (ck) ck.style.display = (tab === 'gudang' && typeof _gudangSub !== 'undefined' && _gudangSub === 'cek') ? 'block' : 'none';
       if (sc) sc.style.display = (tab === 'analisa' && typeof _analisaSub !== 'undefined' && _analisaSub === 'salescust') ? 'block' : 'none';
-      if (tab === 'salesproduk') {
-        // Buka langsung sub-tab Sales per Produk
-        const s7btn = document.querySelector('.tabs button[onclick*="s7"]');
-        show('s7', s7btn || null);
-      } else if (tab === 'penjualan') {
-        // Kembali ke tab Penjualan; pertahankan sub-tab aktif jika ada, default Faktur
+      if (tab === 'penjualan') {
+        // Buka tab Penjualan; pertahankan sub-tab aktif jika ada, default Faktur
         const cur = (typeof _activeTab !== 'undefined' && _activeTab) ? _activeTab : 's6';
-        const target = (cur === 's7') ? 's6' : cur; // dari Sales/Produk masuk Penjualan → Faktur
+        const target = cur;
         const subBtn = document.querySelector('.tabs button[onclick*="' + target + '"]')
           || document.querySelector('.tabs button.active')
           || document.querySelector('.tabs button[onclick*="s6"]');
@@ -5501,7 +5496,7 @@ self.onmessage = function(e){
   }
   function syncMainTabForPenjualanSub(subTab){
     const nav = document.getElementById('mainTabs'); if (!nav) return;
-    const want = (subTab === 's7') ? 'salesproduk' : 'penjualan';
+    const want = 'penjualan';
     // Hanya sync jika sedang di family penjualan (page terlihat)
     const pj = document.getElementById('page-penjualan');
     if (!pj || pj.style.display === 'none') return;
@@ -7091,6 +7086,7 @@ self.onmessage = function(e){
   document.getElementById('installBtn')?.addEventListener('click', async () => { if (!_deferredInstallPrompt) return; _deferredInstallPrompt.prompt(); await _deferredInstallPrompt.userChoice; _deferredInstallPrompt = null; document.getElementById('installBtn').style.display = 'none'; });
   window.addEventListener('appinstalled', () => { const btn = document.getElementById('installBtn'); if (btn) btn.style.display = 'none'; });
 </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
