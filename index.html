@@ -5543,6 +5543,8 @@ self.onmessage = function(e){
           ket: r.ket
         };
         const sec = String(r.section || '').toUpperCase();
+        row._mc = N(r.minyak_cash); row._mt = N(r.minyak_transfer); row._rc = N(r.rupa_cash); row._rt = N(r.rupa_transfer);
+        row._sec = sec.includes('TEMPO') ? 'PIUTANG TEMPO' : 'CASH DROPPING';
         if (sec.includes('TEMPO')) out.tempo.push(row);
         else if (sec.includes('CASH')) out.cash.push(row);
       });
@@ -5840,10 +5842,12 @@ self.onmessage = function(e){
     });
 
     await cekUmLoadState();
+    const cashSet = new Set(cash), tempoSet = new Set(tempo);
     groups.forEach(g => {
       g.payOrig = g.pay;
       const ov = _cekUmPayOv[String(g.faktur).trim()];
       if (ov === 'CASH' || ov === 'TEMPO') g.pay = ov;
+      else if (ov && typeof ov === 'object' && ov.split) g.splitOv = ov;
     });
 
     const list = [];
@@ -5972,7 +5976,15 @@ self.onmessage = function(e){
         if (status !== 'LUNAS') { status = 'LUNAS'; ket = '✔ Lunas manual' + (lr.ket ? ' · ' + lr.ket : '') + ' (selisih ' + rp(selisih) + ')'; }
         else if (lr.ket) ket += ' · ✔ ' + lr.ket;
       }
-      list.push(Object.assign({}, g, { category: targetCategory, umTotal, selisih, status, ket, umMatches: matches.length, umRows: matches, matchType, fuzzyInfo, lunasManual: !!lr, payMoved: g.pay !== g.payOrig }));
+      let umCashAmt = 0, umTempoAmt = 0;
+      matches.forEach(r => { const v = umRowTotal(r); if (cashSet.has(r)) umCashAmt += v; else umTempoAmt += v; });
+      let splitInfo = null;
+      if (g.splitOv) {
+        const cp = Math.min(Math.max(N(g.splitOv.cash), 0), g.tagihan);
+        splitInfo = { cash: cp, tempo: g.tagihan - cp };
+        ket = '✂ Cash ' + rp(cp) + ' · piutang TEMPO ' + rp(g.tagihan - cp) + ' — ' + ket;
+      }
+      list.push(Object.assign({}, g, { category: targetCategory, umTotal, selisih, status, ket, umMatches: matches.length, umRows: matches, matchType, fuzzyInfo, lunasManual: !!lr, payMoved: g.pay !== g.payOrig, split: splitInfo, umCash: umCashAmt, umTempo: umTempoAmt }));
     });
 
     const owner = new Map();
@@ -6116,7 +6128,7 @@ self.onmessage = function(e){
     let list = await buildFakturReconciliation();
     if (month)    list = list.filter(g => g.month === month);
     if (salesF)   list = list.filter(g => g.sales === salesF);
-    if (paymentF) list = list.filter(g => g.pay === paymentF);
+    if (paymentF) list = list.filter(g => g.pay === paymentF || (g.split && paymentF === 'TEMPO'));
     if (statusF)  list = list.filter(g => g.status === statusF);
     if (q) list = list.filter(g => U(g.faktur).includes(q) || U(g.cust).includes(q) || U(g.alamat).includes(q));
     _cekUmLastList = list;
@@ -6173,10 +6185,10 @@ self.onmessage = function(e){
       body += '<td>' + escHtml(g.sales) + '</td>';
       body += '<td>' + escHtml(g.cust) + '</td>';
       body += '<td>' + escHtml(g.alamat) + '</td>';
-      body += '<td>' + (g.pay ? '<span style="' + payStyle(g.pay) + '">' + escHtml(g.pay) + '</span>' : '') + '</td>';
+      body += '<td>' + (g.split ? '<span style="background:#e9d5ff;color:#6b21a8;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700" title="Cash ' + rp(g.split.cash) + ' + Tempo ' + rp(g.split.tempo) + '">CASH+TEMPO</span>' : (g.pay ? '<span style="' + payStyle(g.pay) + '">' + escHtml(g.pay) + '</span>' : '')) + '</td>';
       body += '<td class="num">' + rp(g.tagihan) + '</td>';
-      body += '<td class="num">' + (g.pay === 'CASH'  ? rp(g.umTotal) : '—') + '</td>';
-      body += '<td class="num">' + (g.pay === 'TEMPO' ? rp(g.umTotal) : '—') + '</td>';
+      body += '<td class="num">' + (g.split ? rp(g.umCash)  : (g.pay === 'CASH'  ? rp(g.umTotal) : '—')) + '</td>';
+      body += '<td class="num">' + (g.split ? rp(g.umTempo) : (g.pay === 'TEMPO' ? rp(g.umTotal) : '—')) + '</td>';
       body += '<td class="num" style="font-weight:700">' + rp(g.umTotal) + '</td>';
       const selColor = g.selisih === 0 ? '#166534' : (g.selisih > 0 ? '#1d4ed8' : '#dc2626');
       body += '<td class="num" style="color:' + selColor + '">' + (g.selisih > 0 ? '+' : '') + rp(g.selisih) + '</td>';
@@ -6188,6 +6200,7 @@ self.onmessage = function(e){
       } else if (g.matchType === 'faktur-lintas-jenis') {
         statusCell += ' <span class="ket-badge warn" style="background:#ede9fe;color:#5b21b6" title="Nomor faktur sama, tapi uang masuk tercatat di jenis berbeda (Cash Dropping vs Piutang Tempo)">🔀 beda jenis</span>';
       }
+      if (g.split) statusCell += ' <span class="ket-badge warn" style="background:#f3e8ff;color:#6b21a8" title="Sebagian cash, sisa jadi piutang tempo">✂ split</span>';
       if (g.lunasManual) statusCell += ' <span class="ket-badge ok" style="background:#dcfce7;color:#166534" title="Ditandai LUNAS manual (ada di Transaksi Lunas)">✔ manual</span>';
       if (g.payMoved) statusCell += ' <span class="ket-badge warn" style="background:#e0f2fe;color:#075985" title="Dipindah dari ' + escHtml(g.payOrig || '—') + ' ke ' + escHtml(g.pay) + '">🔁 pindah</span>';
       body += '<td>' + statusCell + '</td>';
@@ -6235,7 +6248,7 @@ self.onmessage = function(e){
     let list = await buildFakturReconciliation();
     if (month)    list = list.filter(g => g.month === month);
     if (salesF)   list = list.filter(g => g.sales === salesF);
-    if (paymentF) list = list.filter(g => g.pay === paymentF);
+    if (paymentF) list = list.filter(g => g.pay === paymentF || (g.split && paymentF === 'TEMPO'));
     if (statusF)  list = list.filter(g => g.status === statusF);
     if (q) list = list.filter(g => U(g.faktur).includes(q) || U(g.cust).includes(q) || U(g.alamat).includes(q));
     if (!list.length) return alert('Tidak ada data untuk diunduh.');
@@ -6243,10 +6256,10 @@ self.onmessage = function(e){
     const head = ['NO','TANGGAL','NO. FAKTUR','SALES','CUSTOMER','ALAMAT','PEMBAYARAN',
       'NOMINAL TAGIHAN','UANG MASUK CASH','UANG MASUK TEMPO','TOTAL UANG MASUK','SELISIH','STATUS','KET'];
     const rows = list.map((g, i) => [
-      i + 1, fmtTgl(g.tgl), g.faktur, g.sales, g.cust, g.alamat, g.pay,
+      i + 1, fmtTgl(g.tgl), g.faktur, g.sales, g.cust, g.alamat, (g.split ? 'CASH+TEMPO' : g.pay),
       g.tagihan,
-      (g.pay === 'CASH'  ? g.umTotal : 0),
-      (g.pay === 'TEMPO' ? g.umTotal : 0),
+      (g.split ? g.umCash  : (g.pay === 'CASH'  ? g.umTotal : 0)),
+      (g.split ? g.umTempo : (g.pay === 'TEMPO' ? g.umTotal : 0)),
       g.umTotal, g.selisih, g.status, g.ket
     ]);
     const totTagihan = list.reduce((a, g) => a + g.tagihan, 0);
@@ -6274,6 +6287,11 @@ self.onmessage = function(e){
     return '';
   }
   function _cekUmFkKategori(r){
+    if (r && r._sec) {
+      const mn = (r._mc || 0) + (r._mt || 0), rp2 = (r._rc || 0) + (r._rt || 0);
+      const k = mn > 0 && rp2 > 0 ? 'MINYAK+RUPA' : (mn > 0 ? 'MINYAK' : (rp2 > 0 ? 'RUPA-RUPA' : ''));
+      return r._sec + (k ? ' · ' + k : '');
+    }
     const c = umRowCategory(r);
     if (c === 'MINYAK' || c === 'RUPA-RUPA' || c === 'CAMPURAN') return c;
     const t = String((r && (r.type || r.jenis || r.kategori || r.section)) || '').toUpperCase();
@@ -6332,7 +6350,7 @@ self.onmessage = function(e){
     parts.push('Sales: <b>' + escHtml(salesName || '—') + '</b>');
     parts.push('Customer: <b>' + escHtml(cust || '—') + '</b>');
     if (alamat) parts.push('Alamat: <b>' + escHtml(alamat) + '</b>');
-    parts.push('Pembayaran: <b>' + escHtml(pay || '—') + '</b>');
+    parts.push('Pembayaran: <b>' + escHtml(g && g.split ? 'CASH + TEMPO' : (pay || '—')) + '</b>' + (g && g.payMoved ? ' <i>(asli: ' + escHtml(g.payOrig || '—') + ')</i>' : ''));
     if (sub) sub.innerHTML = parts.join(' · ');
 
     const selColor = selisih === 0 ? '#166534' : (selisih > 0 ? '#1d4ed8' : '#dc2626');
@@ -6341,6 +6359,7 @@ self.onmessage = function(e){
       + '<div>Total Uang Masuk: <b>' + rp(umTotal) + '</b></div>'
       + '<div>Selisih: <b style="color:' + selColor + '">' + (selisih > 0 ? '+' : '') + rp(selisih) + '</b></div>'
       + '<div>Status: ' + _cekUmFkBadge(status) + '</div>'
+      + (g && g.split ? '<div>✂ Bagian CASH: <b>' + rp(g.split.cash) + '</b> · Bagian TEMPO (piutang): <b>' + rp(g.split.tempo) + '</b></div>' : '')
       + (ketSys ? '<div>Keterangan sistem: <b>' + escHtml(ketSys) + '</b></div>' : '')
       + '</div>';
 
@@ -6384,10 +6403,10 @@ self.onmessage = function(e){
           + '<td>' + escHtml(umRowCustomer(r) || '—') + '</td>'
           + '<td>' + escHtml(umRowAlamat(r) || '—') + '</td>'
           + '<td>' + escHtml(_cekUmFkKategori(r)) + '</td>'
-          + '<td class="num">' + rp(_cekUmFkGet(r, ['minyakCash','Minyak Cash'])) + '</td>'
-          + '<td class="num">' + rp(_cekUmFkGet(r, ['minyakTrf','minyakTf','Minyak Trf','Minyak Transfer'])) + '</td>'
-          + '<td class="num">' + rp(_cekUmFkGet(r, ['rupaCash','Rupa Cash'])) + '</td>'
-          + '<td class="num">' + rp(_cekUmFkGet(r, ['rupaTrf','rupaTf','Rupa Trf','Rupa Transfer'])) + '</td>'
+          + '<td class="num">' + rp(_cekUmFkGet(r, ['_mc', 'minyakCash','Minyak Cash'])) + '</td>'
+          + '<td class="num">' + rp(_cekUmFkGet(r, ['_mt', 'minyakTrf','minyakTf','Minyak Trf','Minyak Transfer'])) + '</td>'
+          + '<td class="num">' + rp(_cekUmFkGet(r, ['_rc', 'rupaCash','Rupa Cash'])) + '</td>'
+          + '<td class="num">' + rp(_cekUmFkGet(r, ['_rt', 'rupaTrf','rupaTf','Rupa Trf','Rupa Transfer'])) + '</td>'
           + '<td class="num" style="font-weight:700">' + rp(umRowTotal(r)) + '</td>'
           + '<td class="cekum-fk-ket">' + (ketRow ? escHtml(ketRow) : '—') + '</td>'
           + '</tr>';
@@ -6404,14 +6423,16 @@ self.onmessage = function(e){
     const isLunasMan = _cekUmLunas.has(fk);
     const payNow = String(pay || '').toUpperCase();
     const target = payNow === 'CASH' ? 'TEMPO' : 'CASH';
-    _cekUmFkCur = { faktur: fk, g, tgl, salesName, cust, alamat, pay: payNow, payOrig: g ? g.payOrig : payNow, tagihan, umTotal, selisih, status };
+    _cekUmFkCur = { faktur: fk, g, tgl, salesName, cust, alamat, pay: payNow, payOrig: g ? g.payOrig : payNow, split: g ? g.split : null, ov: _cekUmPayOv[fk], tagihan, umTotal, selisih, status };
     const act = document.getElementById('cekUmFkActBtns');
     if (act) {
       act.innerHTML =
         (isBatal
           ? '<button type="button" class="cekum-act gray" onclick="cekUmFkBatal(false)">↩ Aktifkan Kembali Faktur</button>'
           : '<button type="button" class="cekum-act red" onclick="cekUmFkBatal(true)">🚫 Tandai Transaksi Batal</button>')
-        + '<button type="button" class="cekum-act blue" onclick="cekUmFkMovePay()">🔁 Pindahkan ke ' + (payNow ? target : 'CASH') + (payNow ? ' (sekarang ' + escHtml(payNow) + ')' : '') + '</button>'
+        + ((g && g.split) ? '' : '<button type="button" class="cekum-act blue" onclick="cekUmFkMovePay()">🔁 Pindahkan seluruhnya ke ' + (payNow ? target : 'CASH') + (payNow ? ' (sekarang ' + escHtml(payNow) + ')' : '') + '</button>')
+        + '<button type="button" class="cekum-act blue" style="background:#7c3aed" onclick="cekUmFkSplit()" title="Sebagian diterima cash di lapangan, sisanya menjadi piutang tempo">✂ Cash diterima sebagian → sisa jadi TEMPO</button>'
+        + (_cekUmPayOv[fk] ? '<button type="button" class="cekum-act gray" onclick="cekUmFkResetPay()">↩ Kembalikan ke ' + escHtml((g && g.payOrig) || payNow || 'asli') + '</button>' : '')
         + (isLunasMan
           ? '<button type="button" class="cekum-act gray" onclick="cekUmFkLunas(false)">↩ Batalkan Tanda Lunas</button>'
           : '<button type="button" class="cekum-act green" onclick="cekUmFkLunas(true)">✅ Tandai LUNAS &amp; Masukkan ke Transaksi Lunas</button>');
@@ -6447,6 +6468,27 @@ self.onmessage = function(e){
     await renderCekUangMasuk();
     await openCekUmFakturModal(nf);
   }
+  async function cekUmFkSplit() {
+    const c = _cekUmFkCur; if (!c) return;
+    const def = c.split ? c.split.cash : ((c.umTotal > 0 && c.umTotal < c.tagihan) ? c.umTotal : '');
+    const v = prompt('Faktur ' + c.faktur + '\nTagihan: ' + rp(c.tagihan) + '\n\nBerapa yang diterima CASH di lapangan (Rp)?\nSisanya otomatis menjadi piutang TEMPO.', def === '' ? '' : String(def));
+    if (v === null) return;
+    const amt = parseInt(String(v).replace(/[^\d]/g, ''), 10);
+    if (!isFinite(amt) || amt <= 0 || amt >= c.tagihan) return alert('Nominal harus lebih dari 0 dan kurang dari tagihan (' + rp(c.tagihan) + ').');
+    _cekUmPayOv[c.faktur] = { split: true, cash: amt };
+    await cekUmSaveState();
+    await renderCekUangMasuk();
+    await openCekUmFakturModal(c.faktur);
+  }
+  async function cekUmFkResetPay() {
+    const c = _cekUmFkCur; if (!c) return;
+    if (!confirm('Kembalikan faktur "' + c.faktur + '" ke pembayaran asli (' + (c.payOrig || '—') + ')?')) return;
+    delete _cekUmPayOv[c.faktur];
+    await cekUmSaveState();
+    await renderCekUangMasuk();
+    await openCekUmFakturModal(c.faktur);
+  }
+  window.cekUmFkSplit = cekUmFkSplit; window.cekUmFkResetPay = cekUmFkResetPay;
   async function cekUmFkLunas(on) {
     const c = _cekUmFkCur; if (!c) return;
     const nf = c.faktur;
