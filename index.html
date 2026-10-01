@@ -1286,6 +1286,8 @@ body.dark #page-penjualan .fm-btn.active{color:#dbe4f0!important}
         <button type="button" data-stok="nissin" onclick="pickStokKat('nissin')">Nissin</button>
         <button type="button" data-stok="sabun" onclick="pickStokKat('sabun')">Sabun</button>
         <button type="button" data-stok="sarisedap" onclick="pickStokKat('sarisedap')">Sarisedap</button>
+        <button type="button" data-stok="margarine" onclick="pickStokKat('margarine')">Margarine</button>
+        <button type="button" data-stok="whosi" onclick="pickStokKat('whosi')">Whosi</button>
       </div>
     </div>
     <div class="gudang-view-toggle" id="gudangViewToggleWrap">
@@ -5303,7 +5305,9 @@ self.onmessage = function(e){
     mie:       { label: 'Mie',       file: 'stok-mie.html' },
     nissin:    { label: 'Nissin',    file: 'stok-nissin.html' },
     sabun:     { label: 'Sabun',     file: 'stok-sabun.html' },
-    sarisedap: { label: 'Sarisedap', file: 'stok-sarisedap.html' }
+    sarisedap: { label: 'Sarisedap', file: 'stok-sarisedap.html' },
+    margarine: { label: 'Margarine', file: 'stok-margarine.html' },
+    whosi:     { label: 'Whosi',     file: 'stok-whosi.html' }
   };
   let _stokKat = 'fitri';
   try { const k = localStorage.getItem('gudang-stok-kat'); if (k && STOK_KAT[k]) _stokKat = k; } catch(e){}
