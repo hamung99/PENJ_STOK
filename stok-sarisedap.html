@@ -89,22 +89,6 @@
             max-height: var(--content-max-h, 65vh);
         }
 
-        /* ===== Navigasi antar halaman produk ===== */
-        .page-nav { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-        .page-nav a {
-            padding: 4px 12px;
-            font-size: 12px;
-            color: #6b7280;
-            background: transparent;
-            border: 1px solid #e5e7eb;
-            border-radius: 6px;
-            text-decoration: none;
-            white-space: nowrap;
-            transition: background 0.15s, color 0.15s, border-color 0.15s;
-        }
-        .page-nav a:hover { background: #f3f4f6; color: #374151; border-color: #d1d5db; }
-        .page-nav a.active { background: #f3f4f6; color: #374151; border-color: #d1d5db; font-weight: 500; pointer-events: none; }
-
         .sticky-left {
             position: sticky;
             left: 0;
@@ -330,8 +314,6 @@
         html.dark #ringkas-container td.ket { color:#7c8aa0; }
         html.dark #ringkas-container tbody tr:hover { background-color:#273449; }
         /* navigasi, chip, tab, sheet */
-        html.dark .page-nav a { color:#94a3b8; border-color:#334155; }
-        html.dark .page-nav a:hover, html.dark .page-nav a.active { background:#273449; color:#e2e8f0; border-color:#475569; }
         html.dark .file-chip { color:#94a3b8; border-color:#334155; }
         html.dark .file-chip:hover { background:#273449; border-color:#475569; color:#cbd5e1; }
         html.dark .file-chip.active { color:#7c8aa0; border-color:#334155; }
@@ -373,7 +355,6 @@
                 <div>
                     <div class="flex items-center gap-4 flex-wrap">
                         <h1 class="text-base font-normal text-gray-900">Rekapitulasi Stok</h1>
-                        <nav id="pageNav" class="page-nav"></nav>
                     </div>
                     <p class="text-red-500 text-xs mt-1 font-medium" id="statusText"></p>
                     <p class="text-gray-400 text-xs mt-1" id="saveText"></p>
@@ -491,40 +472,6 @@
             </div>
         </div>
     </div>
-
-    <script>
-    // ============================================================
-    // NAVIGASI ANTAR HALAMAN (tiap HTML tetap berdiri sendiri)
-    // Salin blok <nav id="pageNav"> + CSS .page-nav + script ini ke file lain.
-    // Ubah daftar di bawah bila ada halaman baru / nama file berubah.
-    // ============================================================
-    (function () {
-        const HALAMAN = [
-            { label: 'FITRI',     file: 'stok-fitri.html' },
-            { label: 'ETHOZ',     file: 'stok-ethoz.html' },
-            { label: 'MIE',       file: 'stok-mie.html' },
-            { label: 'NISSIN',    file: 'stok-nissin.html' },
-            { label: 'SABUN',     file: 'stok-sabun.html' },
-            { label: 'SARISEDAP', file: 'stok-sarisedap.html' }
-        ];
-        const TAMPILKAN_HALAMAN_AKTIF = false; // true = halaman ini ikut tampil sebagai tab aktif
-
-        const nav = document.getElementById('pageNav');
-        if (!nav) return;
-        let sekarang = '';
-        try { sekarang = decodeURIComponent(location.pathname.split('/').pop() || '').toLowerCase(); } catch (e) {}
-
-        HALAMAN.forEach(h => {
-            const aktif = h.file.toLowerCase() === sekarang;
-            if (aktif && !TAMPILKAN_HALAMAN_AKTIF) return;
-            const a = document.createElement('a');
-            a.textContent = h.label;
-            a.href = h.file;
-            if (aktif) a.className = 'active';
-            nav.appendChild(a);
-        });
-    })();
-    </script>
 
     <script>
     // ============================================================
@@ -656,7 +603,7 @@
         function parseStruct(grid) {
             const dateRe = /^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}/;
             const isMsk = v => /^(msk|masuk)/.test(v);
-            const isOut = v => /^(klr|keluar|klar|terjual|jual|bonus)/.test(v);
+            const isOut = v => /^(klr|keluar|klar|terjual|jual|bonus|btl|ref)/.test(v);
             const isStok = v => /^(stok|stk|stock)/.test(v);
             const isTgl = v => /^(tanggal|tgl)/.test(v);
             const norm = row => (row || []).map(v => (v || '').toLowerCase().replace(/[^a-z]/g, ''));
