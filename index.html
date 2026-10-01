@@ -41,6 +41,8 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .faktur-card{background:linear-gradient(145deg,#fff 0%,#f0f6ff 100%);border:1px solid #d6e0ee;border-radius:12px;padding:12px 14px;box-shadow:0 2px 10px rgba(31,78,120,.07);display:flex;flex-direction:column;gap:8px}
 .faktur-card .fc-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
 .faktur-card .fc-faktur{font-size:13px;font-weight:800;color:#1f4e78;word-break:break-all;flex:1;min-width:0}
+.faktur-card .fc-left{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.faktur-card .fc-kat{font-size:11px;font-weight:700;color:#0f172a;letter-spacing:.02em}
 .faktur-card .fc-head-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
 .faktur-card .fc-tgl{font-size:11px;color:#64748b;font-weight:600;white-space:nowrap}
 .faktur-card .fc-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:11px;color:#475569}
@@ -605,6 +607,7 @@ body.dark .gkpi .gk-meta b{color:#cbd5e1}
 body.dark .gkpi .gk-hint{color:#64748b}
 body.dark .faktur-card{background:linear-gradient(145deg,#1e293b 0%,#1a2744 100%);border-color:#334155;box-shadow:0 2px 10px #0005}
 body.dark .faktur-card .fc-faktur{color:#93c5fd}
+body.dark .faktur-card .fc-kat{color:#e2e8f0}
 body.dark .faktur-card .fc-tgl{color:#94a3b8}
 body.dark .faktur-card .fc-meta{color:#94a3b8}
 body.dark .faktur-card .fc-meta b{color:#e2e8f0}
@@ -2658,6 +2661,13 @@ self.onmessage = function(e){
     return months[0];
   }
   function isFitriProduct(p){ return U(p).includes('FITRI'); }
+  /* Kategori faktur: produk Fitri = MINYAK, selain itu = RUPA RUPA */
+  function katProduk(p){ return isFitriProduct(p) ? 'MINYAK' : 'RUPA RUPA'; }
+  function katFaktur(items){
+    let m = false, r = false;
+    for (const x of (items || [])) { if (isFitriProduct(x && x.Produk)) m = true; else r = true; if (m && r) break; }
+    return (m && r) ? 'MINYAK + RUPA RUPA' : (m ? 'MINYAK' : 'RUPA RUPA');
+  }
 
   function productMatchKey(p){
     let s = U(p).replace(/[^A-Z0-9]/g, '');
@@ -3294,9 +3304,9 @@ self.onmessage = function(e){
       addReportSheet(wb,'RUPA RUPA','Rekap per Sales - RUPA RUPA',head,rowsRupa,tot(r.s4rupa||[]));
     } else if(tab==='s6'){
       const fRows=buildFakturRows();
-      const head=['NO','TANGGAL','NO. FAKTUR','SALES','PRODUK','QTY','SATUAN','HARGA JUAL','DISC','TOTAL','NOMINAL FAKTUR','PROFIT PER FAKTUR','PEMBAYARAN','CUSTOMER','ALAMAT'];
-      const rows=fRows.map((row,i)=>{const x=row.x;return [i+1,fmtTgl(x.Tanggal),row.faktur,x.Sales||row.sales||'',x.Produk||'',N(x.Jumlah),x.Satuan||'',N(x['Harga Jual']),N(x.Discount),N(x.Total),row.isFirst?row.nominal:'',row.isFirst?row.profit:'',x.Pembayaran||row.bayar||'',x.Customer||row.customer||'',x.Alamat||row.alamat||''];});
-      addReportSheet(wb,'Faktur','Rekap per Faktur',head,rows,['TOTAL','','','','',r.qty,'','','',r.sales,r.sales,r.profit,'','','']);
+      const head=['NO','TANGGAL','NO. FAKTUR','KATEGORI','SALES','PRODUK','QTY','SATUAN','HARGA JUAL','DISC','TOTAL','NOMINAL FAKTUR','PROFIT PER FAKTUR','PEMBAYARAN','CUSTOMER','ALAMAT'];
+      const rows=fRows.map((row,i)=>{const x=row.x;return [i+1,fmtTgl(x.Tanggal),row.faktur,katProduk(x.Produk),x.Sales||row.sales||'',x.Produk||'',N(x.Jumlah),x.Satuan||'',N(x['Harga Jual']),N(x.Discount),N(x.Total),row.isFirst?row.nominal:'',row.isFirst?row.profit:'',x.Pembayaran||row.bayar||'',x.Customer||row.customer||'',x.Alamat||row.alamat||''];});
+      addReportSheet(wb,'Faktur','Rekap per Faktur',head,rows,['TOTAL','','','','','',r.qty,'','','',r.sales,r.sales,r.profit,'','','']);
     } else if(tab==='s8'){
       const groups=buildFakturGroups();
       const head=['NO','TANGGAL','NO. FAKTUR','SALES','CUSTOMER','PEMBAYARAN','NOMINAL FAKTUR','PROFIT FAKTUR','MARGIN %'];
@@ -4380,7 +4390,7 @@ self.onmessage = function(e){
       const fkCls = 'fc-faktur' + (fkClickable ? ' fk-link' : '') + ((g.hasMinus || g.hasLineBatal) && !g.isBatal ? ' has-minus' : '') + (g.isBatal ? ' batal' : '');
       const fkAttr = fkClickable ? (' onclick="openFkBatalModal(\'' + String(g.faktur).replace(/\\/g,'\\\\').replace(/'/g,"\\'") + '\')" title="Klik untuk detail / transaksi batal"') : '';
       const batalBadge = g.isBatal ? '<span class="fk-badge-batal">BATAL</span>' : (g.hasLineBatal ? '<span class="fk-badge-batal">ITEM BATAL</span>' : '');
-      return '<div class="faktur-card' + (g.isBatal || g.hasLineBatal ? ' fk-batal' : '') + '"><div class="fc-head"><div class="' + fkCls + '"' + fkAttr + '>' + fkEsc + batalBadge + '</div><div class="fc-head-right"><div class="fc-tgl">' + fmtTgl(g.tgl) + '</div>' + (g.bayar ? '<span class="fc-badge ' + badgeCls + '">' + String(g.bayar).replace(/</g,'&lt;') + '</span>' : '') + '</div></div><div class="fc-meta">' + (g.sales ? '<span>Sales <b>' + String(g.sales).replace(/</g,'&lt;') + '</b></span>' : '') + (g.customer ? '<span>Cust <b title="' + String(g.customer).replace(/"/g,'&quot;') + '">' + String(g.customer).replace(/</g,'&lt;') + '</b></span>' : '') + '</div><ul class="fc-items">' + items + '</ul><div class="fc-nums"><div><div class="fc-num-label">Nominal</div><div class="fc-num-val">' + rp(g.nominal) + '</div></div><div style="text-align:right"><div class="fc-num-label">Profit</div><div class="fc-num-val profit">' + rp(g.profit) + '</div></div></div></div>';
+      return '<div class="faktur-card' + (g.isBatal || g.hasLineBatal ? ' fk-batal' : '') + '"><div class="fc-head"><div class="fc-left"><div class="' + fkCls + '"' + fkAttr + '>' + fkEsc + batalBadge + '</div><div class="fc-kat">' + katFaktur(g.items) + '</div></div><div class="fc-head-right"><div class="fc-tgl">' + fmtTgl(g.tgl) + '</div>' + (g.bayar ? '<span class="fc-badge ' + badgeCls + '">' + String(g.bayar).replace(/</g,'&lt;') + '</span>' : '') + '</div></div><div class="fc-meta">' + (g.sales ? '<span>Sales <b>' + String(g.sales).replace(/</g,'&lt;') + '</b></span>' : '') + (g.customer ? '<span>Cust <b title="' + String(g.customer).replace(/"/g,'&quot;') + '">' + String(g.customer).replace(/</g,'&lt;') + '</b></span>' : '') + '</div><ul class="fc-items">' + items + '</ul><div class="fc-nums"><div><div class="fc-num-label">Nominal</div><div class="fc-num-val">' + rp(g.nominal) + '</div></div><div style="text-align:right"><div class="fc-num-label">Profit</div><div class="fc-num-val profit">' + rp(g.profit) + '</div></div></div></div>';
     }).join('');
     const summary = '<div style="font-size:12px;color:#475569;margin:0 0 10px;font-weight:600">' + all.length.toLocaleString('id-ID') + ' faktur · Qty ' + (R.qty||0).toLocaleString('id-ID') + ' · Nominal ' + rp(R.sales) + ' · Profit ' + rp(R.profit) + (truncated ? ' · Menampilkan ' + list.length.toLocaleString('id-ID') + ' kartu pertama' : '') + '</div>';
     const more = truncated
@@ -4394,7 +4404,7 @@ self.onmessage = function(e){
     const totalLines = allRows.length;
     const pageRows = sliceRekap('s6', allRows);
     const base = (rekapPage.s6 || 0) * REKAP_PAGE_SIZE;
-    const head = ['NO','TANGGAL','NO. FAKTUR','SALES','PRODUK','QTY','SATUAN','HARGA JUAL','DISC','TOTAL','NOMINAL FAKTUR','PROFIT PER FAKTUR','PEMBAYARAN','CUSTOMER','ALAMAT'];
+    const head = ['NO','TANGGAL','NO. FAKTUR','KATEGORI','SALES','PRODUK','QTY','SATUAN','HARGA JUAL','DISC','TOTAL','NOMINAL FAKTUR','PROFIT PER FAKTUR','PEMBAYARAN','CUSTOMER','ALAMAT'];
     let body = '';
     const shownFaktur = new Set();
     pageRows.forEach((row, i) => {
@@ -4432,10 +4442,10 @@ self.onmessage = function(e){
       }
       const fkOut = isFirstOfFaktur ? fkCell : '';
       const rowStyle = row.isBatal ? ' style="opacity:.7;background:#fef2f2"' : (row.lineBatal ? ' style="opacity:.65;background:#f1f5f9;text-decoration:line-through"' : (qty < 0 ? ' style="background:#fef2f2"' : ''));
-      body += '<tr' + rowStyle + '><td class="num">' + no + '</td><td>' + tglCell + '</td><td>' + fkOut + '</td><td>' + salesCell + '</td><td title="' + String(produk).replace(/"/g,'&quot;') + '">' + produk + '</td><td class="num">' + qty + '</td><td>' + satuan + '</td><td class="num">' + hj + '</td><td class="num">' + disc + '</td><td class="num">' + total + '</td>' + nomCell + prCell + '<td>' + bayarCell + '</td><td title="' + String(custCell).replace(/"/g,'&quot;') + '">' + custCell + '</td><td title="' + String(alamatCell).replace(/"/g,'&quot;') + '">' + alamatCell + '</td></tr>';
+      body += '<tr' + rowStyle + '><td class="num">' + no + '</td><td>' + tglCell + '</td><td>' + fkOut + '</td><td style="white-space:nowrap;font-weight:600">' + katProduk(produk) + '</td><td>' + salesCell + '</td><td title="' + String(produk).replace(/"/g,'&quot;') + '">' + produk + '</td><td class="num">' + qty + '</td><td>' + satuan + '</td><td class="num">' + hj + '</td><td class="num">' + disc + '</td><td class="num">' + total + '</td>' + nomCell + prCell + '<td>' + bayarCell + '</td><td title="' + String(custCell).replace(/"/g,'&quot;') + '">' + custCell + '</td><td title="' + String(alamatCell).replace(/"/g,'&quot;') + '">' + alamatCell + '</td></tr>';
     });
-    const foot = '<tr><td class="num">TOTAL</td><td></td><td></td><td></td><td></td><td class="num">' + (R.qty || 0) + '</td><td></td><td></td><td></td><td class="num">' + rp(R.sales) + '</td><td class="num">' + rp(R.sales) + '</td><td class="num">' + rp(R.profit) + '</td><td></td><td></td><td></td></tr>';
-    if (!totalLines){ return '<div class="tablebox"><table><thead><tr>' + head.map(h => '<th>'+h+'</th>').join('') + '</tr></thead><tbody><tr><td colspan="15" style="text-align:center;padding:28px;color:#64748b">Belum ada data.</td></tr></tbody></table></div>'; }
+    const foot = '<tr><td class="num">TOTAL</td><td></td><td></td><td></td><td></td><td></td><td class="num">' + (R.qty || 0) + '</td><td></td><td></td><td></td><td class="num">' + rp(R.sales) + '</td><td class="num">' + rp(R.sales) + '</td><td class="num">' + rp(R.profit) + '</td><td></td><td></td><td></td></tr>';
+    if (!totalLines){ return '<div class="tablebox"><table><thead><tr>' + head.map(h => '<th>'+h+'</th>').join('') + '</tr></thead><tbody><tr><td colspan="16" style="text-align:center;padding:28px;color:#64748b">Belum ada data.</td></tr></tbody></table></div>'; }
     return rekapPagerHtml('s6', totalLines) + '<div class="tablebox"><table><thead><tr>' + head.map(h => '<th>'+h+'</th>').join('') + '</tr></thead><tbody>' + body + '</tbody><tfoot>' + foot + '</tfoot></table></div>';
   }
   async function saveExcel(){
@@ -4456,9 +4466,9 @@ self.onmessage = function(e){
     const s4Tot = arr => ['TOTAL', arr.reduce((a,x)=>a+x[1],0), arr.reduce((a,x)=>a+x[2],0), arr.reduce((a,x)=>a+x[3],0), arr.reduce((a,x)=>a+x[4],0), arr.reduce((a,x)=>a+x[5],0)];
     add('MINYAK FITRI - Rekap per Sales', s4Head, r.s4fitri||[], s4Tot(r.s4fitri||[]));
     add('RUPA RUPA - Rekap per Sales', s4Head, r.s4rupa||[], s4Tot(r.s4rupa||[]));
-    { const fRows = buildFakturRows(); const fHead = ['NO','TANGGAL','NO. FAKTUR','SALES','PRODUK','QTY','SATUAN','HARGA JUAL','DISC','TOTAL','NOMINAL FAKTUR','PROFIT PER FAKTUR','PEMBAYARAN','CUSTOMER','ALAMAT'];
-      const fData = fRows.map((row,i) => { const x = row.x; return [i+1, fmtTgl(x.Tanggal), row.faktur, x.Sales || row.sales || '', x.Produk || '', N(x.Jumlah), x.Satuan || '', N(x['Harga Jual']), N(x.Discount), N(x.Total), row.isFirst ? row.nominal : '', row.isFirst ? row.profit : '', x.Pembayaran || row.bayar || '', x.Customer || row.customer || '', x.Alamat || row.alamat || '']; });
-      add('Rekap per Faktur', fHead, fData, ['TOTAL','','','','', r.qty, '', '', '', r.sales, r.sales, r.profit, '', '', '']);
+    { const fRows = buildFakturRows(); const fHead = ['NO','TANGGAL','NO. FAKTUR','KATEGORI','SALES','PRODUK','QTY','SATUAN','HARGA JUAL','DISC','TOTAL','NOMINAL FAKTUR','PROFIT PER FAKTUR','PEMBAYARAN','CUSTOMER','ALAMAT'];
+      const fData = fRows.map((row,i) => { const x = row.x; return [i+1, fmtTgl(x.Tanggal), row.faktur, katProduk(x.Produk), x.Sales || row.sales || '', x.Produk || '', N(x.Jumlah), x.Satuan || '', N(x['Harga Jual']), N(x.Discount), N(x.Total), row.isFirst ? row.nominal : '', row.isFirst ? row.profit : '', x.Pembayaran || row.bayar || '', x.Customer || row.customer || '', x.Alamat || row.alamat || '']; });
+      add('Rekap per Faktur', fHead, fData, ['TOTAL','','','','','', r.qty, '', '', '', r.sales, r.sales, r.profit, '', '', '']);
     }
     XLSX.writeFile(w, 'Rekap_Penjualan_Hasil.xlsx');
   }
