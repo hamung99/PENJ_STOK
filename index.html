@@ -481,6 +481,13 @@ body.dark #page-analisa .gudang-subtab.active{background:#3b82f6;border-color:#3
 #page-analisa .analisa-kpis .kpi:hover{transform:none}
 #page-analisa .analisa-kpis .kpi small{font-size:8px;letter-spacing:.05em}
 #page-analisa .analisa-kpis .kpi b{font-size:12px;margin-top:2px}
+#page-analisa .analisa-alert{display:flex;align-items:center;justify-content:center;gap:8px;flex:1 1 150px;min-width:140px;align-self:center}
+#page-analisa .analisa-alert[hidden]{display:none}
+#page-analisa .analisa-alert .gambar-skull{width:42px;height:auto;flex:0 0 auto;transform-origin:bottom center;animation:analisaTolahToleh 3s ease-in-out infinite}
+#page-analisa .analisa-alert .analisa-alert-txt{font-size:10px;font-weight:800;color:#b91c1c;line-height:1.25;max-width:90px}
+@keyframes analisaTolahToleh{0%{transform:rotate(0deg)}25%{transform:rotate(-15deg)}50%{transform:rotate(0deg)}75%{transform:rotate(15deg)}100%{transform:rotate(0deg)}}
+@media (prefers-reduced-motion:reduce){#page-analisa .analisa-alert .gambar-skull{animation:none}}
+body.dark #page-analisa .analisa-alert .analisa-alert-txt{color:#fca5a5}
 #page-analisa .analisa-tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 #page-analisa .analisa-tools label{font-size:10px!important}
 #page-analisa .analisa-tools select{min-width:128px!important;padding:2px 8px!important;font-size:11px!important;border-radius:6px!important;height:24px;line-height:1.2}
@@ -1578,6 +1585,20 @@ body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#
 
 <!-- ===== PAGE ANALISA (TAB UTAMA BARU) ===== -->
 <div id="page-analisa" style="display:none">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="analisaSkullSym" viewBox="0 0 200 220"><ellipse cx="100" cy="90" rx="90" ry="85" fill="#fdfdfd" stroke="black" stroke-width="6"/>
+<path d="M 40 150 Q 40 200 100 210 Q 160 200 160 150 Z" fill="#fdfdfd" stroke="black" stroke-width="6"/>
+<rect x="60" y="160" width="80" height="30" rx="5" fill="#fdfdfd" stroke="black" stroke-width="5"/>
+<line x1="80" y1="160" x2="80" y2="190" stroke="black" stroke-width="4"/>
+<line x1="100" y1="160" x2="100" y2="190" stroke="black" stroke-width="4"/>
+<line x1="120" y1="160" x2="120" y2="190" stroke="black" stroke-width="4"/>
+<circle cx="60" cy="90" r="30" fill="#d6cbbd" stroke="black" stroke-width="5"/>
+<circle cx="60" cy="90" r="20" fill="#1a1a1a"/>
+<circle cx="65" cy="85" r="6" fill="white"/>
+<circle cx="140" cy="90" r="30" fill="#d6cbbd" stroke="black" stroke-width="5"/>
+<circle cx="140" cy="90" r="20" fill="#1a1a1a"/>
+<circle cx="145" cy="85" r="6" fill="white"/>
+<path d="M 100 115 L 90 130 Q 100 140 110 130 Z" fill="#1a1a1a"/></symbol></svg>
+
   <div class="gudang-subtabs" role="tablist">
     <div class="gudang-dd" id="analisaDD">
       <button type="button" class="gudang-subtab active" id="analisaTabBtn" data-gudang="analisa" aria-haspopup="true" aria-expanded="false" onclick="onAnalisaTabBtnClick(event)">📊 Analisa<span id="analisaDDLabel"> · Fitri</span> <span class="gudang-dd-caret">▾</span></button>
@@ -1644,6 +1665,10 @@ body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#
               <b id="analisaNominalStok">Rp 0</b>
             </div>
           </div>
+          <div class="analisa-alert" id="analisaAlertFitri" hidden title="Ada produk yang Output Penjualan-nya tidak sama dengan Output Gudang">
+            <svg class="gambar-skull" viewBox="0 0 200 220"><use href="#analisaSkullSym"/></svg><svg class="gambar-skull" viewBox="0 0 200 220"><use href="#analisaSkullSym"/></svg><svg class="gambar-skull" viewBox="0 0 200 220"><use href="#analisaSkullSym"/></svg>
+            <span class="analisa-alert-txt" id="analisaAlertFitriTxt"></span>
+          </div>
           <div class="analisa-tools">
             <label for="analisaMonth" style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.04em">Bulan</label>
             <select id="analisaMonth" onchange="renderGudangAnalisa()" style="width:auto;min-width:150px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:7px;font-size:12px;background:#fff;color:#172033"></select>
@@ -1668,6 +1693,10 @@ body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#
               <small>TOTAL NOMINAL STOK AKHIR</small>
               <b id="analisaRupaNominalStok">Rp 0</b>
             </div>
+          </div>
+          <div class="analisa-alert" id="analisaAlertRupa" hidden title="Ada produk yang Output Penjualan-nya tidak sama dengan Output Gudang">
+            <svg class="gambar-skull" viewBox="0 0 200 220"><use href="#analisaSkullSym"/></svg><svg class="gambar-skull" viewBox="0 0 200 220"><use href="#analisaSkullSym"/></svg><svg class="gambar-skull" viewBox="0 0 200 220"><use href="#analisaSkullSym"/></svg>
+            <span class="analisa-alert-txt" id="analisaAlertRupaTxt"></span>
           </div>
           <div class="analisa-tools">
             <label for="analisaRupaMonth" style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.04em">Bulan</label>
@@ -7972,6 +8001,12 @@ self.onmessage = function(e){
     else sel.value = '';
     _analisaMonthInit = true;
   }
+  function setAnalisaAlert(id, n){
+    const el = document.getElementById(id); if (!el) return;
+    const tx = document.getElementById(id + 'Txt');
+    if (tx) tx.textContent = n + ' produk tidak cocok';
+    el.hidden = !(n > 0);
+  }
   async function renderGudangAnalisa(){
     const wrap0 = document.getElementById('analisaTableWrap');
     if (wrap0 && !_analisaLastData) wrap0.innerHTML = '<div style="padding:24px;text-align:center;color:#64748b">⏳ Memuat data penjualan & gudang…</div>';
@@ -8129,6 +8164,7 @@ self.onmessage = function(e){
     const tableHtml = '<div class="tablebox"><table><thead><tr>' + head.map(h => '<th>' + h + '</th>').join('') + '</tr></thead><tbody>' + (list.length ? body : '<tr><td colspan="11" style="text-align:center;padding:24px;color:#64748b">' + emptyMsg + '</td></tr>') + '</tbody>' + (list.length ? '<tfoot>' + foot + '</tfoot>' : '') + '</table></div>' + mismHtml;
     const wrap = document.getElementById('analisaTableWrap');
     if (wrap) wrap.innerHTML = tableHtml;
+    setAnalisaAlert('analisaAlertFitri', hasGudang ? list.filter(r => r.selisih !== 0).length : 0);
     _analisaLastData = { month, list, tot, head, mism };
   }
   async function downloadAnalisaFitri(){
@@ -8397,6 +8433,7 @@ self.onmessage = function(e){
     const tableHtml = hint + '<div class="tablebox"><table><thead><tr>' + head.map(h => '<th>' + h + '</th>').join('') + '</tr></thead><tbody>' + (list.length ? body : '<tr><td colspan="11" style="text-align:center;padding:24px;color:#64748b">Belum ada data.</td></tr>') + '</tbody>' + (list.length ? '<tfoot>' + foot + '</tfoot>' : '') + '</table></div>';
     const wrap = document.getElementById('analisaRupaTableWrap');
     if (wrap) wrap.innerHTML = tableHtml;
+    setAnalisaAlert('analisaAlertRupa', list.filter(r => r.selisih !== 0).length);
     _analisaRupaLastData = { month, list, tot, head };
     _analisaRupaNamaSrc = { p: rawP, g: rawG };
   }
