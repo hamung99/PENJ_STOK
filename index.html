@@ -5691,6 +5691,7 @@ self.onmessage = function(e){
   let _cekUmFuzzyThreshold = 0.82;
   let _cekUmLastList       = [];
   let _cekUmRecon          = null;
+  let _cekUmBRows          = [];
   try {
     const f = localStorage.getItem('cekUmFuzzy');
     if (f === '1') _cekUmFuzzyEnabled = true;
@@ -5978,7 +5979,7 @@ self.onmessage = function(e){
     C.forEach(x => { const k = reasonOf(x); const o = byReason.get(k) || { n: 0, v: 0 }; o.n++; o.v += umRowTotal(x.r); byReason.set(k, o); });
 
     const label = month ? monthLabel(month) : 'semua bulan';
-    const card = (t, v, sub, color) => '<div style="flex:1;min-width:200px;border:1px solid #dbe6f5;border-left:4px solid ' + color + ';border-radius:8px;padding:8px 12px;background:#f8fbff">'
+    const card = (t, v, sub, color, onclick) => '<div ' + (onclick ? 'onclick="' + onclick + '" title="Klik untuk lihat datanya" ' : '') + 'style="flex:1;min-width:200px;border:1px solid #dbe6f5;border-left:4px solid ' + color + ';border-radius:8px;padding:8px 12px;background:#f8fbff;' + (onclick ? 'cursor:pointer' : '') + '">'
       + '<div style="font-size:11px;font-weight:700;color:#475569">' + t + '</div>'
       + '<div style="font-size:16px;font-weight:800;color:#0f172a">' + rp(v) + '</div>'
       + '<div style="font-size:11px;color:#64748b">' + sub + '</div></div>';
@@ -5994,12 +5995,34 @@ self.onmessage = function(e){
     const reasonHtml = [...byReason.entries()].sort((a, b) => b[1].v - a[1].v)
       .map(([k, o]) => '<li><b>' + escHtml(k) + '</b>: ' + o.n.toLocaleString('id-ID') + ' baris · ' + rp(o.v) + '</li>').join('');
 
+    /* detail: uang masuk bulan ini yang terhubung ke faktur bulan lain */
+    const bRows = B.map(x => { const g = owner.get(x.r); return { x, g }; })
+      .sort((a, b) => String(a.g.month).localeCompare(String(b.g.month)) || umRowTotal(b.x.r) - umRowTotal(a.x.r));
+    _cekUmBRows = bRows;
+    const bByMonth = new Map();
+    bRows.forEach(({ x, g }) => { const o = bByMonth.get(g.month) || { n: 0, v: 0 }; o.n++; o.v += umRowTotal(x.r); bByMonth.set(g.month, o); });
+    const bMonthHtml = [...bByMonth.entries()].sort((a, b) => String(a[0]).localeCompare(String(b[0])))
+      .map(([m, o]) => '<li>Faktur <b>' + escHtml(m ? monthLabel(m) : '(tanpa bulan)') + '</b>: ' + o.n.toLocaleString('id-ID') + ' baris · ' + rp(o.v) + '</li>').join('');
+    const bRowsHtml = bRows.map(({ x, g }) => {
+      const r = x.r;
+      return '<tr><td>' + escHtml(String(r.tanggal ?? r.Tanggal ?? '')) + '</td><td>' + x.jenis + '</td><td>' + escHtml(umRowSales(r)) + '</td>'
+        + '<td>' + escHtml(g.faktur) + '</td><td>' + escHtml(g.cust) + '</td><td>' + escHtml(g.month ? monthLabel(g.month) : '') + '</td>'
+        + '<td>' + escHtml(fmtTgl(g.tgl)) + '</td><td>' + escHtml(g.pay || '') + '</td><td class="num">' + rp(g.tagihan) + '</td>'
+        + '<td class="num" style="font-weight:700">' + rp(umRowTotal(r)) + '</td></tr>';
+    }).join('');
+    const detailB = B.length
+      ? '<details id="cekUmDetB" style="margin-top:10px"><summary style="cursor:pointer;font-size:12px;font-weight:700;color:#1d4ed8">Data: uang masuk ' + escHtml(label) + ' untuk faktur bulan lain (' + B.length.toLocaleString('id-ID') + ' baris · ' + rp(sum(B)) + ')</summary>'
+        + '<ul style="font-size:11.5px;color:#1d4ed8;margin:6px 0 6px 18px;padding:0">' + bMonthHtml + '</ul>'
+        + '<button type="button" onclick="downloadCekUmBulanLain()" style="padding:4px 10px;font-size:11px;font-weight:700;border-radius:6px;margin:0 0 6px">⬇ Download Excel</button>'
+        + '<div class="tablebox" style="max-height:420px"><table class="cekum-fk-tbl"><thead><tr><th>TGL UM</th><th>JENIS UM</th><th>SALES</th><th>NO. FAKTUR</th><th>CUSTOMER</th><th>BULAN FAKTUR</th><th>TGL FAKTUR</th><th>BAYAR (PENJUALAN)</th><th>TAGIHAN FAKTUR</th><th>UANG MASUK</th></tr></thead><tbody>' + bRowsHtml + '</tbody></table></div></details>'
+      : '';
+
     box.innerHTML =
       '<div style="font-size:12px;font-weight:800;color:#1f4e78;margin-bottom:6px">🔎 RINCIAN DATA UANG MASUK — ' + escHtml(label.toUpperCase()) + ' (dihitung per tanggal uang masuk)</div>'
       + '<div style="display:flex;gap:10px;flex-wrap:wrap">'
       + card('TOTAL UANG MASUK (= tab Uang Masuk)', sum(inScope), n(inScope), '#1f4e78')
       + card('TERHUBUNG KE FAKTUR ' + (month ? 'BULAN INI' : ''), sum(A), n(A), '#16a34a')
-      + (month ? card('TERHUBUNG KE FAKTUR BULAN LAIN', sum(B), n(B) + ' · dihitung di bulan faktur tsb', '#2563eb') : '')
+      + (month ? card('TERHUBUNG KE FAKTUR BULAN LAIN', sum(B), n(B) + ' · dihitung di bulan faktur tsb · 👆 klik untuk lihat', '#2563eb', "var d=document.getElementById('cekUmDetB');if(d){d.open=true;d.scrollIntoView({behavior:'smooth',block:'start'});}") : '')
       + card('BELUM TERHUBUNG KE FAKTUR', sum(C), n(C), C.length ? '#dc2626' : '#16a34a')
       + '</div>'
       + '<div style="font-size:11.5px;color:#475569;margin-top:6px;line-height:1.6">'
@@ -6010,8 +6033,22 @@ self.onmessage = function(e){
         + '<details style="margin-top:6px"><summary style="cursor:pointer;font-size:12px;font-weight:700;color:#b42318">Lihat baris yang belum terhubung</summary>'
         + '<div class="tablebox" style="max-height:340px;margin-top:6px"><table class="cekum-fk-tbl"><thead><tr><th>TGL</th><th>JENIS</th><th>SALES</th><th>NO. FAKTUR (UM)</th><th>TOKO</th><th>ALAMAT</th><th>NOMINAL</th><th>ALASAN</th></tr></thead><tbody>' + rowsHtml + '</tbody></table></div>'
         + (C.length > LIM ? '<div style="font-size:11px;color:#64748b;margin-top:4px">Menampilkan ' + LIM + ' nominal terbesar dari ' + C.length + ' baris.</div>' : '')
-        + '</details>' : '');
+        + '</details>' : '')
+      + detailB;
   }
+
+  async function downloadCekUmBulanLain() {
+    try { await loadXLSX(); } catch(e){ alert(e.message); return; }
+    if (!_cekUmBRows.length) return alert('Tidak ada data.');
+    const head = ['TGL UM','JENIS UM','SALES','NO. FAKTUR','CUSTOMER','BULAN FAKTUR','TGL FAKTUR','BAYAR (PENJUALAN)','TAGIHAN FAKTUR','UANG MASUK'];
+    const rows = _cekUmBRows.map(({ x, g }) => [String(x.r.tanggal ?? ''), x.jenis, umRowSales(x.r), g.faktur, g.cust, g.month, fmtTgl(g.tgl), g.pay || '', g.tagihan, umRowTotal(x.r)]);
+    const tot = _cekUmBRows.reduce((a, { x }) => a + umRowTotal(x.r), 0);
+    const ws = XLSX.utils.aoa_to_sheet([head, ...rows, ['','','','','','','','','TOTAL', tot]]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'UM faktur bulan lain');
+    XLSX.writeFile(wb, 'UM_untuk_faktur_bulan_lain.xlsx');
+  }
+  window.downloadCekUmBulanLain = downloadCekUmBulanLain;
 
   async function renderCekUangMasuk() {
     await populateCekUmFilters();
