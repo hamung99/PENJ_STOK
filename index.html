@@ -739,7 +739,13 @@ body.dark #page-cekum .cek-card-actions select option{background:#0f172a;color:#
 body.dark #page-cekum .cek-card-actions label{color:#94a3b8}
 body.dark #page-cekum .cek-card-title{color:#93c5fd}
 body.dark #page-cekum .cek-card-actions select:focus,body.dark #page-cekum .cek-search:focus{outline:none;border-color:#3b82f6}
-#page-cekum .kpis{grid-template-columns:repeat(5,1fr)}
+#page-cekum .kpis{grid-template-columns:repeat(5,1fr);gap:8px;margin:8px 0}
+#page-cekum .kpi{padding:5px 12px;border-radius:8px;display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap}
+#page-cekum .kpi::after{height:1px}
+#page-cekum .kpi:hover{transform:none}
+#page-cekum .kpi small{font-size:9.5px}
+#page-cekum .kpi b{margin-top:0;font-size:14px}
+#page-cekum .kpi .kpi-src{display:none}
 @media(max-width:1100px){#page-cekum .kpis{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:900px){#page-cekum .kpis{grid-template-columns:repeat(2,1fr)}}
 #cekUmTable tfoot td{background:#eef2fb;font-weight:800}
@@ -5979,10 +5985,11 @@ self.onmessage = function(e){
     C.forEach(x => { const k = reasonOf(x); const o = byReason.get(k) || { n: 0, v: 0 }; o.n++; o.v += umRowTotal(x.r); byReason.set(k, o); });
 
     const label = month ? monthLabel(month) : 'semua bulan';
-    const card = (t, v, sub, color, onclick) => '<div ' + (onclick ? 'onclick="' + onclick + '" title="Klik untuk lihat datanya" ' : '') + 'style="flex:1;min-width:200px;border:1px solid #dbe6f5;border-left:4px solid ' + color + ';border-radius:8px;padding:8px 12px;background:#f8fbff;' + (onclick ? 'cursor:pointer' : '') + '">'
-      + '<div style="font-size:11px;font-weight:700;color:#475569">' + t + '</div>'
-      + '<div style="font-size:16px;font-weight:800;color:#0f172a">' + rp(v) + '</div>'
-      + '<div style="font-size:11px;color:#64748b">' + sub + '</div></div>';
+    const card = (t, v, sub, color, onclick) => '<div ' + (onclick ? 'onclick="' + onclick + '" title="Klik untuk lihat datanya" ' : '') + 'style="flex:1;min-width:190px;border:1px solid #dbe6f5;border-left:3px solid ' + color + ';border-radius:8px;padding:4px 10px;background:#f8fbff;' + (onclick ? 'cursor:pointer' : '') + '">'
+      + '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap">'
+      + '<span style="font-size:10px;font-weight:700;color:#475569">' + t + '</span>'
+      + '<b style="font-size:13.5px;font-weight:800;color:#0f172a">' + rp(v) + '</b></div>'
+      + '<div style="font-size:10px;color:#64748b;line-height:1.3">' + sub + '</div></div>';
     const n = (a) => a.length.toLocaleString('id-ID') + ' baris';
     const sorted = C.slice().sort((a, b) => umRowTotal(b.r) - umRowTotal(a.r));
     const LIM = 300;
