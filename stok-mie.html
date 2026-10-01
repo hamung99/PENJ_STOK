@@ -5,6 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rekap Stok - MIE</title>
     
+    <script>
+/* Tema gelap: ikut mode gelap aplikasi induk (index.html) saat dimuat di iframe */
+(function(){
+  var root = document.documentElement;
+  function parentDark(){
+    try { return window.parent !== window && window.parent.document.body.classList.contains('dark'); } catch(e){ return false; }
+  }
+  function sync(){ root.classList.toggle('dark', parentDark()); }
+  sync();
+  try {
+    if (window.parent !== window) {
+      new MutationObserver(sync).observe(window.parent.document.body, { attributes:true, attributeFilter:['class'] });
+    }
+  } catch(e){}
+  window.addEventListener('message', function(e){
+    if (e.origin === location.origin && e.data && e.data.type === 'stok-theme') root.classList.toggle('dark', !!e.data.dark);
+  });
+})();
+</script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
@@ -261,6 +280,68 @@
             #result-container th, #result-container td { padding: 5px 6px; }
             .file-chip { max-width: 220px; }
         }
+    </style>
+    <style id="darkThemeStok">
+        /* ===== TEMA GELAP (aktif bila <html class="dark">) ===== */
+        html.dark { color-scheme: dark; background:#0f172a; }
+        html.dark body { background:#0f172a !important; color:#e2e8f0 !important; }
+        html.dark .bg-white { background-color:#1e293b !important; }
+        html.dark .bg-gray-50 { background-color:#172033 !important; }
+        html.dark .text-gray-900, html.dark .text-gray-800, html.dark .text-gray-700 { color:#e2e8f0 !important; }
+        html.dark .text-gray-500 { color:#94a3b8 !important; }
+        html.dark .text-gray-400, html.dark .text-gray-300 { color:#7c8aa0 !important; }
+        html.dark .text-blue-600, html.dark .text-blue-500 { color:#60a5fa !important; }
+        html.dark .text-red-600, html.dark .text-red-500 { color:#f87171 !important; }
+        html.dark .text-orange-600 { color:#fb923c !important; }
+        html.dark .text-green-500 { color:#4ade80 !important; }
+        html.dark .text-amber-500 { color:#fbbf24 !important; }
+        html.dark .border-gray-100, html.dark .border-gray-200 { border-color:#334155 !important; }
+        html.dark .hover\:bg-gray-50:hover, html.dark .hover\:bg-gray-100:hover { background-color:#273449 !important; }
+        html.dark .hover\:bg-gray-200:hover { background-color:#334155 !important; }
+        html.dark .hover\:bg-blue-50:hover { background-color:#1e3a5f !important; }
+        html.dark .hover\:bg-red-50:hover { background-color:#450a0a !important; }
+        html.dark .hover\:text-blue-600:hover { color:#93c5fd !important; }
+        html.dark .shadow-sm, html.dark .shadow-xl, html.dark .shadow-2xl { box-shadow:0 2px 10px rgba(0,0,0,.45) !important; }
+
+        /* tabel mode Lengkap */
+        html.dark #result-container th { background-color:#1e293b; color:#a8b5c9; border-bottom-color:#334155; border-right-color:#2a374d; }
+        html.dark #result-container thead th { background-color:#1e293b; box-shadow: inset 0 -1px 0 #334155; }
+        html.dark #result-container td { color:#e2e8f0; border-bottom-color:#2a374d; border-right-color:#222f45; }
+        html.dark #result-container tbody tr { background-color:#1e293b; }
+        html.dark #result-container tbody tr:nth-child(even) { background-color:#1a2539; }
+        html.dark #result-container tbody tr:hover { background-color:#273449; }
+        /* tabel mode Ringkas */
+        html.dark #ringkas-container th { background-color:#1e293b; color:#a8b5c9; border-color:#334155; }
+        html.dark #ringkas-container td { color:#e2e8f0; border-color:#2a374d; }
+        html.dark #ringkas-container td.ket { color:#7c8aa0; }
+        html.dark #ringkas-container tbody tr:hover { background-color:#273449; }
+        /* navigasi, chip, tab, sheet */
+        html.dark .page-nav a { color:#94a3b8; border-color:#334155; }
+        html.dark .page-nav a:hover, html.dark .page-nav a.active { background:#273449; color:#e2e8f0; border-color:#475569; }
+        html.dark .file-chip { color:#94a3b8; border-color:#334155; }
+        html.dark .file-chip:hover { background:#273449; border-color:#475569; color:#cbd5e1; }
+        html.dark .file-chip.active { color:#7c8aa0; border-color:#334155; }
+        html.dark .sheet-btn { color:#94a3b8; border-color:#334155; }
+        html.dark .sheet-btn:hover { background:#273449; color:#e2e8f0; }
+        html.dark .sheet-btn.active { background:#273449; color:#e2e8f0; border-color:#475569; }
+        html.dark .tab-btn { color:#94a3b8; }
+        html.dark .tab-btn:hover { color:#e2e8f0; }
+        html.dark .tab-btn.active { color:#e2e8f0; border-bottom-color:#64748b; }
+        html.dark .tab-filter-row .tab-group { border-bottom-color:#334155; }
+        /* filter */
+        html.dark .filter-wrap { background:#1e293b; border-color:#334155; color:#94a3b8; }
+        html.dark .filter-wrap .filter-sep { color:#475569; }
+        html.dark .filter-wrap > i.fa-calendar-alt { color:#7c8aa0; }
+        html.dark .filter-input { color:#e2e8f0; }
+        html.dark .filter-input option { background:#1e293b; color:#e2e8f0; }
+        html.dark .filter-input:hover { background:#273449; }
+        html.dark .filter-input:focus { background:#273449; border-color:#475569; box-shadow:0 0 0 2px rgba(148,163,184,.2); }
+        html.dark .filter-reset-btn { background:#273449; color:#94a3b8; }
+        html.dark .filter-reset-btn:hover { background:#334155; }
+        html.dark .filter-info { color:#7c8aa0; }
+        html.dark .filter-info.active { color:#cbd5e1; }
+        html.dark ::-webkit-scrollbar-thumb { background:#475569; }
+        html.dark ::-webkit-scrollbar-track { background:#172033; }
     </style>
 </head>
 
