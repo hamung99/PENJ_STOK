@@ -3336,6 +3336,7 @@ self.onmessage = function(e){
   }
 
   let _activeTab = 's6';
+  const SYNC_RENDER_MAX_ROWS = 8000;   // ambang render langsung; makin besar = makin cepat tapi risiko UI sesaat membeku
   function show(t, b){
     _activeTab = t;
     document.querySelectorAll('.tabs button').forEach(x => x.classList.remove('active'));
@@ -3377,6 +3378,13 @@ self.onmessage = function(e){
     if (panel) panel.style.display = 'block';
     if (t === 's0'){ const k = s0Key(); if (s0KeyBuilt !== k){ buildPanelS0(); s0KeyBuilt = k; } }
     else if (!viewCache[t] || viewCache[t].ver !== dataVersion){
+      if (filteredRows.length <= SYNC_RENDER_MAX_ROWS){
+        // data kecil/sedang: render langsung (tanpa placeholder & tanpa menunggu idle) -> tab terasa instan
+        const html = renderTab(t);
+        viewCache[t] = { ver: dataVersion, html: html };
+        if (panel) panel.innerHTML = html;
+        return;
+      }
       if (panel) panel.innerHTML = '<div style="padding:28px;text-align:center;color:#64748b;font-size:13px">Menyiapkan rekap…</div>';
       const ver = dataVersion; const tab = t;
       scheduleIdle(function(){
@@ -8720,6 +8728,7 @@ self.onmessage = function(e){
     if (sbClient){ await pullFromCloud({ silent: true }); subscribeRealtime(); }
     else { await restoreFromDB(); await loadGudangFromDB(); await rrLoadAll(); }
     try { await refreshAutoBatalBadgeOnly(); } catch(e){}
+    setTimeout(() => { try { ensureStokFitriSummary(); ensureStokSummaries(); } catch(e){} }, 2000);   // panaskan data Analisa di background
     try {
       const nav = document.getElementById('mainTabs');
       if (nav) {
