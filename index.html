@@ -971,6 +971,7 @@ body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#
       <div class="kpi"><small>TOTAL TAGIHAN</small><b id="cekUmTotalTagihan">Rp 0</b><span class="kpi-src">dari data Penjualan</span></div>
       <div class="kpi"><small>TOTAL UANG MASUK</small><b id="cekUmTotalMasuk">Rp 0</b><span class="kpi-src">dari data Uang Masuk</span></div>
     </div>
+    <div id="cekUmRecon" style="margin:0 0 10px"></div>
     <div class="tablebox" id="cekUmBox">
       <table id="cekUmTable" style="min-width:1300px">
         <thead>
@@ -5689,6 +5690,7 @@ self.onmessage = function(e){
   let _cekUmFuzzyEnabled   = false;
   let _cekUmFuzzyThreshold = 0.82;
   let _cekUmLastList       = [];
+  let _cekUmRecon          = null;
   try {
     const f = localStorage.getItem('cekUmFuzzy');
     if (f === '1') _cekUmFuzzyEnabled = true;
@@ -5911,6 +5913,7 @@ self.onmessage = function(e){
       list.push(Object.assign({}, g, { category: targetCategory, umTotal, selisih, status, ket, umMatches: matches.length, umRows: matches, matchType, fuzzyInfo }));
     });
 
+    _cekUmRecon = { cash, tempo, claimed };
     list.sort((a, b) => (b.ts || 0) - (a.ts || 0));
     return list;
   }
@@ -5934,6 +5937,43 @@ self.onmessage = function(e){
     salesSel.innerHTML = '<option value="">Semua Sales</option>' +
       salesArr.map(s => '<option value="' + s + '">' + s + '</option>').join('');
     salesSel.value = salesArr.includes(curS) ? curS : '';
+  }
+
+  /* ===== RINCIAN SELISIH: Total UM (data Uang Masuk) = Terhubung ke faktur + Belum terhubung ===== */
+  function renderCekUmRecon(month, totalMasukKartu) {
+    const box = document.getElementById('cekUmRecon');
+    if (!box || !_cekUmRecon) return;
+    const { cash, tempo, claimed } = _cekUmRecon;
+    const all = [].concat(cash.map(r => ({ r, jenis: 'CASH' })), tempo.map(r => ({ r, jenis: 'TEMPO' })))
+                  .filter(x => umRowTotal(x.r) !== 0);
+    const inScope = month ? all.filter(x => umRowMonth(x.r) === month) : all;
+    const sum = (a) => a.reduce((t, x) => t + umRowTotal(x.r), 0);
+    const linked = inScope.filter(x => claimed.has(x.r));
+    const unl    = inScope.filter(x => !claimed.has(x.r)).sort((a, b) => umRowTotal(b.r) - umRowTotal(a.r));
+    const label  = month ? monthLabel(month) : 'semua bulan';
+    const card = (t, v, sub, color) => '<div style="flex:1;min-width:190px;border:1px solid #dbe6f5;border-left:4px solid ' + color + ';border-radius:8px;padding:8px 12px;background:#f8fbff">'
+      + '<div style="font-size:11px;font-weight:700;color:#475569">' + t + '</div>'
+      + '<div style="font-size:16px;font-weight:800;color:#0f172a">' + rp(v) + '</div>'
+      + '<div style="font-size:11px;color:#64748b">' + sub + '</div></div>';
+    const LIM = 300;
+    const rowsHtml = unl.slice(0, LIM).map(x => {
+      const r = x.r;
+      return '<tr><td>' + escHtml(String(r.tanggal ?? r.Tanggal ?? '')) + '</td><td>' + x.jenis + '</td><td>' + escHtml(umRowSales(r)) + '</td>'
+        + '<td>' + escHtml(String(r.faktur ?? r.no_faktur ?? '')) + '</td><td>' + escHtml(umRowCustomer(r)) + '</td><td>' + escHtml(umRowAlamat(r))
+        + '</td><td class="num">' + rp(umRowTotal(r)) + '</td></tr>';
+    }).join('');
+    const beda = Math.abs(sum(linked) - totalMasukKartu) > 1;
+    box.innerHTML =
+      '<div style="display:flex;gap:10px;flex-wrap:wrap">'
+      + card('TOTAL UM ' + label.toUpperCase(), sum(inScope), inScope.length.toLocaleString('id-ID') + ' baris di data Uang Masuk', '#1f4e78')
+      + card('UM TERHUBUNG KE FAKTUR', sum(linked), linked.length.toLocaleString('id-ID') + ' baris', '#16a34a')
+      + card('UM BELUM TERHUBUNG', sum(unl), unl.length.toLocaleString('id-ID') + ' baris — tidak masuk TOTAL UANG MASUK', unl.length ? '#dc2626' : '#16a34a')
+      + '</div>'
+      + (beda ? '<div style="font-size:11px;color:#64748b;margin-top:6px">Catatan: kartu TOTAL UANG MASUK di atas dihitung per bulan <b>faktur</b> (Rp ' + Math.round(totalMasukKartu).toLocaleString('id-ID') + '), sedangkan rincian ini per bulan <b>uang masuk</b>, sehingga uang faktur lintas bulan bisa membuat angkanya berbeda.</div>' : '')
+      + (unl.length ? '<details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;font-weight:700;color:#b42318">Lihat ' + unl.length.toLocaleString('id-ID') + ' baris UM yang belum terhubung</summary>'
+        + '<div class="tablebox" style="max-height:340px;margin-top:6px"><table class="cekum-fk-tbl"><thead><tr><th>TGL</th><th>JENIS</th><th>SALES</th><th>NO. FAKTUR (UM)</th><th>TOKO</th><th>ALAMAT</th><th>NOMINAL</th></tr></thead><tbody>' + rowsHtml + '</tbody></table></div>'
+        + (unl.length > LIM ? '<div style="font-size:11px;color:#64748b;margin-top:4px">Menampilkan ' + LIM + ' nominal terbesar dari ' + unl.length + ' baris.</div>' : '')
+        + '</details>' : '');
   }
 
   async function renderCekUangMasuk() {
@@ -5968,6 +6008,7 @@ self.onmessage = function(e){
     if (elB) elB.textContent  = totalBelum.toLocaleString('id-ID');
     if (elT) elT.textContent  = rp(totalTagihan);
     if (elM) elM.textContent  = rp(totalMasuk);
+    try { renderCekUmRecon(month, totalMasuk); } catch(e){ console.warn('renderCekUmRecon', e); }
 
     const tbody = document.getElementById('cekUmTbody');
     const tfoot = document.getElementById('cekUmTfoot');
