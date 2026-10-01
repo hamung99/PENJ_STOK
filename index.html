@@ -90,7 +90,12 @@ body.dark #s7FakturOverlay .s7-fk-group span{color:#94a3b8}
 .fak-link:hover{color:#0f172a;background:#e8f1ff;border-radius:4px}
 body.dark .fak-link{color:#93c5fd}
 body.dark .fak-link:hover{color:#fff;background:#334155}
-#cekUmFakturOverlay .gmodal-box{max-width:880px;width:100%;max-height:90vh;display:flex;flex-direction:column;padding:18px 20px 16px}
+#cekUmFakturOverlay .gmodal-box,#cekUmLunasOverlay .gmodal-box{max-width:min(1500px,100%);width:100%;max-height:92vh;display:flex;flex-direction:column;padding:18px 22px 16px}
+.cekum-fk-tbl th,.cekum-fk-tbl td{white-space:nowrap}
+.cekum-act{padding:7px 14px;border:0;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;color:#fff}
+.cekum-act.red{background:#dc2626}.cekum-act.blue{background:#2563eb}.cekum-act.green{background:#16a34a}.cekum-act.gray{background:#64748b}
+.cekum-act:hover{filter:brightness(1.08)}
+body.dark #cekUmLunasOverlay .gmodal-box{background:#1e293b;color:#e2e8f0}
 #cekUmFakturOverlay h3{margin:0 0 4px;font-size:16px;color:#1f4e78}
 #cekUmFakturOverlay .gmodal-sub{font-size:12px;color:#64748b;margin-bottom:6px;line-height:1.5}
 #cekUmFkBody{overflow:auto;flex:1;min-height:0;margin:6px 0 10px}
@@ -968,6 +973,7 @@ body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#
         </span>
         <button type="button" class="cek-refresh-btn" onclick="renderCekUangMasuk()" title="Segarkan">↻</button>
         <button type="button" onclick="downloadCekUangMasuk()">⬇ Download</button>
+        <button type="button" id="cekUmLunasBtn" onclick="openCekUmLunasList()" title="Daftar faktur yang ditandai LUNAS manual">📋 Transaksi Lunas</button>
       </div>
     </div>
     <div class="kpis">
@@ -1447,7 +1453,8 @@ body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#
     <h3>Detail Faktur — <span id="cekUmFkTitle">-</span></h3>
     <div class="gmodal-sub" id="cekUmFkSub">-</div>
     <div id="cekUmFkBody"></div>
-    <div class="gmodal-actions">
+    <div class="gmodal-actions" style="flex-wrap:wrap;justify-content:space-between;align-items:center">
+      <div id="cekUmFkActBtns" style="display:flex;gap:8px;flex-wrap:wrap"></div>
       <button type="button" class="gmodal-ghost" onclick="closeCekUmFakturModal()">Tutup</button>
     </div>
   </div>
@@ -5698,6 +5705,35 @@ self.onmessage = function(e){
   let _cekUmLastList       = [];
   let _cekUmRecon          = null;
   let _cekUmBRows          = [];
+  let _cekUmLunas          = new Map();   /* faktur -> record Transaksi Lunas (manual) */
+  let _cekUmPayOv          = {};          /* faktur -> 'CASH' | 'TEMPO' (pindah bagian) */
+  async function cekUmLoadState() {
+    try {
+      let a = null, b = null;
+      if (useIDB && db) {
+        const x = await db.meta.get('cekUmLunas');   a = x ? x.value : null;
+        const y = await db.meta.get('cekUmPayOv');   b = y ? y.value : null;
+      } else {
+        a = JSON.parse(localStorage.getItem('cekUmLunas') || 'null');
+        b = JSON.parse(localStorage.getItem('cekUmPayOv') || 'null');
+      }
+      _cekUmLunas = new Map((Array.isArray(a) ? a : []).filter(r => r && r.faktur).map(r => [String(r.faktur).trim(), r]));
+      _cekUmPayOv = (b && typeof b === 'object') ? b : {};
+    } catch(e){ console.warn('cekUmLoadState', e); }
+  }
+  async function cekUmSaveState() {
+    const a = [..._cekUmLunas.values()], b = _cekUmPayOv;
+    try {
+      if (useIDB && db) {
+        await db.meta.put({ key: 'cekUmLunas', value: a });
+        await db.meta.put({ key: 'cekUmPayOv', value: b });
+      } else {
+        localStorage.setItem('cekUmLunas', JSON.stringify(a));
+        localStorage.setItem('cekUmPayOv', JSON.stringify(b));
+      }
+    } catch(e){ console.warn('cekUmSaveState', e); }
+    try { schedulePush(); } catch(e){}
+  }
   try {
     const f = localStorage.getItem('cekUmFuzzy');
     if (f === '1') _cekUmFuzzyEnabled = true;
@@ -5801,6 +5837,13 @@ self.onmessage = function(e){
       if (!g.alamat && alamat) g.alamat = alamat;
       if (!g.pay && pay)       g.pay = pay;
       if (!g.month && mk)      g.month = mk;
+    });
+
+    await cekUmLoadState();
+    groups.forEach(g => {
+      g.payOrig = g.pay;
+      const ov = _cekUmPayOv[String(g.faktur).trim()];
+      if (ov === 'CASH' || ov === 'TEMPO') g.pay = ov;
     });
 
     const list = [];
@@ -5924,7 +5967,12 @@ self.onmessage = function(e){
         ket += ' · cocok lintas bulan';
       }
 
-      list.push(Object.assign({}, g, { category: targetCategory, umTotal, selisih, status, ket, umMatches: matches.length, umRows: matches, matchType, fuzzyInfo }));
+      const lr = _cekUmLunas.get(String(g.faktur).trim());
+      if (lr) {
+        if (status !== 'LUNAS') { status = 'LUNAS'; ket = '✔ Lunas manual' + (lr.ket ? ' · ' + lr.ket : '') + ' (selisih ' + rp(selisih) + ')'; }
+        else if (lr.ket) ket += ' · ✔ ' + lr.ket;
+      }
+      list.push(Object.assign({}, g, { category: targetCategory, umTotal, selisih, status, ket, umMatches: matches.length, umRows: matches, matchType, fuzzyInfo, lunasManual: !!lr, payMoved: g.pay !== g.payOrig }));
     });
 
     const owner = new Map();
@@ -6090,6 +6138,8 @@ self.onmessage = function(e){
     if (elT) elT.textContent  = rp(totalTagihan);
     if (elM) elM.textContent  = rp(totalMasuk);
     try { renderCekUmRecon(month); } catch(e){ console.warn('renderCekUmRecon', e); }
+    const lb = document.getElementById('cekUmLunasBtn');
+    if (lb) lb.textContent = '📋 Transaksi Lunas (' + _cekUmLunas.size.toLocaleString('id-ID') + ')';
 
     const tbody = document.getElementById('cekUmTbody');
     const tfoot = document.getElementById('cekUmTfoot');
@@ -6138,6 +6188,8 @@ self.onmessage = function(e){
       } else if (g.matchType === 'faktur-lintas-jenis') {
         statusCell += ' <span class="ket-badge warn" style="background:#ede9fe;color:#5b21b6" title="Nomor faktur sama, tapi uang masuk tercatat di jenis berbeda (Cash Dropping vs Piutang Tempo)">🔀 beda jenis</span>';
       }
+      if (g.lunasManual) statusCell += ' <span class="ket-badge ok" style="background:#dcfce7;color:#166534" title="Ditandai LUNAS manual (ada di Transaksi Lunas)">✔ manual</span>';
+      if (g.payMoved) statusCell += ' <span class="ket-badge warn" style="background:#e0f2fe;color:#075985" title="Dipindah dari ' + escHtml(g.payOrig || '—') + ' ke ' + escHtml(g.pay) + '">🔁 pindah</span>';
       body += '<td>' + statusCell + '</td>';
       body += '<td>' + escHtml(g.ket) + '</td>';
       body += '</tr>';
@@ -6345,7 +6397,129 @@ self.onmessage = function(e){
     html += '</div>';
 
     body.innerHTML = html;
+
+    /* ---- aksi ---- */
+    const fk = String(faktur ?? '').trim();
+    const isBatal = isBatalFaktur(fk);
+    const isLunasMan = _cekUmLunas.has(fk);
+    const payNow = String(pay || '').toUpperCase();
+    const target = payNow === 'CASH' ? 'TEMPO' : 'CASH';
+    _cekUmFkCur = { faktur: fk, g, tgl, salesName, cust, alamat, pay: payNow, payOrig: g ? g.payOrig : payNow, tagihan, umTotal, selisih, status };
+    const act = document.getElementById('cekUmFkActBtns');
+    if (act) {
+      act.innerHTML =
+        (isBatal
+          ? '<button type="button" class="cekum-act gray" onclick="cekUmFkBatal(false)">↩ Aktifkan Kembali Faktur</button>'
+          : '<button type="button" class="cekum-act red" onclick="cekUmFkBatal(true)">🚫 Tandai Transaksi Batal</button>')
+        + '<button type="button" class="cekum-act blue" onclick="cekUmFkMovePay()">🔁 Pindahkan ke ' + (payNow ? target : 'CASH') + (payNow ? ' (sekarang ' + escHtml(payNow) + ')' : '') + '</button>'
+        + (isLunasMan
+          ? '<button type="button" class="cekum-act gray" onclick="cekUmFkLunas(false)">↩ Batalkan Tanda Lunas</button>'
+          : '<button type="button" class="cekum-act green" onclick="cekUmFkLunas(true)">✅ Tandai LUNAS &amp; Masukkan ke Transaksi Lunas</button>');
+    }
   }
+  let _cekUmFkCur = null;
+  async function cekUmFkBatal(on) {
+    const c = _cekUmFkCur; if (!c) return;
+    const nf = c.faktur;
+    if (on) {
+      if (!confirm('Tandai faktur "' + nf + '" sebagai TRANSAKSI BATAL (seluruh faktur)?\n\nSemua baris faktur ini tidak akan dihitung di semua tab.\nData tetap tersimpan dan bisa diaktifkan kembali.')) return;
+      batalFakturSet.add(nf);
+      const prefix = nf + '|'; [...batalLineSet].forEach(k => { if (k.startsWith(prefix)) batalLineSet.delete(k); });
+    } else {
+      if (!confirm('Aktifkan kembali faktur "' + nf + '"?')) return;
+      batalFakturSet.delete(nf);
+      const prefix = nf + '|'; [...batalLineSet].forEach(k => { if (k.startsWith(prefix)) batalLineSet.delete(k); });
+    }
+    await saveBatalFaktur();
+    closeCekUmFakturModal();
+    showBusy('Memperbarui…');
+    try { await refreshAfterDataChange(); } finally { hideBusy(); }
+    await renderCekUangMasuk();
+    setStatus('Faktur ' + nf + (on ? ' ditandai BATAL — dikecualikan dari perhitungan.' : ' diaktifkan kembali.'));
+  }
+  async function cekUmFkMovePay() {
+    const c = _cekUmFkCur; if (!c) return;
+    const nf = c.faktur;
+    const target = c.pay === 'CASH' ? 'TEMPO' : 'CASH';
+    if (!confirm('Pindahkan faktur "' + nf + '" dari ' + (c.pay || '—') + ' ke ' + target + '?\n\nPencocokan uang masuk dan kolom Pembayaran di Cek Uang Masuk akan mengikuti ' + target + '.\nData Penjualan asli tidak diubah.')) return;
+    if (c.payOrig === target) delete _cekUmPayOv[nf]; else _cekUmPayOv[nf] = target;
+    await cekUmSaveState();
+    await renderCekUangMasuk();
+    await openCekUmFakturModal(nf);
+  }
+  async function cekUmFkLunas(on) {
+    const c = _cekUmFkCur; if (!c) return;
+    const nf = c.faktur;
+    if (on) {
+      let msg = 'Tandai faktur "' + nf + '" LUNAS dan masukkan ke Transaksi Lunas?\n\nTagihan ' + rp(c.tagihan) + ' · Uang masuk ' + rp(c.umTotal) + ' · Selisih ' + rp(c.selisih);
+      if (c.umTotal === 0) msg += '\n\n⚠ Faktur ini belum ada uang masuk sama sekali.';
+      if (!confirm(msg)) return;
+      const ket = prompt('Keterangan (opsional), mis. "selisih dibulatkan" / "diskon" / "titip":', '');
+      if (ket === null) return;
+      _cekUmLunas.set(nf, { faktur: nf, tgl: fmtTgl(c.tgl), ts: (c.g && c.g.ts) || 0, month: (c.g && c.g.month) || '', sales: c.salesName, cust: c.cust, alamat: c.alamat,
+        pay: c.pay, tagihan: c.tagihan, umTotal: c.umTotal, selisih: c.selisih, statusAsal: c.status, ket: String(ket).trim(), markedAt: Date.now() });
+    } else {
+      if (!confirm('Batalkan tanda LUNAS manual untuk faktur "' + nf + '"?')) return;
+      _cekUmLunas.delete(nf);
+    }
+    await cekUmSaveState();
+    await renderCekUangMasuk();
+    await openCekUmFakturModal(nf);
+  }
+  window.cekUmFkBatal = cekUmFkBatal; window.cekUmFkMovePay = cekUmFkMovePay; window.cekUmFkLunas = cekUmFkLunas;
+
+  /* ===== Daftar Transaksi Lunas (manual) ===== */
+  function _cekUmLunasEnsure() {
+    let ov = document.getElementById('cekUmLunasOverlay');
+    if (ov) return ov;
+    ov = document.createElement('div');
+    ov.className = 'gmodal-overlay'; ov.id = 'cekUmLunasOverlay';
+    ov.addEventListener('click', e => { if (e.target === ov) closeCekUmLunasList(); });
+    ov.innerHTML = '<div class="gmodal-box"><h3 style="margin:0 0 4px;font-size:16px;color:#1f4e78">📋 Transaksi Lunas (ditandai manual)</h3>'
+      + '<div class="gmodal-sub" id="cekUmLunasSub" style="font-size:12px;color:#64748b;margin-bottom:6px"></div>'
+      + '<div id="cekUmLunasBody" style="overflow:auto;flex:1;min-height:0;margin:6px 0 10px"></div>'
+      + '<div class="gmodal-actions" style="justify-content:space-between;flex-wrap:wrap"><button type="button" class="cekum-act green" onclick="downloadCekUmLunas()">⬇ Download Excel</button>'
+      + '<button type="button" class="gmodal-ghost" onclick="closeCekUmLunasList()">Tutup</button></div></div>';
+    document.body.appendChild(ov);
+    return ov;
+  }
+  function closeCekUmLunasList() { const ov = document.getElementById('cekUmLunasOverlay'); if (ov) ov.classList.remove('show'); }
+  async function openCekUmLunasList() {
+    await cekUmLoadState();
+    const ov = _cekUmLunasEnsure();
+    const body = document.getElementById('cekUmLunasBody');
+    const list = [..._cekUmLunas.values()].sort((a, b) => (b.markedAt || 0) - (a.markedAt || 0));
+    const tag = list.reduce((t, r) => t + (r.tagihan || 0), 0), um = list.reduce((t, r) => t + (r.umTotal || 0), 0);
+    document.getElementById('cekUmLunasSub').innerHTML = list.length.toLocaleString('id-ID') + ' faktur · Tagihan <b>' + rp(tag) + '</b> · Uang masuk <b>' + rp(um) + '</b> · Selisih <b>' + rp(um - tag) + '</b>';
+    if (!list.length) body.innerHTML = '<div class="cekum-fk-empty">Belum ada faktur yang ditandai LUNAS manual. Buka detail faktur di Cek Uang Masuk, lalu klik "Tandai LUNAS".</div>';
+    else body.innerHTML = '<table class="cekum-fk-tbl"><thead><tr><th>TGL</th><th>NO. FAKTUR</th><th>SALES</th><th>CUSTOMER</th><th>ALAMAT</th><th>BAYAR</th><th>TAGIHAN</th><th>UANG MASUK</th><th>SELISIH</th><th>KETERANGAN</th><th>DITANDAI</th><th></th></tr></thead><tbody>'
+      + list.map(r => '<tr><td>' + escHtml(r.tgl || '') + '</td><td><span class="fak-link" style="color:#1d4ed8;cursor:pointer;text-decoration:underline" onclick="closeCekUmLunasList();openCekUmFakturModal(this.dataset.f)" data-f="' + escHtml(r.faktur) + '">' + escHtml(r.faktur) + '</span></td>'
+        + '<td>' + escHtml(r.sales || '') + '</td><td>' + escHtml(r.cust || '') + '</td><td>' + escHtml(r.alamat || '') + '</td><td>' + escHtml(r.pay || '') + '</td>'
+        + '<td class="num">' + rp(r.tagihan) + '</td><td class="num">' + rp(r.umTotal) + '</td><td class="num" style="color:' + ((r.selisih || 0) < 0 ? '#dc2626' : '#166534') + '">' + rp(r.selisih) + '</td>'
+        + '<td>' + escHtml(r.ket || '—') + '</td><td>' + escHtml(new Date(r.markedAt || 0).toLocaleString('id-ID')) + '</td>'
+        + '<td><button type="button" class="cekum-act gray" style="padding:3px 8px;font-size:11px" data-f="' + escHtml(r.faktur) + '" onclick="cekUmLunasRemove(this.dataset.f)">Hapus</button></td></tr>').join('')
+      + '</tbody></table>';
+    ov.classList.add('show');
+  }
+  async function cekUmLunasRemove(f) {
+    if (!confirm('Hapus faktur "' + f + '" dari Transaksi Lunas?')) return;
+    _cekUmLunas.delete(String(f).trim());
+    await cekUmSaveState();
+    await renderCekUangMasuk();
+    await openCekUmLunasList();
+  }
+  async function downloadCekUmLunas() {
+    try { await loadXLSX(); } catch(e){ alert(e.message); return; }
+    const list = [..._cekUmLunas.values()].sort((a, b) => (b.markedAt || 0) - (a.markedAt || 0));
+    if (!list.length) return alert('Belum ada data.');
+    const head = ['TANGGAL','NO. FAKTUR','SALES','CUSTOMER','ALAMAT','PEMBAYARAN','TAGIHAN','UANG MASUK','SELISIH','STATUS ASAL','KETERANGAN','DITANDAI'];
+    const rows = list.map(r => [r.tgl, r.faktur, r.sales, r.cust, r.alamat, r.pay, r.tagihan, r.umTotal, r.selisih, r.statusAsal, r.ket, new Date(r.markedAt || 0).toLocaleString('id-ID')]);
+    const ws = XLSX.utils.aoa_to_sheet([head, ...rows]);
+    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Transaksi Lunas');
+    XLSX.writeFile(wb, 'Transaksi_Lunas.xlsx');
+  }
+  window.openCekUmLunasList = openCekUmLunasList; window.closeCekUmLunasList = closeCekUmLunasList;
+  window.cekUmLunasRemove = cekUmLunasRemove; window.downloadCekUmLunas = downloadCekUmLunas;
   window.openCekUmFakturModal = openCekUmFakturModal;
   window.closeCekUmFakturModal = closeCekUmFakturModal;
 
@@ -6358,7 +6532,7 @@ self.onmessage = function(e){
       openCekUmFakturModal(el.getAttribute('data-faktur') || '');
     });
     document.addEventListener('keydown', function(ev){
-      if (ev.key === 'Escape') { closeCekUmFakturModal(); return; }
+      if (ev.key === 'Escape') { closeCekUmFakturModal(); closeCekUmLunasList(); return; }
       if ((ev.key === 'Enter' || ev.key === ' ') && document.activeElement && document.activeElement.classList && document.activeElement.classList.contains('fak-link')) {
         ev.preventDefault();
         openCekUmFakturModal(document.activeElement.getAttribute('data-faktur') || '');
