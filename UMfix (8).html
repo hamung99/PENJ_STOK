@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Rekap Uang Masuk Harian</title>
+<script>
+/* Ikuti mode gelap index.html (sama origin). Dibuka sendirian: ikut pilihan tersimpan bila ada. */
+(function () {
+  try {
+    var dark = false;
+    if (window.parent && window.parent !== window) {
+      dark = window.parent.document.documentElement.getAttribute("data-theme") === "dark";
+    } else {
+      dark = localStorage.getItem("rekap-theme") === "dark";
+    }
+    if (dark) document.documentElement.classList.add("dark");
+  } catch (e) {}
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; margin: 0; background: #f5f6fa; color: #222; }
+
+  /* ===== MENU (titik tiga, sebaris dengan tab) ===== */
+  .menu-wrap { position: relative; flex: 0 0 auto; margin: 0 0 6px 8px; }
+  .menu-btn {
+    background: #eef1f7;
+    border: 1px solid #d8deea;
+    color: #1f3b73;
+    width: 30px; height: 30px; border-radius: 6px;
+    font-size: 18px; line-height: 1; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .15s;
+  }
+  .menu-btn:hover { background: #dfe6f4; }
+
+  /* ===== KOTAK PENCARIAN CEPAT ===== */
+  .search-wrap { flex: 0 1 340px; padding: 0 8px 6px; min-width: 180px; }
+  .search-wrap input {
+    width: 100%; padding: 6px 10px 6px 30px; font-size: 13px;
+    border: 1px solid #d8deea; border-radius: 6px; background: #fff; color: #222;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><line x1='21' y1='21' x2='16.65' y2='16.65'/></svg>");
+    background-repeat: no-repeat; background-position: 9px center;
+  }
+  .search-wrap input:focus {
+    outline: none; border-color: #1f3b73;
+    box-shadow: 0 0 0 2px rgba(31,59,115,.15);
+  }
+  .search-wrap input::placeholder { color: #8892a6; }
+
+  .menu-dropdown {
+    position: absolute; top: calc(100% + 4px); right: 0;
+    background: #fff; color: #222;
+    border: 1px solid #d8deea; border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.18);
+    min-width: 300px; max-width: calc(100vw - 32px); padding: 10px 0;
+    display: none;
+  }
+  .menu-dropdown.open { display: block; }
+  .menu-dropdown .item { padding: 8px 16px; font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
+  .menu-dropdown .item label { font-weight: 600; color: #1f3b73; font-size: 12px; }
+  .menu-dropdown .item input[type=file],
+  .menu-dropdown .item select {
+    width: 100%; font-size: 13px; padding: 5px 6px;
+    border: 1px solid #ccd; border-radius: 4px; background: #fff;
+  }
+  .menu-dropdown .divider { height: 1px; background: #e0e0e0; margin: 6px 0; }
+  .menu-dropdown .actions { display: flex; gap: 8px; padding: 6px 16px; }
+  .menu-dropdown .btn {
+    flex: 1; padding: 7px 10px; font-size: 13px; border: none; border-radius: 4px; cursor: pointer;
+  }
+  .menu-dropdown .btn.primary { background: #1f3b73; color: #fff; }
+  .menu-dropdown .btn.primary:disabled { background: #aab; cursor: not-allowed; }
+  .menu-dropdown .btn.ghost { background: #eef1f7; color: #1f3b73; border: 1px solid #d8deea; }
+  .menu-dropdown .status {
+    padding: 8px 16px 4px; font-size: 12px; color: #555;
+    border-top: 1px solid #eee; margin-top: 6px;
+  }
+
+  /* ===== CARDS ===== */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    padding: 12px 24px 0;
+    background: #fff;
+  }
+  .card {
+    background: #fff;
+    border: 1px solid #e0e4ee;
+    border-left: 3px solid #1f3b73;
+    border-radius: 6px;
+    padding: 8px 12px;
+    display: flex; flex-direction: column; gap: 2px;
+    min-width: 0;
+  }
+  .card .label {
+    font-size: 11px; color: #667; text-transform: uppercase;
+    letter-spacing: .4px; font-weight: 600;
+  }
+  .card .value {
+    font-size: 14px; font-weight: 700; color: #1f3b73;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .card .sub { font-size: 11px; color: #889; }
+  .card.c-minyak    { border-left-color: #2e7d32; }
+  .card.c-minyak    .value { color: #2e7d32; }
+  .card.c-rupa      { border-left-color: #ef6c00; }
+  .card.c-rupa      .value { color: #ef6c00; }
+  .card.c-grand     { border-left-color: #c62828; background: #fff8f8; }
+  .card.c-grand     .value { color: #c62828; font-size: 15px; }
+
+  /* ===== TABS ===== */
+  .tabbar {
+    display: flex; align-items: flex-start;
+    padding: 12px 24px 0;
+    background: #fff; border-bottom: 1px solid #e0e0e0;
+    position: sticky; top: 0; z-index: 30;
+  }
+  .tabs { display: flex; flex-wrap: wrap; gap: 4px; flex: 1 1 auto; min-width: 0; }
+  .tab {
+    padding: 8px 14px; background: #eef1f7; border: 1px solid #d8deea;
+    border-bottom: none; border-radius: 6px 6px 0 0;
+    font-size: 13px; cursor: pointer;
+  }
+  .tab.active { background: #1f3b73; color: #fff; border-color: #1f3b73; }
+
+  .panel { display: none; padding: 16px 24px 32px; }
+  .panel.active { display: block; }
+  .panel .summary { font-size: 12px; color: #555; margin-bottom: 8px; }
+  table { border-collapse: collapse; width: 100%; background: #fff; font-size: 12px; }
+  th, td { border: 1px solid #e0e0e0; padding: 6px 8px; text-align: left; vertical-align: top; white-space: nowrap; }
+  th { background: #f0f3fa; position: sticky; top: 0; z-index: 1; }
+  td.num, th.num { text-align: right; }
+  .bln-cap { display:flex; justify-content:space-between; align-items:center; padding:8px 4px; font-size:13px; }
+  .bln-cap span { font-size:12px; opacity:.7; font-weight:600; }
+  tr.tot-row td { font-weight:800; border-top:2px solid #94a3b8; }
+  tbody tr:nth-child(even) { background: #fafbfe; }
+  .table-wrap { max-height: 70vh; overflow: auto; border: 1px solid #e0e0e0; border-radius: 6px; }
+  .empty { padding: 32px; text-align: center; color: #888; font-size: 13px; }
+
+  /* ===== PAGER ===== */
+  .pager {
+    display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+    padding: 8px 10px; font-size: 12px; background: #fff;
+    position: sticky; bottom: 0; border-top: 1px solid #e0e0e0;
+  }
+  .pager button {
+    padding: 5px 10px; font-size: 12px; border: 1px solid #ccd; background: #eef1f7;
+    color: #1f3b73; border-radius: 4px; cursor: pointer;
+  }
+  .pager button:disabled { opacity: .4; cursor: not-allowed; }
+  .pager button:hover:not(:disabled) { background: #dfe6f4; }
+  .pager .info { color: #555; margin-left: auto; }
+
+  @media (max-width: 720px) {
+    .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .search-wrap { flex-basis: 200px; }
+  }
+  /* ===== MODE GELAP (mengikuti index.html) ===== */
+  html.dark { color-scheme: dark; }
+  html.dark body { background: #0f172a; color: #e2e8f0; }
+  html.dark .cards { background: #0f172a; }
+  html.dark .card { background: #1e293b; border-color: #334155; border-left-color: #5b9bd5; color: #e2e8f0; }
+  html.dark .card .label { color: #94a3b8; }
+  html.dark .card .value { color: #93c5fd; }
+  html.dark .card .sub { color: #94a3b8; }
+  html.dark .card.c-minyak { border-left-color: #4ade80; }
+  html.dark .card.c-minyak .value { color: #4ade80; }
+  html.dark .card.c-rupa { border-left-color: #fb923c; }
+  html.dark .card.c-rupa .value { color: #fb923c; }
+  html.dark .card.c-grand { border-left-color: #f87171; background: #2a1c25; }
+  html.dark .card.c-grand .value { color: #f87171; }
+  html.dark .tabbar { background: #0f172a; border-bottom-color: #334155; }
+  html.dark .tab { background: #334155; border-color: #475569; color: #cbd5e1; }
+  html.dark .tab.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+  html.dark .menu-btn { background: #334155; border-color: #475569; color: #e2e8f0; }
+  html.dark .menu-btn:hover { background: #475569; }
+  html.dark .search-wrap input {
+    background-color: #0f172a; color: #e2e8f0; border-color: #475569;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><line x1='21' y1='21' x2='16.65' y2='16.65'/></svg>");
+  }
+  html.dark .search-wrap input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,.25); }
+  html.dark .search-wrap input::placeholder { color: #64748b; }
+  html.dark .menu-dropdown { background: #1e293b; color: #e2e8f0; border-color: #475569; box-shadow: 0 8px 24px rgba(0,0,0,.55); }
+  html.dark .menu-dropdown .item label { color: #93c5fd; }
+  html.dark .menu-dropdown .item input[type=file],
+  html.dark .menu-dropdown .item select { background: #0f172a; color: #e2e8f0; border-color: #475569; }
+  html.dark .menu-dropdown .divider { background: #334155; }
+  html.dark .menu-dropdown .btn.primary { background: #3b82f6; color: #fff; }
+  html.dark .menu-dropdown .btn.primary:disabled { background: #475569; color: #94a3b8; }
+  html.dark .menu-dropdown .btn.ghost { background: #334155; color: #e2e8f0; border-color: #475569; }
+  html.dark .menu-dropdown .status { color: #94a3b8; border-top-color: #334155; }
+  html.dark .panel .summary { color: #94a3b8; }
+  html.dark table { background: #1e293b; color: #e2e8f0; }
+  html.dark th, html.dark td { border-color: #334155; }
+  html.dark th { background: #1e3a5f; color: #fff; }
+  html.dark tbody tr:nth-child(even) { background: #1a2538; }
+  html.dark .table-wrap { border-color: #334155; }
+  html.dark .empty { color: #94a3b8; }
+  html.dark .pager { background: #1e293b; border-top-color: #334155; color: #e2e8f0; }
+  html.dark .pager button { background: #334155; border-color: #475569; color: #e2e8f0; }
+  html.dark .pager button:hover:not(:disabled) { background: #475569; }
+  html.dark .pager .info { color: #94a3b8; }
+</style>
+</head>
+<body>
+
+
+<!-- ===== CARDS RINGKASAN ===== -->
+<div class="cards" id="cards">
+  <div class="card">
+    <div class="label">Total Faktur</div>
+    <div class="value" id="cardFaktur">Rp 0</div>
+    <div class="sub" id="cardFakturSub">0 transaksi</div>
+  </div>
+  <div class="card c-minyak">
+    <div class="label">Total Minyak</div>
+    <div class="value" id="cardMinyak">Rp 0</div>
+    <div class="sub" id="cardMinyakSub">Cash: 0 • TF: 0</div>
+  </div>
+  <div class="card c-rupa">
+    <div class="label">Total Rupa-Rupa</div>
+    <div class="value" id="cardRupa">Rp 0</div>
+    <div class="sub" id="cardRupaSub">Cash: 0 • TF: 0</div>
+  </div>
+  <div class="card c-grand">
+    <div class="label">Grand Total</div>
+    <div class="value" id="cardGrand">Rp 0</div>
+    <div class="sub" id="cardGrandSub">Cash: 0 • TF: 0</div>
+  </div>
+</div>
+
+<div class="tabbar">
+  <div class="tabs" id="tabs"></div>
+  <div class="search-wrap">
+    <input type="search" id="searchInput" placeholder="Cari no faktur / toko / sales / alamat…" autocomplete="off">
+  </div>
+  <div class="menu-wrap">
+    <button class="menu-btn" id="menuBtn" title="Menu">&#8942;</button>
+<div class="menu-dropdown" id="menuDropdown">
+    <div class="item">
+      <label>File Excel</label>
+      <input type="file" id="fileInput" accept=".xlsx,.xls">
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="item">
+      <label>Filter Bulan</label>
+      <select id="filterBulan"><option value="">Semua</option></select>
+    </div>
+    <div class="item">
+      <label>Filter Tanggal</label>
+      <select id="filterTanggal"><option value="">Semua</option></select>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="actions">
+      <button class="btn ghost" id="btnReset">Reset</button>
+      <button class="btn primary" id="btnExport" disabled>Export ke Excel</button>
+    </div>
+
+    <div class="item" id="rowDelMonth">
+      <label>Hapus Data per Bulan</label>
+      <select id="delBulan"><option value="">— pilih bulan —</option></select>
+    </div>
+    <div class="actions">
+      <button class="btn ghost" id="btnDelMonth" disabled>Hapus Bulan Terpilih</button>
+    </div>
+
+    <div class="actions" id="rowClearStored" style="display:none">
+      <button class="btn ghost" id="btnClearStored">Hapus Semua Data Tersimpan</button>
+    </div>
+
+    <div class="status" id="status">Belum ada file.</div>
+    <div class="status" id="storeStatus" style="display:none"></div>
+  </div>
+  </div>
+</div>
+<div id="panels"></div>
+
+<script>
+const BULAN_NAMA = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+
+const TABS = [
+  { id: "detail",    label: "Data Detail",                cols: ["tanggal","section","sales","no_faktur","nama_toko","alamat","tagihan_nominal","minyak_cash","minyak_transfer","rupa_cash","rupa_transfer","total_pembayaran","ket"] },
+  { id: "harian",    label: "Rekap Harian",                cols: ["tanggal","jml_transaksi","total_tagihan","minyak_cash","minyak_transfer","rupa_cash","rupa_transfer","total_pembayaran"] },
+  { id: "piutang",   label: "Piutang Tempo",               cols: ["tanggal","sales","no_faktur","nama_toko","alamat","tagihan_nominal","minyak_cash","minyak_transfer","rupa_cash","rupa_transfer","total_pembayaran","ket"] },
+  { id: "dropping",  label: "Cash Dropping",               cols: ["tanggal","sales","no_faktur","nama_toko","alamat","tagihan_nominal","minyak_cash","minyak_transfer","rupa_cash","rupa_transfer","total_pembayaran","ket"] },
+  { id: "tokoleng",  label: "Rekap Toko+Sales+Tanggal",    cols: ["tanggal","sales","nama_toko","alamat","section","jml_transaksi","total_tagihan","minyak_cash","minyak_transfer","rupa_cash","rupa_transfer","total_pembayaran"] },
+  { id: "bulanan",   label: "Data Bulanan",                cols: ["bulan","jml_transaksi","piutang_tempo","cash_dropping","total_tagihan","total_cash","total_transfer","total_pembayaran"] },
+];
+
+const NUM_COLS = new Set(["tagihan_nominal","minyak_cash","minyak_transfer","rupa_cash","rupa_transfer","total_pembayaran","jml_transaksi","total_tagihan","total_minyak","total_rupa","total_cash","total_transfer","jml_toko","jml_hari","piutang_tempo","cash_dropping"]);
+
+/* Label header khusus tab Data Bulanan */
+const BULANAN_LABEL = { bulan:"BULAN", jml_transaksi:"JML FAKTUR", piutang_tempo:"PIUTANG TEMPO", cash_dropping:"CASH DROPPING", total_tagihan:"TAGIHAN", total_cash:"BAYAR CASH", total_transfer:"BAYAR TF", total_pembayaran:"TOTAL BAYAR" };
+
+/* ===== LABEL HEADER TABEL (menggantikan nama kolom mentah) ===== */
+const COL_LABEL = {
+  tanggal:"Tanggal", section:"Pembayaran", sales:"Sales", no_faktur:"No Faktur",
+  nama_toko:"Toko", alamat:"Alamat", tagihan_nominal:"Nominal Tagihan",
+  minyak_cash:"Minyak Cash", minyak_transfer:"Minyak Trf",
+  rupa_cash:"Rupa Cash", rupa_transfer:"Rupa Trf",
+  total_pembayaran:"Total", ket:"Ket",
+  jml_transaksi:"Jml Faktur", total_tagihan:"Total Tagihan",
+  bulan:"Bulan", piutang_tempo:"Piutang Tempo", cash_dropping:"Cash Dropping",
+  total_minyak:"Total Minyak", total_rupa:"Total Rupa",
+  total_cash:"Total Cash", total_transfer:"Total Transfer",
+  jml_toko:"Jml Toko", jml_hari:"Jml Hari", daftar_toko:"Daftar Toko"
+};
+
+/* Penyesuaian label per tab (menimpa COL_LABEL) */
+const TAB_COL_LABEL = {
+  detail:   { tanggal:"Tgl", total_pembayaran:"Total" },
+  tokoleng: { jml_transaksi:"Jml Faktur" }
+};
+
+function colLabel(tabId, c) {
+  if (tabId === "bulanan" && BULANAN_LABEL[c]) return BULANAN_LABEL[c];
+  const t = TAB_COL_LABEL[tabId];
+  if (t && t[c]) return t[c];
+  return COL_LABEL[c] || c;
+}
+
+/* Peta tabId -> key pada state.views */
+const VIEW_KEY = {
+  detail: "detail", harian: "harian", piutang: "piutang", dropping: "dropping",
+  tokoleng: "tokoSalesTgl",
+  bulanan: "bulanan"
+};
+
+const PAGE_SIZE = 500;
+
+const state = {
+  records: [],
+  views: null,
+  rendered: {},   // { tabId: true/false }
+  dirty: {},      // { tabId: true/false }
+  page: {},       // { tabId: pageNumber }
+  search: ""      // teks pencarian cepat
+};
+
+function num(v) {
+  if (v === null || v === undefined || v === "") return 0;
+  if (typeof v === "number") return v;
+  const s = String(v).replace(/[^\d.-]/g, "");
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+function resolvePay(val, tagihan) {
+  if (val === null || val === undefined || val === "") return 0;
+  if (typeof val === "number") return val;
+  const s = String(val).trim();
+  if (/^=I\d+/i.test(s)) return tagihan;
+  if (s.startsWith("=")) return 0;
+  return num(s);
+}
+function fmt(n) {
+  if (typeof n !== "number") return n ?? "";
+  if (Number.isInteger(n)) return n.toLocaleString("id-ID");
+  return n.toLocaleString("id-ID", {maximumFractionDigits: 2});
+}
+function rp(n) { return "Rp " + fmt(n || 0); }
+
+function parseSheetDate(sheetName) {
+  const m = String(sheetName).match(/^(\d{1,2})[-/](\d{1,2})/);
+  if (!m) return { tanggal: sheetName, bulanNum: 0, bulanLabel: sheetName, tglSort: 0 };
+  const d = parseInt(m[1], 10);
+  const mo = parseInt(m[2], 10);
+  const label = `${String(d).padStart(2,"0")}/${String(mo).padStart(2,"0")}`;
+  const bulanLabel = BULAN_NAMA[mo-1] || `Bulan-${mo}`;
+  return { tanggal: label, bulanNum: mo, bulanLabel, tglSort: mo*100 + d };
+}
+
+/* Kunci unik per sheet/hari: bulan+tanggal (dari nama sheet). Sheet non-tanggal pakai nama sheet. */
+function recKey(r) {
+  return r.tglSort ? "T" + r.tglSort : "S" + r.sheet;
+}
+function mergeRecords(lama, baru) {
+  if (!Array.isArray(lama) || !lama.length) return baru;
+  const keyBaru = new Set(baru.map(recKey));
+  const sisa = lama.filter(r => !keyBaru.has(recKey(r)));
+  return sisa.concat(baru);
+}
+
+/* Deretan angka panjang (>= 9 digit) = nomor faktur / kode, bukan nama toko */
+function isKode(v) { return /^\d{9,}$/.test(String(v ?? "").trim()); }
+
+/* Perbaiki data lama yang sudah tersimpan dengan kolom tergeser (nama_toko berisi nomor faktur) */
+function fixRecord(r) {
+  if (isKode(r.nama_toko) && r.alamat && !isKode(r.alamat)) {
+    if (!r.no_faktur) r.no_faktur = r.nama_toko;
+    r.nama_toko = r.alamat;
+    r.alamat = "";
+  }
+  return r;
+}
+
+function parseWorkbook(wb) {
+  const records = [];
+  for (const sheetName of wb.SheetNames) {
+    if (sheetName.toUpperCase() === "SHEET") continue;
+    const info = parseSheetDate(sheetName);
+    const ws = wb.Sheets[sheetName];
+    /* blankrows:false memangkas baris kosong -> parsing file besar lebih ringan */
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null, blankrows: false });
+    let section = null;
+    let currentSales = null;
+    let colMap = null;   /* posisi kolom faktur/toko/alamat, dibaca dari baris header */
+
+    for (const row of rows) {
+      const vals = row || [];
+      const text = vals.filter(v => v !== null && v !== undefined).join(" ").toUpperCase();
+
+      if (text.includes("PIUTANG TEMPO")) { section = "PIUTANG TEMPO"; currentSales = null; continue; }
+      if (text.includes("CASH DROPPING")) { section = "CASH DROPPING"; currentSales = null; continue; }
+      if (text.includes("UANG MASUK DARI PIUTANG") || text.includes("UANG MASUK CASH") || text.includes("TOTAL UANG MASUK")) { section = null; continue; }
+      if (!section) continue;
+
+      const b = String(vals[1] ?? "").trim().toUpperCase();
+      if (b === "NO" || b === "SALES" || b === "DROPPING/SALES") {
+        /* Baris header: cari posisi kolom faktur / nama toko / alamat */
+        const cm = {};
+        vals.forEach((h, idx) => {
+          const t = String(h ?? "").toUpperCase().trim();
+          if (!t) return;
+          if (/SALES/.test(t) && cm.sales === undefined) cm.sales = idx;
+          else if (/^NO\.?\s*FAKTUR|^FAKTUR/.test(t) && cm.faktur === undefined) cm.faktur = idx;
+          else if (/ALAMAT/.test(t) && cm.alamat === undefined) cm.alamat = idx;
+          else if (/TOKO|CUSTOMER|PELANGGAN|OUTLET/.test(t) && !/KODE|CODE/.test(t) && cm.toko === undefined) cm.toko = idx;
+        });
+        if (cm.toko !== undefined) colMap = cm;
+        continue;
+      }
+      if (String(vals[0] ?? "").trim().toUpperCase() === "TOTAL" || b === "TOTAL") continue;
+      if (!vals[2] && !vals[3] && !vals[4] && !vals[8]) continue;
+
+      /* Nama sales: kolom SALES (atau DROPPING/SALES) dari baris header; biasanya hanya terisi di baris pertama tiap kelompok */
+      const salesIdx = (colMap && colMap.sales !== undefined) ? colMap.sales : 2;
+      const sv = String(vals[salesIdx] ?? "").trim();
+      if (sv && !["NAN", "SALES", "DROPPING/SALES"].includes(sv.toUpperCase())) currentSales = sv;
+
+      /* Faktur / toko / alamat */
+      let noFaktur, namaToko, alamat;
+      if (colMap && colMap.toko !== undefined) {
+        noFaktur = colMap.faktur !== undefined ? vals[colMap.faktur] : vals[2];
+        namaToko = vals[colMap.toko];
+        alamat = colMap.alamat !== undefined ? vals[colMap.alamat] : vals[colMap.toko + 1];
+        if (alamat === null || alamat === undefined || String(alamat).trim() === "") {
+          for (let i = colMap.toko + 1; i <= 7; i++) {
+            const v = vals[i];
+            if (v !== null && v !== undefined && String(v).trim() !== "" && typeof v !== "number" && !isKode(v)) { alamat = v; break; }
+          }
+        }
+      } else {
+        noFaktur = vals[2]; namaToko = vals[3]; alamat = vals[4];
+        /* Fallback: kalau "nama toko" ternyata deretan angka panjang (nomor faktur/kode), geser kolom */
+        if (isKode(namaToko)) {
+          const teks = [3,4,5,6,7].map(i => vals[i]).filter(v => v !== null && v !== undefined && String(v).trim() !== "" && !isKode(v));
+          if (!vals[2]) noFaktur = namaToko;
+          namaToko = teks[0]; alamat = teks[1];
+        }
+      }
+
+      const tagihan = num(vals[8]);
+      const mc = resolvePay(vals[9], tagihan);
+      const mt = resolvePay(vals[10], tagihan);
+      const rc = resolvePay(vals[11], tagihan);
+      const rt = resolvePay(vals[12], tagihan);
+
+      records.push({
+        sheet: sheetName,
+        tanggal: info.tanggal,
+        bulan: info.bulanLabel,
+        bulanNum: info.bulanNum,
+        tglSort: info.tglSort,
+        section,
+        sales: currentSales,
+        no_faktur: noFaktur ?? "",
+        nama_toko: String(namaToko ?? "").trim(),
+        alamat: String(alamat ?? "").trim(),
+        tagihan_nominal: tagihan,
+        minyak_cash: mc,
+        minyak_transfer: mt,
+        rupa_cash: rc,
+        rupa_transfer: rt,
+        total_pembayaran: mc + mt + rc + rt,
+        ket: vals[13] ?? "",
+      });
+    }
+  }
+  return records;
+}
+
+function buildViews(records) {
+  const detail = records.slice().sort((a,b)=> a.tglSort-b.tglSort);
+
+  const harianMap = {};
+  for (const r of records) {
+    const k = r.bulan + "|" + r.tanggal;
+    if (!harianMap[k]) harianMap[k] = { tanggal: r.tanggal, bulan: r.bulan, tglSort: r.tglSort, jml_transaksi: 0, total_tagihan: 0, minyak_cash: 0, minyak_transfer: 0, rupa_cash: 0, rupa_transfer: 0, total_pembayaran: 0 };
+    const o = harianMap[k];
+    o.jml_transaksi++;
+    o.total_tagihan += r.tagihan_nominal;
+    o.minyak_cash += r.minyak_cash;
+    o.minyak_transfer += r.minyak_transfer;
+    o.rupa_cash += r.rupa_cash;
+    o.rupa_transfer += r.rupa_transfer;
+    o.total_pembayaran += r.total_pembayaran;
+  }
+  const harian = Object.values(harianMap).sort((a,b)=> a.tglSort-b.tglSort);
+
+  const piutang = records.filter(r => r.section === "PIUTANG TEMPO").sort((a,b)=> a.tglSort-b.tglSort);
+  const dropping = records.filter(r => r.section === "CASH DROPPING").sort((a,b)=> a.tglSort-b.tglSort);
+
+  const tokoMap = {};
+  for (const r of records) {
+    const k = (r.nama_toko || "") + "|||" + (r.alamat || "");
+    if (!tokoMap[k]) tokoMap[k] = { nama_toko: r.nama_toko, alamat: r.alamat, jml_transaksi: 0, total_tagihan: 0, minyak_cash: 0, minyak_transfer: 0, rupa_cash: 0, rupa_transfer: 0, total_pembayaran: 0 };
+    const o = tokoMap[k];
+    o.jml_transaksi++;
+    o.total_tagihan += r.tagihan_nominal;
+    o.minyak_cash += r.minyak_cash;
+    o.minyak_transfer += r.minyak_transfer;
+    o.rupa_cash += r.rupa_cash;
+    o.rupa_transfer += r.rupa_transfer;
+    o.total_pembayaran += r.total_pembayaran;
+  }
+  const toko = Object.values(tokoMap).sort((a,b)=> b.total_pembayaran - a.total_pembayaran);
+
+  const tstMap = {};
+  for (const r of records) {
+    const k = [r.bulan, r.tanggal, r.sales||"", r.nama_toko||"", r.alamat||"", r.section].join("|||");
+    if (!tstMap[k]) tstMap[k] = { tanggal: r.tanggal, bulan: r.bulan, tglSort: r.tglSort, sales: r.sales, nama_toko: r.nama_toko, alamat: r.alamat, section: r.section, jml_transaksi: 0, total_tagihan: 0, minyak_cash: 0, minyak_transfer: 0, rupa_cash: 0, rupa_transfer: 0, total_pembayaran: 0 };
+    const o = tstMap[k];
+    o.jml_transaksi++;
+    o.total_tagihan += r.tagihan_nominal;
+    o.minyak_cash += r.minyak_cash;
+    o.minyak_transfer += r.minyak_transfer;
+    o.rupa_cash += r.rupa_cash;
+    o.rupa_transfer += r.rupa_transfer;
+    o.total_pembayaran += r.total_pembayaran;
+  }
+  const tokoSalesTgl = Object.values(tstMap).sort((a,b)=>{
+    const d = a.tglSort-b.tglSort;
+    if (d) return d;
+    const s = String(a.sales||"").localeCompare(String(b.sales||""));
+    if (s) return s;
+    return String(a.nama_toko||"").localeCompare(String(b.nama_toko||""));
+  });
+
+  const dstMap = {};
+  for (const r of records) {
+    const k = r.bulan + "|" + r.tanggal + "|" + (r.sales||"");
+    if (!dstMap[k]) dstMap[k] = { tanggal: r.tanggal, bulan: r.bulan, tglSort: r.tglSort, sales: r.sales, _tokoSet: new Set(), total_pembayaran: 0 };
+    const o = dstMap[k];
+    if (r.nama_toko) o._tokoSet.add(r.nama_toko);
+    o.total_pembayaran += r.total_pembayaran;
+  }
+  const salesList = Object.values(dstMap).map(o => ({
+    tanggal: o.tanggal,
+    bulan: o.bulan,
+    sales: o.sales,
+    daftar_toko: [...o._tokoSet].sort().join(", "),
+    jml_toko: o._tokoSet.size,
+    total_pembayaran: o.total_pembayaran,
+  })).sort((a,b)=>{
+    const d = a.tglSort-b.tglSort;
+    if (d) return d;
+    return String(a.sales||"").localeCompare(String(b.sales||""));
+  });
+
+  const bulanMap = {};
+  for (const r of records) {
+    const k = r.bulan;
+    if (!bulanMap[k]) bulanMap[k] = {
+      bulan: r.bulan, bulanNum: r.bulanNum,
+      jml_transaksi: 0, _hariSet: new Set(), _tokoSet: new Set(),
+      total_tagihan: 0, minyak_cash: 0, minyak_transfer: 0,
+      rupa_cash: 0, rupa_transfer: 0, total_pembayaran: 0,
+      piutang_tempo: 0, cash_dropping: 0
+    };
+    const o = bulanMap[k];
+    if (r.section === "PIUTANG TEMPO") o.piutang_tempo += r.total_pembayaran;
+    else if (r.section === "CASH DROPPING") o.cash_dropping += r.total_pembayaran;
+    o.jml_transaksi++;
+    o._hariSet.add(r.tanggal);
+    if (r.nama_toko) o._tokoSet.add(r.nama_toko);
+    o.total_tagihan += r.tagihan_nominal;
+    o.minyak_cash += r.minyak_cash;
+    o.minyak_transfer += r.minyak_transfer;
+    o.rupa_cash += r.rupa_cash;
+    o.rupa_transfer += r.rupa_transfer;
+    o.total_pembayaran += r.total_pembayaran;
+  }
+  const bulanan = Object.values(bulanMap).map(o => ({
+    bulan: o.bulan,
+    bulanNum: o.bulanNum,
+    jml_transaksi: o.jml_transaksi,
+    jml_hari: o._hariSet.size,
+    jml_toko: o._tokoSet.size,
+    piutang_tempo: o.piutang_tempo,
+    cash_dropping: o.cash_dropping,
+    total_tagihan: o.total_tagihan,
+    minyak_cash: o.minyak_cash,
+    minyak_transfer: o.minyak_transfer,
+    rupa_cash: o.rupa_cash,
+    rupa_transfer: o.rupa_transfer,
+    total_minyak: o.minyak_cash + o.minyak_transfer,
+    total_rupa: o.rupa_cash + o.rupa_transfer,
+    total_cash: o.minyak_cash + o.rupa_cash,
+    total_transfer: o.minyak_transfer + o.rupa_transfer,
+    total_pembayaran: o.total_pembayaran,
+  })).sort((a,b)=> (a.bulanNum||0) - (b.bulanNum||0));
+
+  return { detail, harian, piutang, dropping, toko, tokoSalesTgl, salesList, bulanan };
+}
+
+/* Cari cepat: no faktur, toko, sales, alamat, ket, section */
+function matchSearch(r, q) {
+  if (!q) return true;
+  const s = q.toLowerCase();
+  return (String(r.no_faktur ?? "").toLowerCase().includes(s))
+      || (String(r.nama_toko ?? "").toLowerCase().includes(s))
+      || (String(r.sales ?? "").toLowerCase().includes(s))
+      || (String(r.alamat ?? "").toLowerCase().includes(s))
+      || (String(r.ket ?? "").toLowerCase().includes(s))
+      || (String(r.section ?? "").toLowerCase().includes(s));
+}
+
+function applyFilter(records) {
+  const fBulan = document.getElementById("filterBulan").value;
+  const fTanggal = document.getElementById("filterTanggal").value;
+  const q = state.search || "";
+  return records.filter(r => {
+    if (fBulan && r.bulan !== fBulan) return false;
+    if (fTanggal && r.tanggal !== fTanggal) return false;
+    if (q && !matchSearch(r, q)) return false;
+    return true;
+  });
+}
+
+function refreshFilterOptions(allRecords, preferLastMonth) {
+  const bulanSel = document.getElementById("filterBulan");
+  const bulanSet = new Map();
+  for (const r of allRecords) {
+    if (r.bulanNum) bulanSet.set(r.bulan, r.bulanNum);
+  }
+  const bulanList = [...bulanSet.entries()].sort((a,b)=> a[1]-b[1]);
+  bulanSel.innerHTML = `<option value="">Semua</option>` +
+    bulanList.map(([label]) => `<option value="${label}">${label}</option>`).join("");
+
+  /* Default: pilih bulan terakhir yang ada di data (jika ada > 1 bulan) */
+  if (preferLastMonth && bulanList.length > 1) {
+    const lastLabel = bulanList[bulanList.length - 1][0];
+    bulanSel.value = lastLabel;
+  } else {
+    bulanSel.value = "";
+  }
+
+  const delSel = document.getElementById("delBulan");
+  if (delSel) {
+    const cnt = {};
+    for (const r of allRecords) if (r.bulanNum) cnt[r.bulan] = (cnt[r.bulan] || 0) + 1;
+    delSel.innerHTML = `<option value="">— pilih bulan —</option>` +
+      bulanList.map(([label]) => `<option value="${label}">${label} (${fmt(cnt[label] || 0)} baris)</option>`).join("");
+    document.getElementById("btnDelMonth").disabled = true;
+  }
+
+  refreshTanggalOptions(allRecords);
+}
+
+function refreshTanggalOptions(allRecords) {
+  const fBulan = document.getElementById("filterBulan").value;
+  const tglSel = document.getElementById("filterTanggal");
+  const curVal = tglSel.value;
+  const map = new Map();
+  for (const r of allRecords) {
+    if (fBulan && r.bulan !== fBulan) continue;
+    map.set(r.tanggal, r.tglSort);
+  }
+  const list = [...map.entries()].sort((a,b)=> a[1]-b[1]);
+  tglSel.innerHTML = `<option value="">Semua</option>` +
+    list.map(([label]) => `<option value="${label}">${label}</option>`).join("");
+  if ([...tglSel.options].some(o => o.value === curVal)) tglSel.value = curVal;
+}
+
+function renderTabs() {
+  const tabsEl = document.getElementById("tabs");
+  const panelsEl = document.getElementById("panels");
+  tabsEl.innerHTML = "";
+  panelsEl.innerHTML = "";
+
+  TABS.forEach((t, i) => {
+    const tab = document.createElement("div");
+    tab.className = "tab" + (i === 0 ? " active" : "");
+    tab.textContent = t.label;
+    tab.dataset.id = t.id;
+    tab.onclick = () => {
+      document.querySelectorAll(".tab").forEach(el => el.classList.toggle("active", el === tab));
+      document.querySelectorAll(".panel").forEach(el => el.classList.toggle("active", el.id === "panel-" + t.id));
+      renderTabIfNeeded(t.id);
+    };
+    tabsEl.appendChild(tab);
+
+    const panel = document.createElement("div");
+    panel.className = "panel" + (i === 0 ? " active" : "");
+    panel.id = "panel-" + t.id;
+    panel.innerHTML = `<div class="summary" id="sum-${t.id}"></div>
+                       <div class="table-wrap" id="wrap-${t.id}"><div class="empty">Belum ada data. Upload file Excel dulu.</div></div>`;
+    panelsEl.appendChild(panel);
+
+    state.rendered[t.id] = false;
+    state.dirty[t.id] = true;
+    state.page[t.id] = 1;
+  });
+}
+
+/* Render satu tab saja (dipakai lazy + saat paginasi) */
+function renderTabIfNeeded(tabId) {
+  if (!state.views) return;
+  if (!state.rendered[tabId] || state.dirty[tabId]) {
+    renderOneTab(tabId);
+    state.rendered[tabId] = true;
+    state.dirty[tabId] = false;
+  }
+}
+
+function renderOneTab(tabId) {
+  const t = TABS.find(x => x.id === tabId);
+  const rows = state.views[VIEW_KEY[tabId]] || [];
+  renderTable(tabId, t.cols, rows);
+
+  const sumEl = document.getElementById("sum-" + tabId);
+  const totalPay = rows.reduce((s, r) => s + (r.total_pembayaran || 0), 0);
+  let extra = (tabId === "bulanan") ? ` • ${rows.length} bulan` : "";
+  sumEl.textContent = `${fmt(rows.length)} baris${extra}` +
+    (totalPay ? ` • Total pembayaran: Rp ${fmt(totalPay)}` : "");
+}
+
+function renderTable(tabId, cols, rows) {
+  const wrap = document.getElementById("wrap-" + tabId);
+  if (!rows || !rows.length) {
+    wrap.innerHTML = `<div class="empty">Tidak ada data.</div>`;
+    return;
+  }
+
+  /* Paginasi */
+  const page = state.page[tabId] || 1;
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const start = (safePage - 1) * PAGE_SIZE;
+  const slice = rows.slice(start, start + PAGE_SIZE);
+  state.page[tabId] = safePage;
+
+  /* Header */
+  const thead = "<thead><tr>" +
+    cols.map(c => `<th class="${NUM_COLS.has(c) ? "num" : ""}">${colLabel(tabId, c)}</th>`).join("") +
+    "</tr></thead>";
+
+  /* Body — pakai array + join (lebih cepat dari string concat berulang) */
+  const parts = ["<tbody>"];
+  for (let i = 0; i < slice.length; i++) {
+    const r = slice[i];
+    parts.push("<tr>");
+    for (let j = 0; j < cols.length; j++) {
+      const c = cols[j];
+      const isNum = NUM_COLS.has(c);
+      const v = r[c];
+      parts.push(isNum
+        ? `<td class="num">${fmt(v)}</td>`
+        : `<td>${v ?? ""}</td>`);
+    }
+    parts.push("</tr>");
+  }
+  parts.push("</tbody>");
+  if (tabId === "bulanan") {
+    parts.push('<tfoot><tr class="tot-row">');
+    for (const c of cols) {
+      if (c === "bulan") parts.push("<td>TOTAL</td>");
+      else parts.push(`<td class="num">${fmt(rows.reduce((a, r) => a + (r[c] || 0), 0))}</td>`);
+    }
+    parts.push("</tr></tfoot>");
+  }
+
+  /* Pager */
+  let pager = "";
+  if (totalPages > 1) {
+    pager = `<div class="pager">
+      <button data-pg="1" ${safePage === 1 ? "disabled" : ""}>« Awal</button>
+      <button data-pg="${safePage - 1}" ${safePage === 1 ? "disabled" : ""}>‹ Prev</button>
+      <span>Hal ${safePage} / ${totalPages}</span>
+      <button data-pg="${safePage + 1}" ${safePage === totalPages ? "disabled" : ""}>Next ›</button>
+      <button data-pg="${totalPages}" ${safePage === totalPages ? "disabled" : ""}>Akhir »</button>
+      <span class="info">Menampilkan ${fmt(start + 1)}–${fmt(start + slice.length)} dari ${fmt(rows.length)} baris</span>
+    </div>`;
+  } else {
+    pager = `<div class="pager"><span class="info">${fmt(rows.length)} baris</span></div>`;
+  }
+
+  const cap = (tabId === "bulanan")
+    ? `<div class="bln-cap"><b>DATA BULANAN — UANG MASUK</b><span>Semua Bulan (perbandingan)</span></div>` : "";
+  wrap.innerHTML = `${cap}<table>${thead}${parts.join("")}</table>${pager}`;
+
+  /* Event pager */
+  wrap.querySelectorAll("button[data-pg]").forEach(b => {
+    b.onclick = () => {
+      const p = parseInt(b.dataset.pg, 10);
+      if (!isNaN(p)) {
+        state.page[tabId] = p;
+        renderTable(tabId, cols, rows);
+        wrap.scrollTop = 0;
+      }
+    };
+  });
+}
+
+const APP_VER = "v6";
+function updateStatus(msg) { document.getElementById("status").textContent = "[" + APP_VER + "] " + msg; }
+
+function renderCards(records) {
+  let totalFaktur = 0;
+  let minyakCash = 0, minyakTransfer = 0;
+  let rupaCash = 0, rupaTransfer = 0;
+  let jml = 0;
+
+  for (const r of records) {
+    totalFaktur += r.tagihan_nominal || 0;
+    minyakCash += r.minyak_cash || 0;
+    minyakTransfer += r.minyak_transfer || 0;
+    rupaCash += r.rupa_cash || 0;
+    rupaTransfer += r.rupa_transfer || 0;
+    jml++;
+  }
+  const totalMinyak = minyakCash + minyakTransfer;
+  const totalRupa = rupaCash + rupaTransfer;
+  const grand = totalMinyak + totalRupa;
+
+  document.getElementById("cardFaktur").textContent = rp(totalFaktur);
+  document.getElementById("cardFakturSub").textContent = `${fmt(jml)} transaksi`;
+
+  document.getElementById("cardMinyak").textContent = rp(totalMinyak);
+  document.getElementById("cardMinyakSub").textContent = `Cash: ${fmt(minyakCash)} • TF: ${fmt(minyakTransfer)}`;
+
+  document.getElementById("cardRupa").textContent = rp(totalRupa);
+  document.getElementById("cardRupaSub").textContent = `Cash: ${fmt(rupaCash)} • TF: ${fmt(rupaTransfer)}`;
+
+  document.getElementById("cardGrand").textContent = rp(grand);
+  document.getElementById("cardGrandSub").textContent = `Cash: ${fmt(minyakCash + rupaCash)} • TF: ${fmt(minyakTransfer + rupaTransfer)}`;
+}
+
+function renderAll() {
+  const all = state.records;
+  const filtered = applyFilter(all);
+
+  /* Bangun ulang seluruh views — cepat, tidak sentuh DOM */
+  state.views = buildViews(filtered);
+  /* Data Bulanan = perbandingan SEMUA bulan, tidak ikut filter bulan/tanggal */
+  state.views.bulanan = buildViews(all.filter(r => r.bulanNum)).bulanan;
+  renderCards(filtered);
+
+  /* Tandai semua tab dirty, reset paginasi */
+  for (const t of TABS) {
+    state.rendered[t.id] = false;
+    state.dirty[t.id] = true;
+    state.page[t.id] = 1;
+  }
+
+  /* Hanya render tab yang sedang aktif */
+  const activeTab = document.querySelector(".tab.active");
+  const activeId = activeTab ? activeTab.dataset.id : TABS[0].id;
+  renderTabIfNeeded(activeId);
+
+  document.getElementById("btnExport").disabled = false;
+  const fB = document.getElementById("filterBulan").value || "Semua";
+  const fT = document.getElementById("filterTanggal").value || "Semua";
+  const q = state.search ? `, Cari: "${state.search}"` : "";
+  updateStatus(`${fmt(filtered.length)} transaksi (Bulan: ${fB}, Tanggal: ${fT}${q})`);
+}
+
+function processFile(file) {
+  updateStatus("Membaca file...");
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, { type: "array", cellDates: false });
+      const baru = parseWorkbook(wb);
+      /* GABUNGKAN dengan data lama (jangan ditimpa): sheet/tanggal yang sama diganti,
+         tanggal lain (mis. September) tetap dipertahankan. */
+      const jmlLama = state.records.length;
+      state.records = mergeRecords(state.records, baru);
+      const bl = [...new Set(state.records.map(r => r.bulan))].join(", ");
+      state.mergeInfo = `[v2-gabung] lama ${jmlLama} + baru ${baru.length} = ${state.records.length} baris • bulan: ${bl}`;
+      /* Default: pilih bulan terakhir dari data yang ada */
+      refreshFilterOptions(state.records, true);
+      renderAll();
+      /* Simpan ke halaman induk (index.html) -> database lokal + cloud */
+      state.savedAt = Date.now();
+      state.fileName = file.name + " (digabung dengan data sebelumnya)";
+      if (IN_FRAME) {
+        setStoreStatus("Menyimpan data…");
+        postParent({ type: "um:save", payload: { records: state.records, savedAt: state.savedAt, fileName: state.fileName } });
+      }
+    } catch (err) {
+      console.error(err);
+      updateStatus("Gagal: " + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function exportExcel() {
+  if (!state.views) return;
+  const wb = XLSX.utils.book_new();
+  const mapping = [
+    ["Data Detail", "detail"],
+    ["Rekap Harian", "harian"],
+    ["Piutang Tempo", "piutang"],
+    ["Cash Dropping", "dropping"],
+    ["Rekap Toko+Sales+Tanggal", "tokoSalesTgl"],
+    ["Data Bulanan", "bulanan"],
+  ];
+  for (const [name, key] of mapping) {
+    const rows = state.views[key];
+    const ws = XLSX.utils.json_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, ws, name.slice(0, 31));
+  }
+  const fB = document.getElementById("filterBulan").value || "Semua";
+  const fT = document.getElementById("filterTanggal").value || "Semua";
+  XLSX.writeFile(wb, `Rekap_UangMasuk_${fB}_${fT}.xlsx`);
+}
+
+/* ===== MENU DROPDOWN ===== */
+const menuBtn = document.getElementById("menuBtn");
+const menuDropdown = document.getElementById("menuDropdown");
+
+menuBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  menuDropdown.classList.toggle("open");
+});
+document.addEventListener("click", (e) => {
+  if (!menuDropdown.contains(e.target) && e.target !== menuBtn) {
+    menuDropdown.classList.remove("open");
+  }
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") menuDropdown.classList.remove("open");
+});
+
+/* ===== EVENTS ===== */
+document.getElementById("fileInput").addEventListener("change", e => {
+  const f = e.target.files[0];
+  if (f) processFile(f);
+});
+document.getElementById("filterBulan").addEventListener("change", () => {
+  refreshTanggalOptions(state.records);
+  renderAll();
+});
+document.getElementById("filterTanggal").addEventListener("change", renderAll);
+
+/* Pencarian cepat: debounce 200ms */
+const searchInput = document.getElementById("searchInput");
+let searchTimer = null;
+searchInput.addEventListener("input", () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    state.search = searchInput.value.trim();
+    renderAll();
+  }, 200);
+});
+/* Enter langsung eksekusi */
+searchInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    clearTimeout(searchTimer);
+    state.search = searchInput.value.trim();
+    renderAll();
+  }
+});
+
+document.getElementById("btnReset").addEventListener("click", () => {
+  document.getElementById("filterBulan").value = "";
+  searchInput.value = "";
+  state.search = "";
+  refreshTanggalOptions(state.records);
+  renderAll();
+});
+document.getElementById("btnExport").addEventListener("click", exportExcel);
+
+/* ===== HAPUS DATA PER BULAN ===== */
+document.getElementById("delBulan").addEventListener("change", e => {
+  document.getElementById("btnDelMonth").disabled = !e.target.value;
+});
+document.getElementById("btnDelMonth").addEventListener("click", () => {
+  const bln = document.getElementById("delBulan").value;
+  if (!bln) return;
+  const jml = state.records.filter(r => r.bulan === bln).length;
+  if (!confirm(`Hapus SEMUA data bulan ${bln} (${jml} baris)?\nData bulan lain tidak ikut terhapus.`)) return;
+  state.records = state.records.filter(r => r.bulan !== bln);
+  menuDropdown.classList.remove("open");
+  if (!state.records.length) {
+    /* semua bulan habis -> sama dengan hapus semua */
+    if (IN_FRAME) postParent({ type: "um:clear" }); else location.reload();
+    return;
+  }
+  state.mergeInfo = `Bulan ${bln} dihapus (${jml} baris) • sisa ${state.records.length} baris`;
+  refreshFilterOptions(state.records, true);
+  renderAll();
+  state.savedAt = Date.now();
+  state.fileName = (state.fileName || "data") + " (bulan " + bln + " dihapus)";
+  if (IN_FRAME) {
+    setStoreStatus("Menyimpan perubahan…");
+    postParent({ type: "um:save", payload: { records: state.records, savedAt: state.savedAt, fileName: state.fileName } });
+  } else {
+    setStoreStatus(state.mergeInfo);
+  }
+});
+
+/* ===== PENYIMPANAN (saat dibuka di dalam index.html) ===== */
+const IN_FRAME = (window.parent && window.parent !== window);
+const PARENT_ORIGIN = (location.origin === "null") ? "*" : location.origin;
+function postParent(msg) { try { window.parent.postMessage(msg, PARENT_ORIGIN); } catch (e) { console.warn(e); } }
+function setStoreStatus(t) {
+  const el = document.getElementById("storeStatus");
+  el.textContent = t; el.style.display = t ? "block" : "none";
+}
+function describeStored(p, cloud) {
+  const tgl = p.savedAt ? new Date(p.savedAt).toLocaleString("id-ID") : "";
+  return (state.mergeInfo ? state.mergeInfo + "\n" : "") + "Tersimpan: " + (p.fileName || "data") + " • " + tgl + (cloud ? " • ikut sinkron ke cloud" : " • di perangkat ini");
+}
+function applyStored(p) {
+  if (!p || !Array.isArray(p.records) || !p.records.length) return;
+  if (state.savedAt && p.savedAt === state.savedAt) return;   /* sudah sama, jangan render ulang */
+  state.records = p.records.map(fixRecord);
+  state.savedAt = p.savedAt;
+  state.fileName = p.fileName;
+  refreshFilterOptions(state.records, true);
+  renderAll();
+  setStoreStatus(describeStored(p, true));
+}
+if (IN_FRAME) {
+  document.getElementById("rowClearStored").style.display = "flex";
+  document.getElementById("btnClearStored").addEventListener("click", () => {
+    if (confirm("Hapus data uang masuk yang tersimpan (di perangkat dan cloud)?")) postParent({ type: "um:clear" });
+  });
+  window.addEventListener("message", (e) => {
+    if (e.origin !== location.origin && location.origin !== "null") return;
+    if (e.source !== window.parent) return;
+    const d = e.data;
+    if (!d || typeof d.type !== "string") return;
+    if (d.type === "um:data") applyStored(d.payload);
+    else if (d.type === "um:saved") {
+      if (d.ok) setStoreStatus(describeStored({ fileName: state.fileName, savedAt: state.savedAt }, d.cloud));
+      else setStoreStatus("Gagal menyimpan data (penyimpanan penuh atau tidak tersedia).");
+    }
+    else if (d.type === "um:cleared") location.reload();
+    else if (d.type === "um:theme") document.documentElement.classList.toggle("dark", !!d.dark);
+  });
+}
+
+renderTabs();
+if (IN_FRAME) postParent({ type: "um:ready" });
+</script>
+
+</body>
+</html>
