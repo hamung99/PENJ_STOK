@@ -4445,6 +4445,7 @@ self.onmessage = function(e){
     if (useIDB && db){ try { const metaM = ((await db.meta.get('months')) || {}).value || []; metaM.forEach(m => { if (m) months.add(m); }); } catch(e){} }
     else { rows.forEach(r => { const bl = r.bulan || rowBulan(r); if (bl) months.add(bl); }); }
     if (gudangData && gudangData.rows){ gudangData.rows.forEach(r => { const k = cekDateKeyUTC(r.tanggal); if (k) months.add(cekMonthKey(k)); }); }
+    if (mode === 'fitri' && stokFitriSummary && stokFitriSummary.rows){ stokFitriSummary.rows.forEach(r => { const k = cekDateKeyUTC(new Date(r.ts)); if (k) months.add(cekMonthKey(k)); }); }
     if (Array.isArray(rrCategories)) rrCategories.forEach(c => { (c.rows || []).forEach(r => { const k = cekDateKeyUTC(r.tanggal); if (k) months.add(cekMonthKey(k)); }); });
     return [...months].filter(Boolean).sort().reverse();
   }
@@ -7843,7 +7844,9 @@ self.onmessage = function(e){
     _analisaMonthInit = true;
   }
   async function renderGudangAnalisa(){
+    ensureStokFitriSummary();
     await populateAnalisaMonths();
+    const gd = getStokFitriData() || gudangData;
     const month = document.getElementById('analisaMonth')?.value || '';
     const sourceRows = await fetchCekRawRows(month, { mode: 'fitri' });
     const penjualanMap = new Map();
@@ -7862,17 +7865,17 @@ self.onmessage = function(e){
       if (ts >= agg.latestTs) { agg.latestTs = ts; agg.latestHargaBeli = hb; }
     }
     const gudangMap = new Map();
-    if (gudangData && gudangData.products) {
-      for (const p of gudangData.products) {
+    if (gd && gd.products) {
+      for (const p of gd.products) {
         if (!isFitriProduct(p)) continue;
         const key = productMatchKey(p);
         if (!gudangMap.has(key)) gudangMap.set(key, { name: p, keluar: 0, stokAkhir: null });
       }
-      for (let i = 0; i < gudangData.rows.length; i++) {
-        const r = gudangData.rows[i];
+      for (let i = 0; i < gd.rows.length; i++) {
+        const r = gd.rows[i];
         const mk = monthKeyUTC(r.tanggal);
         if (month && mk !== month) continue;
-        for (const p of gudangData.products) {
+        for (const p of gd.products) {
           if (!isFitriProduct(p)) continue;
           const key = productMatchKey(p);
           const v = r.values[p];
@@ -7883,11 +7886,11 @@ self.onmessage = function(e){
         }
       }
       const stokMap = new Map();
-      for (let i = 0; i < gudangData.rows.length; i++) {
-        const r = gudangData.rows[i];
+      for (let i = 0; i < gd.rows.length; i++) {
+        const r = gd.rows[i];
         const mk = monthKeyUTC(r.tanggal);
         if (month && mk > month) break;
-        for (const p of gudangData.products) {
+        for (const p of gd.products) {
           if (!isFitriProduct(p)) continue;
           const key = productMatchKey(p);
           const v = r.values[p];
@@ -7971,6 +7974,46 @@ self.onmessage = function(e){
     clearTimeout(_stokSumRefreshTimer);
     _stokSumRefreshTimer = setTimeout(function(){ if (_analisaSub === 'rupa') refreshAnalisaIfVisible(); }, 400);
   });
+  let stokFitriSummary = null;
+  let _stokFitriLoading = false, _stokFitriLast = 0, _stokFitriTimer = null;
+  try { const raw = localStorage.getItem('stokSummary-minyak'); if (raw) stokFitriSummary = JSON.parse(raw); } catch(e){}
+  window.addEventListener('message', function(e){
+    if (e.origin !== location.origin) return;
+    const d = e.data;
+    if (!d || d.type !== 'stok-summary' || d.kat !== 'minyak' || !d.summary) return;
+    stokFitriSummary = d.summary;
+    clearTimeout(_stokFitriTimer);
+    _stokFitriTimer = setTimeout(function(){ if (_analisaSub === 'fitri') refreshAnalisaIfVisible(); }, 400);
+  });
+  function getStokFitriData(){
+    const sm = stokFitriSummary;
+    if (!sm || !sm.products || !sm.products.length || !sm.rows) return null;
+    return {
+      products: sm.products.slice(),
+      saldoAwal: {},
+      rows: sm.rows.map(r => ({ ts: r.ts, tanggal: new Date(r.ts), values: r.values || {} })).sort((a,b) => a.ts - b.ts)
+    };
+  }
+  async function ensureStokFitriSummary(force){
+    if (_stokFitriLoading) return;
+    if (!force && Date.now() - _stokFitriLast < 120000) return;
+    _stokFitriLoading = true;
+    try {
+      await new Promise(function(resolve){
+        const fr = document.createElement('iframe');
+        fr.style.cssText = 'position:absolute;width:1px;height:1px;left:-9999px;top:0;border:0;visibility:hidden';
+        fr.setAttribute('aria-hidden', 'true');
+        let done = false;
+        const finish = function(){ if (done) return; done = true; window.removeEventListener('message', onMsg); setTimeout(function(){ try{ fr.remove(); }catch(e){} }, 300); resolve(); };
+        const onMsg = function(e){ if (e.origin === location.origin && e.data && e.data.type === 'stok-summary' && e.data.kat === 'minyak') finish(); };
+        window.addEventListener('message', onMsg);
+        setTimeout(finish, 25000);
+        fr.src = 'stok-fitri.html';
+        document.body.appendChild(fr);
+      });
+      _stokFitriLast = Date.now();
+    } finally { _stokFitriLoading = false; }
+  }
   function getStokRupaData(){
     const kats = Object.keys(stokSummaries).filter(k => stokSummaries[k] && stokSummaries[k].products && stokSummaries[k].products.length);
     if (!kats.length) return null;
