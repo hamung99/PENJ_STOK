@@ -479,7 +479,7 @@ body.dark #page-gudang tr.gudang-saldo-row td{color:#f1f5f9;font-weight:700;bord
 #page-cek .cek-date-wrap > span{font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.03em}
 #page-cek .cek-date-wrap input[type=date]{width:auto;min-width:138px;padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;font-size:12px;background:#fff;color:#172033}
 #analisaTableWrap table thead tr:first-child th{background:#1f4e78;color:#fff}
-#analisaTableWrap table thead tr:first-child th:nth-child(4){min-width:130px}
+#analisaTableWrap table thead tr:first-child th:nth-child(5){min-width:200px}
 #analisaRupaTableWrap table thead tr:first-child th{background:#1f4e78;color:#fff}
 body.dark{background:#0f172a;color:#e2e8f0}
 body.dark #umfixFrame{background:#0f172a}
@@ -7832,6 +7832,27 @@ self.onmessage = function(e){
     else renderGudangAnalisa();
   }
 
+  async function analisaMonthsWithData(){
+    // bulan yang benar-benar punya data (penjualan Fitri ATAU output gudang Fitri)
+    const withData = new Set();
+    try {
+      const all = await fetchCekRawRows('', { mode: 'fitri' });
+      for (let i = 0; i < all.length; i++) {
+        const x = all[i];
+        const bl = x.bulan || rowBulan(x);
+        if (bl) withData.add(bl);
+      }
+    } catch(e){}
+    const gd = getStokFitriData() || gudangData;
+    if (gd && gd.rows) {
+      gd.rows.forEach(r => {
+        let adaKeluar = false;
+        for (const p in (r.values || {})) { if (isFitriProduct(p) && r.values[p] && N(r.values[p].keluar)) { adaKeluar = true; break; } }
+        if (adaKeluar) { const mk = monthKeyUTC(r.tanggal); if (mk) withData.add(mk); }
+      });
+    }
+    return withData;
+  }
   async function populateAnalisaMonths(){
     const sel = document.getElementById('analisaMonth'); if (!sel) return;
     const arr = await collectCekMonths('fitri');
@@ -7839,70 +7860,107 @@ self.onmessage = function(e){
     sel.innerHTML = '<option value="">Semua bulan</option>' + arr.map(m => '<option value="' + m + '">' + monthLabel(m) + '</option>').join('');
     if (arr.includes(current)) sel.value = current;
     else if (current === '' && _analisaMonthInit) sel.value = '';
-    else if (arr.length) sel.value = pickLatestMonth(arr);
+    else if (arr.length) {
+      // pilih bulan berjalan HANYA jika punya data; kalau kosong, pakai bulan terakhir yang ada datanya
+      const withData = await analisaMonthsWithData();
+      const cur = pickLatestMonth(arr);
+      if (withData.has(cur)) sel.value = cur;
+      else {
+        const lastWith = arr.find(m => withData.has(m));
+        sel.value = lastWith || cur;
+      }
+    }
     else sel.value = '';
     _analisaMonthInit = true;
   }
   async function renderGudangAnalisa(){
-    ensureStokFitriSummary();
+    const wrap0 = document.getElementById('analisaTableWrap');
+    if (wrap0 && !_analisaLastData) wrap0.innerHTML = '<div style="padding:24px;text-align:center;color:#64748b">⏳ Memuat data penjualan & gudang…</div>';
+    // Muat ringkasan stok Fitri (iframe) & tunggu, supaya data gudang tidak kosong saat pertama dibuka
+    try {
+      if (!getStokFitriData()) await ensureStokFitriSummary(true);
+      else ensureStokFitriSummary();
+    } catch(e){ console.warn('ensureStokFitriSummary', e); }
     await populateAnalisaMonths();
-    const gd = getStokFitriData() || gudangData;
     const month = document.getElementById('analisaMonth')?.value || '';
+
+    // Sumber gudang: ringkasan stok-fitri.html; fallback gudangData (Data Gudang lama)
+    const gd = getStokFitriData() || gudangData;
+    const hasGudang = !!(gd && gd.products && gd.products.length);
+
+    // ---- Penjualan (bulan terpilih) ----
     const sourceRows = await fetchCekRawRows(month, { mode: 'fitri' });
-    const penjualanMap = new Map();
+    const penjualanMap = new Map();   // key -> {name, qty, total, hpp, perDate}
     for (let i = 0; i < sourceRows.length; i++) {
       const x = sourceRows[i];
       const produk = x.produk ?? x.Produk;
       if (!isFitriProduct(produk)) continue;
-      const key = productMatchKey(produk);
-      let agg = penjualanMap.get(key);
-      if (!agg) { agg = { name: String(produk).trim(), qty: 0, total: 0, hpp: 0, latestHargaBeli: 0, latestTs: -1 }; penjualanMap.set(key, agg); }
-      const j  = N(x.jumlah ?? x.Jumlah);
-      const t  = N(x.total ?? x.Total);
+      const fk = cekRupaFinalKeyAndName(String(produk).trim());
+      let agg = penjualanMap.get(fk.key);
+      if (!agg) { agg = { name: fk.name, qty: 0, total: 0, hpp: 0, perDate: {} }; penjualanMap.set(fk.key, agg); }
+      const j = N(x.jumlah ?? x.Jumlah);
+      const t = N(x.total ?? x.Total);
       const hb = N(x.hargaBeli ?? x['Harga Beli']);
-      const ts = x._ts || 0;
-      agg.qty   += j; agg.total += t; agg.hpp   += j * hb;
-      if (ts >= agg.latestTs) { agg.latestTs = ts; agg.latestHargaBeli = hb; }
+      agg.qty += j; agg.total += t; agg.hpp += j * hb;
+      const dk = cekDateKey(x.tanggal ?? x.Tanggal) || '';
+      if (dk) agg.perDate[dk] = (agg.perDate[dk] || 0) + j;
     }
-    const gudangMap = new Map();
-    if (gd && gd.products) {
+
+    // ---- Harga beli terbaru: dari transaksi TERAKHIR di semua bulan (bukan hanya bulan terpilih) ----
+    const hargaTerbaru = new Map();   // key -> {ts, hb}
+    try {
+      const allRows = month ? await fetchCekRawRows('', { mode: 'fitri' }) : sourceRows;
+      for (let i = 0; i < allRows.length; i++) {
+        const x = allRows[i];
+        const produk = x.produk ?? x.Produk;
+        if (!isFitriProduct(produk)) continue;
+        const hb = N(x.hargaBeli ?? x['Harga Beli']);
+        if (!hb) continue;
+        const ts = x._ts || (toDate(x.tanggal ?? x.Tanggal) || new Date(0)).getTime() || 0;
+        const key = cekRupaFinalKeyAndName(String(produk).trim()).key;
+        const cur = hargaTerbaru.get(key);
+        if (!cur || ts >= cur.ts) hargaTerbaru.set(key, { ts, hb });
+      }
+    } catch(e){ console.warn('harga beli terbaru', e); }
+
+    // ---- Gudang (output/keluar per tanggal + stok akhir) ----
+    const gudangMap = new Map();      // key -> {name, keluar, stokAkhir, perDate}
+    if (hasGudang) {
+      const keyOf = {};
       for (const p of gd.products) {
         if (!isFitriProduct(p)) continue;
-        const key = productMatchKey(p);
-        if (!gudangMap.has(key)) gudangMap.set(key, { name: p, keluar: 0, stokAkhir: null });
+        const fk = cekRupaFinalKeyAndName(p);
+        keyOf[p] = fk.key;
+        if (!gudangMap.has(fk.key)) gudangMap.set(fk.key, { name: fk.name, keluar: 0, stokAkhir: null, perDate: {} });
       }
       for (let i = 0; i < gd.rows.length; i++) {
         const r = gd.rows[i];
         const mk = monthKeyUTC(r.tanggal);
-        if (month && mk !== month) continue;
-        for (const p of gd.products) {
-          if (!isFitriProduct(p)) continue;
-          const key = productMatchKey(p);
-          const v = r.values[p];
+        const dk = cekDateKeyUTC(r.tanggal);
+        const inMonth = !month || mk === month;
+        for (const p in keyOf) {
+          const v = r.values && r.values[p];
           if (!v) continue;
-          let g = gudangMap.get(key);
-          if (!g) { g = { name: p, keluar: 0, stokAkhir: null }; gudangMap.set(key, g); }
-          g.keluar += N(v.keluar);
+          const g = gudangMap.get(keyOf[p]);
+          if (inMonth) {
+            const k = N(v.keluar);
+            if (k) { g.keluar += k; if (dk) g.perDate[dk] = (g.perDate[dk] || 0) + k; }
+          }
         }
       }
-      const stokMap = new Map();
+      // stok akhir = stok terakhir yang tercatat s/d akhir bulan terpilih
       for (let i = 0; i < gd.rows.length; i++) {
         const r = gd.rows[i];
         const mk = monthKeyUTC(r.tanggal);
         if (month && mk > month) break;
-        for (const p of gd.products) {
-          if (!isFitriProduct(p)) continue;
-          const key = productMatchKey(p);
-          const v = r.values[p];
-          if (v && v.stok != null) stokMap.set(key, { stok: v.stok, name: p });
+        for (const p in keyOf) {
+          const v = r.values && r.values[p];
+          if (v && v.stok != null && v.stok !== '') gudangMap.get(keyOf[p]).stokAkhir = N(v.stok);
         }
       }
-      for (const [key, val] of stokMap) {
-        let g = gudangMap.get(key);
-        if (!g) { g = { name: val.name, keluar: 0, stokAkhir: null }; gudangMap.set(key, g); }
-        g.stokAkhir = val.stok;
-      }
     }
+
+    // ---- Gabung ----
     const allKeys = new Set([...penjualanMap.keys(), ...gudangMap.keys()]);
     const list = [];
     for (const key of allKeys) {
@@ -7913,13 +7971,14 @@ self.onmessage = function(e){
       const outputGudang    = g.keluar || 0;
       const selisih         = outputPenjualan - outputGudang;
       const ket = selisih === 0 ? 'Cocok' : (selisih > 0 ? 'Penjualan Lebih Banyak' : 'Gudang Lebih Banyak');
-      const totalPenjualan   = p.total || 0;
-      const hpp              = p.hpp || 0;
-      const profit           = totalPenjualan - hpp;
-      const stokAkhir        = (g.stokAkhir != null) ? g.stokAkhir : 0;
-      const hargaBeliTerbaru = p.latestHargaBeli || 0;
+      const entries = (hasGudang && selisih !== 0) ? ketMismatchEntries(selisih, p.perDate || {}, g.perDate || {}) : [];
+      const totalPenjualan = p.total || 0;
+      const hpp = p.hpp || 0;
+      const profit = totalPenjualan - hpp;
+      const stokAkhir = (g.stokAkhir != null) ? g.stokAkhir : 0;
+      const hargaBeliTerbaru = (hargaTerbaru.get(key) || {}).hb || 0;
       const nominalStokAkhir = stokAkhir * hargaBeliTerbaru;
-      list.push({ key, name, outputPenjualan, outputGudang, selisih, ket, totalPenjualan, hpp, profit, stokAkhir, hargaBeliTerbaru, nominalStokAkhir });
+      list.push({ key, name, outputPenjualan, outputGudang, selisih, ket, entries, perDateP: p.perDate || {}, perDateG: g.perDate || {}, totalPenjualan, hpp, profit, stokAkhir, hargaBeliTerbaru, nominalStokAkhir });
     }
     list.sort((a, b) => a.name.localeCompare(b.name, 'id'));
     const tot = list.reduce((acc, r) => {
@@ -7932,31 +7991,61 @@ self.onmessage = function(e){
     const elNominal = document.getElementById('analisaNominalStok');
     if (elProfit) elProfit.textContent = rp(tot.profit);
     if (elNominal) elNominal.textContent = rp(tot.nominalStokAkhir);
-    const head = ['PRODUK FITRI','OUTPUT PENJUALAN','OUTPUT GUDANG','KET','TOTAL PENJUALAN','HPP','PROFIT PENJUALAN','STOK AKHIR','HARGA BELI TERBARU','NOMINAL STOK AKHIR'];
-    let body = list.map(r => {
-      let ketHtml = '';
-      if (r.selisih === 0) ketHtml = '<span class="ket-badge ok">✅ Cocok</span>';
-      else if (r.selisih > 0) ketHtml = '<span class="ket-badge warn">🔷 Penjualan Lebih Banyak</span>';
-      else ketHtml = '<span class="ket-badge alert">🚨 Gudang Lebih Banyak</span>';
-      return '<tr><td>' + escHtml(r.name) + '</td><td class="num">' + nfQty(r.outputPenjualan) + '</td><td class="num">' + nfQty(r.outputGudang) + '</td><td>' + ketHtml + '</td><td class="num">' + rp(r.totalPenjualan) + '</td><td class="num">' + rp(r.hpp) + '</td><td class="num" style="color:#166534;font-weight:700">' + rp(r.profit) + '</td><td class="num">' + nfQty(r.stokAkhir) + '</td><td class="num">' + rp(r.hargaBeliTerbaru) + '</td><td class="num">' + rp(r.nominalStokAkhir) + '</td></tr>';
+
+    const head = ['PRODUK FITRI','OUTPUT PENJUALAN','OUTPUT GUDANG','SELISIH','KET','TOTAL PENJUALAN','HPP','PROFIT PENJUALAN','STOK AKHIR','HARGA BELI TERBARU','NOMINAL STOK AKHIR'];
+    const body = list.map(r => {
+      const ketHtml = hasGudang ? ketBadge(r.selisih, r.entries, r.name) : '<span style="color:#94a3b8">Data gudang belum termuat</span>';
+      const selColor = r.selisih === 0 ? '#166534' : (r.selisih > 0 ? '#1d4ed8' : '#dc2626');
+      return '<tr><td>' + escHtml(r.name) + '</td><td class="num">' + nfQty(r.outputPenjualan) + '</td><td class="num">' + (hasGudang ? nfQty(r.outputGudang) : '-') + '</td><td class="num" style="color:' + selColor + ';font-weight:700">' + (r.selisih > 0 ? '+' : '') + nfQty(r.selisih) + '</td><td style="white-space:normal">' + ketHtml + '</td><td class="num">' + rp(r.totalPenjualan) + '</td><td class="num">' + rp(r.hpp) + '</td><td class="num" style="color:#166534;font-weight:700">' + rp(r.profit) + '</td><td class="num">' + nfQty(r.stokAkhir) + '</td><td class="num">' + rp(r.hargaBeliTerbaru) + '</td><td class="num">' + rp(r.nominalStokAkhir) + '</td></tr>';
     }).join('');
-    const totalKetHtml = (tot.outputPenjualan === tot.outputGudang) ? '<span class="ket-badge ok">✅ Cocok</span>' : '';
-    const foot = '<tr><td>TOTAL</td><td class="num">' + nfQty(tot.outputPenjualan) + '</td><td class="num">' + nfQty(tot.outputGudang) + '</td><td>' + totalKetHtml + '</td><td class="num">' + rp(tot.totalPenjualan) + '</td><td class="num">' + rp(tot.hpp) + '</td><td class="num">' + rp(tot.profit) + '</td><td class="num">' + nfQty(tot.stokAkhir) + '</td><td class="num">-</td><td class="num">' + rp(tot.nominalStokAkhir) + '</td></tr>';
-    const tableHtml = '<div class="tablebox"><table><thead><tr>' + head.map(h => '<th>' + h + '</th>').join('') + '</tr></thead><tbody>' + (list.length ? body : '<tr><td colspan="10" style="text-align:center;padding:24px;color:#64748b">Belum ada data.</td></tr>') + '</tbody>' + (list.length ? '<tfoot>' + foot + '</tfoot>' : '') + '</table></div>';
+    const totSel = tot.outputPenjualan - tot.outputGudang;
+    const totalKetHtml = (hasGudang && totSel === 0) ? '<span class="ket-badge ok">✅ Cocok</span>' : '';
+    const foot = '<tr><td>TOTAL</td><td class="num">' + nfQty(tot.outputPenjualan) + '</td><td class="num">' + nfQty(tot.outputGudang) + '</td><td class="num">' + (totSel > 0 ? '+' : '') + nfQty(totSel) + '</td><td>' + totalKetHtml + '</td><td class="num">' + rp(tot.totalPenjualan) + '</td><td class="num">' + rp(tot.hpp) + '</td><td class="num">' + rp(tot.profit) + '</td><td class="num">' + nfQty(tot.stokAkhir) + '</td><td class="num">-</td><td class="num">' + rp(tot.nominalStokAkhir) + '</td></tr>';
+
+    // ---- Rincian per tanggal: hanya tanggal yang selisih ----
+    const mism = [];
+    list.forEach(r => {
+      const dks = new Set([...Object.keys(r.perDateP), ...Object.keys(r.perDateG)]);
+      [...dks].sort().forEach(dk => {
+        const pj = N(r.perDateP[dk]), gu = N(r.perDateG[dk]);
+        if (pj !== gu) mism.push({ dk, name: r.name, pj, gu, s: pj - gu });
+      });
+    });
+    mism.sort((x, y) => x.dk < y.dk ? -1 : x.dk > y.dk ? 1 : x.name.localeCompare(y.name, 'id'));
+    let mismHtml = '';
+    if (hasGudang) {
+      mismHtml = '<div style="margin-top:18px;font-weight:800;color:#b45309;font-size:12px;letter-spacing:.02em;margin-bottom:8px">🔎 TANGGAL YANG JUMLAHNYA BEDA (' + mism.length + ')</div>';
+      if (!mism.length) {
+        mismHtml += '<div style="padding:14px;color:#166534;font-weight:700;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px">✅ Semua tanggal cocok — Output Penjualan = Output Gudang.</div>';
+      } else {
+        mismHtml += '<div class="tablebox"><table><thead><tr><th>TANGGAL</th><th>PRODUK</th><th>PENJUALAN</th><th>GUDANG</th><th>SELISIH</th><th>KET</th></tr></thead><tbody>' +
+          mism.map(m => {
+            const c = m.s > 0 ? '#1d4ed8' : '#dc2626';
+            return '<tr><td>' + cekDateLabelLong(m.dk) + '</td><td>' + escHtml(m.name) + '</td><td class="num">' + nfQty(m.pj) + '</td><td class="num">' + nfQty(m.gu) + '</td><td class="num" style="color:' + c + ';font-weight:700">' + (m.s > 0 ? '+' : '') + nfQty(m.s) + '</td><td>' + ketBadge(m.s) + '</td></tr>';
+          }).join('') + '</tbody></table></div>';
+      }
+    }
+
+    const emptyMsg = 'Belum ada data' + (month ? ' untuk ' + monthLabel(month) : '') + '. Coba pilih bulan lain / "Semua bulan".';
+    const tableHtml = '<div class="tablebox"><table><thead><tr>' + head.map(h => '<th>' + h + '</th>').join('') + '</tr></thead><tbody>' + (list.length ? body : '<tr><td colspan="11" style="text-align:center;padding:24px;color:#64748b">' + emptyMsg + '</td></tr>') + '</tbody>' + (list.length ? '<tfoot>' + foot + '</tfoot>' : '') + '</table></div>' + mismHtml;
     const wrap = document.getElementById('analisaTableWrap');
     if (wrap) wrap.innerHTML = tableHtml;
-    _analisaLastData = { month, list, tot, head };
+    _analisaLastData = { month, list, tot, head, mism };
   }
   async function downloadAnalisaFitri(){
     if (!_analisaLastData || !_analisaLastData.list.length) return alert('Belum ada data untuk diunduh.');
     try { await loadXLSX(); } catch(e){ alert(e.message); return; }
-    const { list, tot } = _analisaLastData;
-    const head = ['PRODUK FITRI','OUTPUT PENJUALAN','OUTPUT GUDANG','KET','TOTAL PENJUALAN','HPP','PROFIT PENJUALAN','STOK AKHIR','HARGA BELI TERBARU','NOMINAL STOK AKHIR'];
-    const rows = list.map(r => [r.name, r.outputPenjualan, r.outputGudang, r.ket, r.totalPenjualan, r.hpp, r.profit, r.stokAkhir, r.hargaBeliTerbaru, r.nominalStokAkhir]);
-    const foot = ['TOTAL', tot.outputPenjualan, tot.outputGudang, (tot.outputPenjualan === tot.outputGudang ? 'Cocok' : ''), tot.totalPenjualan, tot.hpp, tot.profit, tot.stokAkhir, '-', tot.nominalStokAkhir];
-    const ws = XLSX.utils.aoa_to_sheet([head, ...rows, foot]);
+    const { list, tot, mism } = _analisaLastData;
+    const head = ['PRODUK FITRI','OUTPUT PENJUALAN','OUTPUT GUDANG','SELISIH','KET','TOTAL PENJUALAN','HPP','PROFIT PENJUALAN','STOK AKHIR','HARGA BELI TERBARU','NOMINAL STOK AKHIR'];
+    const rows = list.map(r => [r.name, r.outputPenjualan, r.outputGudang, r.selisih, ketText(r.selisih, r.entries), r.totalPenjualan, r.hpp, r.profit, r.stokAkhir, r.hargaBeliTerbaru, r.nominalStokAkhir]);
+    const totSel = tot.outputPenjualan - tot.outputGudang;
+    const foot = ['TOTAL', tot.outputPenjualan, tot.outputGudang, totSel, (totSel === 0 ? 'Cocok' : ''), tot.totalPenjualan, tot.hpp, tot.profit, tot.stokAkhir, '-', tot.nominalStokAkhir];
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Analisa Fitri');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([head, ...rows, foot]), 'Analisa Fitri');
+    if (mism && mism.length) {
+      const h2 = ['TANGGAL','PRODUK','PENJUALAN','GUDANG','SELISIH'];
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([h2, ...mism.map(m => [cekDateLabelLong(m.dk), m.name, m.pj, m.gu, m.s])]), 'Tanggal Beda');
+    }
     XLSX.writeFile(wb, 'Analisa_Fitri.xlsx');
   }
 
