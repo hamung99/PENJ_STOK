@@ -483,7 +483,7 @@ body.dark #page-analisa .gudang-subtab.active{background:#3b82f6;border-color:#3
 #page-matching .mn-bar input[type=search]{min-width:200px}
 #page-matching .mn-bar button{padding:4px 10px;border:1px solid #cbd5e1;border-radius:6px;background:#f1f5f9;color:#1f2937;font-size:12px;font-weight:700;cursor:pointer}
 #page-matching .mn-sum{margin-left:auto;color:#475569}
-#page-matching .mn-grid{display:grid;grid-template-columns:minmax(260px,1fr) minmax(460px,1.7fr);gap:18px;align-items:start}
+#page-matching .mn-grid{display:grid;grid-template-columns:minmax(340px,1fr) minmax(560px,1.7fr);gap:18px;align-items:start}
 #page-matching .mn-cap{font-size:12px;font-weight:700;margin-bottom:3px}
 #page-matching table.mn-tbl{min-width:0;width:100%;border-collapse:collapse;font-size:12px}
 #page-matching .mn-tbl th,#page-matching .mn-tbl td{border:1px solid #475569;padding:4px 8px;background:#fff;color:#172033;position:static}
@@ -494,6 +494,8 @@ body.dark #page-analisa .gudang-subtab.active{background:#3b82f6;border-color:#3
 #page-matching .mn-tbl td.mn-btn button[data-act=save]:hover{background:#dcfce7;border-color:#16a34a}
 #page-matching .mn-tbl td.mn-btn button[data-act=cancel]:hover{background:#fee2e2;border-color:#dc2626}
 #page-matching .mn-in{width:52px;padding:3px 4px;border:1px solid #94a3b8;border-radius:5px;text-align:center;font-size:12px;background:#fff;color:#172033}
+#page-matching .mn-kd{width:96px;padding:3px 4px;border:1px solid #94a3b8;border-radius:5px;text-align:center;font-size:12px;background:#fff;color:#172033;text-transform:uppercase}
+#page-matching td.mn-kdcell{width:104px;text-align:center;padding:2px 4px;font-weight:700;color:#0f766e}
 #page-matching tr.mn-ok .mn-in{background:#dcfce7;border-color:#16a34a;font-weight:700}
 #page-matching tr.mn-stale .mn-in{background:#fef3c7;border-color:#d97706}
 #page-matching tr.mn-hit td{background:#f0fdf4}
@@ -506,6 +508,8 @@ body.dark #page-matching .mn-tbl thead th{background:#1e293b}
 body.dark #page-matching tr.mn-hit td{background:#052e16}
 body.dark #page-matching .mn-in,body.dark #page-matching .mn-bar select,body.dark #page-matching .mn-bar input,body.dark #page-matching .mn-bar button{background:#1e293b;color:#e2e8f0;border-color:#475569}
 body.dark #page-matching tr.mn-ok .mn-in{background:#14532d}
+body.dark #page-matching .mn-kd{background:#1e293b;color:#e2e8f0;border-color:#475569}
+body.dark #page-matching td.mn-kdcell{color:#5eead4}
 body.dark #page-matching .mn-tbl td.mn-btn button{background:#1e293b;color:#e2e8f0;border-color:#475569}
 body.dark #page-matching .mn-sum{color:#94a3b8}
 @media (max-width:900px){#page-matching .mn-grid{grid-template-columns:1fr}}
@@ -1696,7 +1700,7 @@ body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#
       <button type="button" id="mnReload" title="Muat ulang data penjualan & gudang">↻ Segarkan</button>
       <span class="mn-sum" id="mnSummary"></span>
     </div>
-    <div style="font-size:11px;color:#64748b;margin-bottom:8px">Isi kolom <b>NO</b> di tabel kanan dengan nomor produk yang artinya sama di tabel <b>NAMA DI GUDANG</b>, lalu klik <b>SAVE</b> (atau tekan Enter). <b>CANCEL</b> = batalkan/hapus pencocokan. Hasilnya langsung dipakai di Analisa Fitri &amp; Rupa Rupa.</div>
+    <div style="font-size:11px;color:#64748b;margin-bottom:8px">Isi kolom <b>NO</b> di tabel kanan dengan nomor produk yang artinya sama di tabel <b>NAMA DI GUDANG</b>, lalu klik <b>SAVE</b> (atau tekan Enter). <b>CANCEL</b> = batalkan/hapus pencocokan. Hasilnya langsung dipakai di Analisa Fitri &amp; Rupa Rupa. <b>KODE PRODUK</b>: isi manual di tabel NAMA DI GUDANG (kosong dulu) — kolom kode di tabel NAMA DI PENJUALAN terisi otomatis dari daftar kode produk (nama yang belum ada di daftar memakai kode gudang yang sudah match, bila ada).</div>
     <div id="mnBody"><div class="mn-empty">Belum ada data.</div></div>
   </div>
 </div>
@@ -1939,7 +1943,9 @@ body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#
     const meta = await db.meta.toArray();
     let namaMap = {};
     try { namaMap = JSON.parse(localStorage.getItem('cekRupaNamaProdukMap_v1') || '{}'); } catch(e){ namaMap = {}; }
-    return { tx, meta, namaMap };
+    let kodeMap = {};
+    try { kodeMap = JSON.parse(localStorage.getItem('mnKodeProdukMap_v1') || '{}'); } catch(e){ kodeMap = {}; }
+    return { tx, meta, namaMap, kodeMap };
   }
   async function pushToCloud(){
     if (!sbClient) throw new Error('Cloud belum terhubung.');
@@ -1988,6 +1994,7 @@ body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#
             if (!cv || (keepUM.savedAt || 0) > (cv.savedAt || 0)) { await db.meta.put({ key: UM_META_KEY, value: keepUM }); umNeedPush = true; }
           }
           if (snap.namaMap && typeof snap.namaMap === 'object') { try { localStorage.setItem('cekRupaNamaProdukMap_v1', JSON.stringify(snap.namaMap)); } catch(e){} }
+          if (snap.kodeMap && typeof snap.kodeMap === 'object') { try { localStorage.setItem('mnKodeProdukMap_v1', JSON.stringify(snap.kodeMap)); } catch(e){} }
           setCloudStatus('Sinkron dari cloud • ' + new Date().toLocaleTimeString('id-ID'));
         } finally { isSyncingFromCloud = false; }
         if (umNeedPush) { try { schedulePush(); } catch(e){} }
@@ -8019,6 +8026,22 @@ self.onmessage = function(e){
   let _mnCache = { fitri: null, rupa: null };   // daftar nama penjualan per kelompok
   let _mnGudang = [];             // daftar nama gudang yang sedang tampil (urut = nomor)
   let _mnBound = false;
+  let _mnGKeys = [];              // key akhir tiap nama gudang (urut = nomor)
+  const MN_KODE_KEY = 'mnKodeProdukMap_v1';
+  // Daftar kode produk (dari KODE-PRODUK.xls): [kode, nama produk di faktur penjualan]
+  const MN_KODE_LIST = [["00300047","NS CRIPSY LEMON"],["00300001","KECAP GUNA JRG"],["00300002","SAMBAL STICK 9 GR"],["00300003","SAMBAL REFFIL 600ML"],["00300004","SAMBAL CABE 500GR"],["00200001","SHZ KIREI 85GR"],["00200002","SHZ CLASIC/MATSU 85GR"],["00300005","KRUPUK B PUTIH PEDAS"],["00300006","BIHUN JAGUNG"],["00200003","SHZ KENSHO 85GR"],["00300007","SOUN BAKSO GAJAH 2 KP"],["00300008","JELLYGAR HEMAT MELON"],["00200004","SHZ MYORI 85GR"],["00200005","SHZ HANA 85GR"],["00300009","KECAP BOTOL NAS 130ML"],["00300010","SAMBAL BOTOL MEJA 130ML"],["00200006","ZEN SULPHUR"],["00200007","ZEN ECHINACEA"],["00200008","ZEN JUNIPERBERRIES"],["00200009","ZEN SANDALWOOD"],["00200010","ZEN SEALSALT"],["00200011","ZEN TEATREE"],["00300011","KECAP NAS REFF 520ML"],["00300012","JELLYGAR STRAWBERRY"],["00300013","JELLYGAR LECI"],["00300014","JELLY ORANGE"],["00300015","JELLYGAR BLUEBERRY"],["00300016","JELLYGAR PLAIN"],["00300017","KERUPUK BWG BIBIR RJW"],["00300018","KERUPUK BWG PUTIH RJW"],["00300019","AGAR LUMBA HEMAT COKLAT"],["00200012","SHZ SAKURA 85GR"],["00300020","AGAR LUMBA SUPER PUTIH"],["00300021","AGAR LUMBA SUPER MERAH"],["00300022","AGAR LUMBA SUPER HIJAU"],["00300023","MIE IKAT KECIL"],["00200013","SHZ REFF MATSU 85ML"],["00200014","SHZ REFF KIREI 85ML"],["00300024","KERUPUK TERASI"],["00300025","KECAP REF 300ML"],["00300026","KECAP JERIGEN 6KG"],["00300027","KECAP GUNA 520 REFF"],["00300028","KECAP PREMIUM 70ML"],["00300029","KECAP CG ASIN BESAR 625ML"],["00300030","SAMBAL GUNA 1 KG"],["00300031","COCOMAXI CAIR 65GR"],["00300032","AGAR LUMBA SUPER COKLAT"],["00300033","AGAR LUMBA HEMAT PUTIH"],["00300034","AGAR LUMBA HEMAT MERAH"],["00300041","AGAR LUMBA HEMAT HIJAU"],["00300035","PUDDING MANGGO"],["00300036","PUDDING VANILA"],["00300037","PUDDING COCOPANDAN"],["00300038","PUDDING MIXBERY"],["00300039","PUDDING CHOCOCREAM"],["00300040","TERASI RENCENG 5GR"],["00300042","MIE 18 KP"],["00300043","BOTOL 600ML"],["00100002","FITRI BOTOL 1800ML"],["00100003","FITRI BOTOL 400ML"],["00100004","FITRI BOTOL 800ML"],["00100005","FITRI BOTOL 200ML"],["00300045","KERUPUK UDANG RJW"],["00200020","SHZ BAR KIREI 24X3X60"],["00300046","NS CRIPSY CRACKERS"],["00300044","MARGARINE FORVITA"],["00200015","WOSHI2 GREAN TEA 72X75ML"],["00200016","ZEN REFF SANDALWOOD"],["00200018","ZEN REFF JUNIPERBERIS"],["00200017","ZEN REFF SEASALT"],["00200019","ZEN REFF TEATREE"],["00300048","NS KUE KERING"],["00300049","NS KG MARIE RAJA"],["00300050","NS WALENS CHOC SOES"],["00300051","NS WALENS BLUEBERRY SOES"],["00300052","NS WALENS COKLAT SOES"],["00300053","MD SR SNACK GOLD 30"],["00300054","MD SR SNACK GOLD 45"],["00300055","NS AYNAKO 10"]];
+  let _mnKodeByKey = null;
+  function mnKodeFromList(key){
+    if (!_mnKodeByKey) { _mnKodeByKey = {}; MN_KODE_LIST.forEach(x => { const k = productMatchKey(x[1]); if (k && !_mnKodeByKey[k]) _mnKodeByKey[k] = x[0]; }); }
+    return _mnKodeByKey[key] || '';
+  }
+  function getMnKodeMap(){
+    try { const v = JSON.parse(localStorage.getItem(MN_KODE_KEY) || '{}'); return (v && typeof v === 'object') ? v : {}; } catch(e){ return {}; }
+  }
+  function saveMnKodeMap(map){
+    try { localStorage.setItem(MN_KODE_KEY, JSON.stringify(map || {})); } catch(e) {}
+    try { schedulePush(); } catch(e) {}
+  }
   function mnInGroup(n){ return _mnGroup === 'fitri' ? isFitriProduct(n) : !isFitriProduct(n); }
   async function mnLoadSales(){
     const rows = await fetchCekRawRows('', { mode: _mnGroup });
@@ -8066,8 +8089,21 @@ self.onmessage = function(e){
     });
     pg.addEventListener('keydown', e => {
       if (e.key !== 'Enter') return;
+      const kd = e.target.closest('input.mn-kd');
+      if (kd) { kd.blur(); return; }
       const inp = e.target.closest('input.mn-in'); if (!inp) return;
       mnSave(inp.closest('tr').dataset.k);
+    });
+    pg.addEventListener('change', e => {
+      const kd = e.target.closest('input.mn-kd'); if (!kd) return;
+      const gk = kd.dataset.gk; if (!gk) return;
+      const v = kd.value.trim().toUpperCase();
+      kd.value = v;
+      const map = getMnKodeMap();
+      if (v) map[gk] = v; else delete map[gk];
+      saveMnKodeMap(map);
+      // update kolom KODE PRODUK di tabel penjualan tanpa render ulang (fokus tidak hilang)
+      pg.querySelectorAll('td.mn-kdcell[data-gk="' + gk + '"]').forEach(td => { td.textContent = v; });
     });
   }
   function mnSave(key){
@@ -8109,6 +8145,8 @@ self.onmessage = function(e){
     }
     const sales = _mnCache[grp] || [];
     _mnGudang = mnGudangNames();
+    _mnGKeys = _mnGudang.map(n => cekRupaFinalKeyAndName(n).key);
+    const kodeMap = getMnKodeMap();
     const map = getCekRupaNamaMap();
     const gNoByKey = new Map();
     _mnGudang.forEach((n, i) => { const k = cekRupaFinalKeyAndName(n).key; if (!gNoByKey.has(k)) gNoByKey.set(k, i + 1); });
@@ -8117,15 +8155,17 @@ self.onmessage = function(e){
       const no = gNoByKey.get(cekRupaFinalKeyAndName(s.name).key) || 0;
       const manual = Object.prototype.hasOwnProperty.call(map, s.key);
       if (no) { hit.add(no); nOk++; }
-      return { key: s.key, name: s.name, no, manual };
+      const kodeList = mnKodeFromList(s.key);
+      const kode = kodeList || (no ? (kodeMap[_mnGKeys[no - 1]] || '') : '');
+      return { key: s.key, name: s.name, no, manual, kode, kodeList };
     });
     const q = _mnSearch.trim().toUpperCase();
     const fS = srows.filter(r => (_mnFilter === 'all' || (_mnFilter === 'ok' ? r.no : !r.no)) && (!q || r.name.toUpperCase().includes(q)));
     const fG = _mnGudang.map((n, i) => ({ no: i + 1, name: n })).filter(g => !q || g.name.toUpperCase().includes(q));
     const sm = document.getElementById('mnSummary');
-    if (sm) sm.innerHTML = '<b>' + nOk + '</b> dari <b>' + srows.length + '</b> nama penjualan sudah cocok · <b>' + (srows.length - nOk) + '</b> belum';
-    const gHtml = fG.length ? fG.map(g => '<tr class="' + (hit.has(g.no) ? 'mn-hit' : '') + '"><td class="mn-no">' + g.no + '</td><td>' + escHtml(g.name) + '</td></tr>').join('')
-      : '<tr><td colspan="2" class="mn-empty">' + (_mnGudang.length ? 'Tidak ada yang cocok dengan pencarian.' : 'Data gudang belum termuat / kosong.') + '</td></tr>';
+    if (sm) sm.innerHTML = '<b>' + nOk + '</b> dari <b>' + srows.length + '</b> nama penjualan sudah cocok · <b>' + (srows.length - nOk) + '</b> belum · kode produk terisi <b>' + srows.filter(r => r.kode).length + '</b>/' + srows.length;
+    const gHtml = fG.length ? fG.map(g => '<tr class="' + (hit.has(g.no) ? 'mn-hit' : '') + '"><td class="mn-no">' + g.no + '</td><td>' + escHtml(g.name) + '</td><td class="mn-kdcell"><input class="mn-kd" type="text" data-gk="' + escHtml(_mnGKeys[g.no - 1]) + '" value="' + escHtml(kodeMap[_mnGKeys[g.no - 1]] || '') + '" placeholder="isi manual"></td></tr>').join('')
+      : '<tr><td colspan="3" class="mn-empty">' + (_mnGudang.length ? 'Tidak ada yang cocok dengan pencarian.' : 'Data gudang belum termuat / kosong.') + '</td></tr>';
     const sHtml = fS.length ? fS.map(r => {
       const pend = Object.prototype.hasOwnProperty.call(_mnPending, r.key) ? _mnPending[r.key] : null;
       const val = pend != null ? pend : (r.no ? String(r.no) : '');
@@ -8134,11 +8174,11 @@ self.onmessage = function(e){
       if (pend != null && pend !== '') { const n = parseInt(pend, 10); if (n >= 1 && n <= _mnGudang.length && String(n) === pend.trim()) { prev = '→ ' + _mnGudang[n - 1] + ' (klik SAVE)'; pcls += ' pend'; } else { prev = '⚠ nomor tidak ada (1–' + _mnGudang.length + ')'; pcls += ' bad'; } }
       else if (r.no) prev = (r.manual ? '✅ manual' : '✅ otomatis sama') + ' = ' + _mnGudang[r.no - 1];
       else if (r.manual) { prev = '⚠ nama baku tersimpan tidak ada di gudang: ' + (map[r.key] || ''); pcls += ' bad'; }
-      return '<tr class="' + cls + '" data-k="' + r.key + '"><td class="mn-no"><input class="mn-in" type="text" inputmode="numeric" value="' + escHtml(val) + '"></td><td>' + escHtml(r.name) + '<div class="' + pcls + '">' + escHtml(prev) + '</div></td><td class="mn-btn"><button type="button" data-act="save">SAVE</button></td><td class="mn-btn"><button type="button" data-act="cancel">CANCEL</button></td></tr>';
-    }).join('') : '<tr><td colspan="4" class="mn-empty">' + (srows.length ? 'Tidak ada baris untuk filter ini.' : 'Belum ada data penjualan' + (grp === 'fitri' ? ' Fitri' : ' Rupa Rupa') + '.') + '</td></tr>';
+      return '<tr class="' + cls + '" data-k="' + r.key + '"><td class="mn-no"><input class="mn-in" type="text" inputmode="numeric" value="' + escHtml(val) + '"></td><td>' + escHtml(r.name) + '<div class="' + pcls + '">' + escHtml(prev) + '</div></td><td class="mn-kdcell" data-gk="' + escHtml(r.kodeList ? '' : (r.no ? _mnGKeys[r.no - 1] : '')) + '">' + escHtml(r.kode) + '</td><td class="mn-btn"><button type="button" data-act="save">SAVE</button></td><td class="mn-btn"><button type="button" data-act="cancel">CANCEL</button></td></tr>';
+    }).join('') : '<tr><td colspan="5" class="mn-empty">' + (srows.length ? 'Tidak ada baris untuk filter ini.' : 'Belum ada data penjualan' + (grp === 'fitri' ? ' Fitri' : ' Rupa Rupa') + '.') + '</td></tr>';
     box.innerHTML = '<div class="mn-grid">' +
-      '<div><div class="mn-cap">NAMA DI GUDANG</div><div class="tablebox"><table class="mn-tbl"><thead><tr><th style="width:46px">NO</th><th>NAMA PRODUK GUDANG</th></tr></thead><tbody>' + gHtml + '</tbody></table></div></div>' +
-      '<div><div class="mn-cap">NAMA DI PENJUALAN</div><div class="tablebox"><table class="mn-tbl"><thead><tr><th style="width:62px">NO</th><th>NAMA PRODUK FAKTUR PENJUALAN</th><th>SAVE</th><th>CANCEL</th></tr></thead><tbody>' + sHtml + '</tbody></table></div></div>' +
+      '<div><div class="mn-cap">NAMA DI GUDANG</div><div class="tablebox"><table class="mn-tbl"><thead><tr><th style="width:46px">NO</th><th>NAMA PRODUK GUDANG</th><th style="width:104px">KODE PRODUK</th></tr></thead><tbody>' + gHtml + '</tbody></table></div></div>' +
+      '<div><div class="mn-cap">NAMA DI PENJUALAN</div><div class="tablebox"><table class="mn-tbl"><thead><tr><th style="width:62px">NO</th><th>NAMA PRODUK FAKTUR PENJUALAN</th><th style="width:104px">KODE PRODUK</th><th>SAVE</th><th>CANCEL</th></tr></thead><tbody>' + sHtml + '</tbody></table></div></div>' +
       '</div>';
   }
 
