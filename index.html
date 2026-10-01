@@ -476,6 +476,39 @@ body.dark #page-analisa .gudang-dd-menu button.active{background:#1d4ed8;color:#
 body.dark #page-analisa .gudang-subtab{background:#1e293b;color:#94a3b8;border-color:#475569}
 body.dark #page-analisa .gudang-subtab:hover{background:#334155;color:#e2e8f0}
 body.dark #page-analisa .gudang-subtab.active{background:#3b82f6;border-color:#3b82f6;color:#fff}
+/* ===== MATCHING NAMES (sub-tab Analisa) ===== */
+#page-matching .mn-title{text-align:center;font-weight:800;font-size:14px;margin:4px 0 10px;letter-spacing:.04em}
+#page-matching .mn-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;font-size:12px}
+#page-matching .mn-bar select,#page-matching .mn-bar input{padding:4px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12px;background:#fff;color:#172033}
+#page-matching .mn-bar input[type=search]{min-width:200px}
+#page-matching .mn-bar button{padding:4px 10px;border:1px solid #cbd5e1;border-radius:6px;background:#f1f5f9;color:#1f2937;font-size:12px;font-weight:700;cursor:pointer}
+#page-matching .mn-sum{margin-left:auto;color:#475569}
+#page-matching .mn-grid{display:grid;grid-template-columns:minmax(260px,1fr) minmax(460px,1.7fr);gap:18px;align-items:start}
+#page-matching .mn-cap{font-size:12px;font-weight:700;margin-bottom:3px}
+#page-matching table.mn-tbl{min-width:0;width:100%;border-collapse:collapse;font-size:12px}
+#page-matching .mn-tbl th,#page-matching .mn-tbl td{border:1px solid #475569;padding:4px 8px;background:#fff;color:#172033;position:static}
+#page-matching .mn-tbl thead th{position:sticky;top:0;z-index:2;background:#e2e8f0;text-align:center}
+#page-matching .mn-tbl td.mn-no{text-align:right;width:46px}
+#page-matching .mn-tbl td.mn-btn{width:62px;text-align:center;padding:2px}
+#page-matching .mn-tbl td.mn-btn button{width:100%;padding:3px 2px;font-size:11px;font-weight:700;border:1px solid #cbd5e1;border-radius:5px;background:#f8fafc;color:#1f2937;cursor:pointer}
+#page-matching .mn-tbl td.mn-btn button[data-act=save]:hover{background:#dcfce7;border-color:#16a34a}
+#page-matching .mn-tbl td.mn-btn button[data-act=cancel]:hover{background:#fee2e2;border-color:#dc2626}
+#page-matching .mn-in{width:52px;padding:3px 4px;border:1px solid #94a3b8;border-radius:5px;text-align:center;font-size:12px;background:#fff;color:#172033}
+#page-matching tr.mn-ok .mn-in{background:#dcfce7;border-color:#16a34a;font-weight:700}
+#page-matching tr.mn-stale .mn-in{background:#fef3c7;border-color:#d97706}
+#page-matching tr.mn-hit td{background:#f0fdf4}
+#page-matching .mn-prev{font-size:10.5px;margin-top:2px;color:#15803d}
+#page-matching .mn-prev.bad{color:#dc2626}
+#page-matching .mn-prev.pend{color:#1d4ed8}
+#page-matching .mn-empty{padding:20px;text-align:center;color:#64748b}
+body.dark #page-matching .mn-tbl th,body.dark #page-matching .mn-tbl td{background:#0f172a;color:#e2e8f0;border-color:#64748b}
+body.dark #page-matching .mn-tbl thead th{background:#1e293b}
+body.dark #page-matching tr.mn-hit td{background:#052e16}
+body.dark #page-matching .mn-in,body.dark #page-matching .mn-bar select,body.dark #page-matching .mn-bar input,body.dark #page-matching .mn-bar button{background:#1e293b;color:#e2e8f0;border-color:#475569}
+body.dark #page-matching tr.mn-ok .mn-in{background:#14532d}
+body.dark #page-matching .mn-tbl td.mn-btn button{background:#1e293b;color:#e2e8f0;border-color:#475569}
+body.dark #page-matching .mn-sum{color:#94a3b8}
+@media (max-width:900px){#page-matching .mn-grid{grid-template-columns:1fr}}
 #page-analisa .analisa-kpis{display:flex;gap:6px;flex-wrap:wrap;flex:0 1 41%;min-width:260px}
 #page-analisa .analisa-kpis .kpi{flex:1 1 120px!important;min-width:120px!important;padding:5px 9px;border-radius:9px}
 #page-analisa .analisa-kpis .kpi:hover{transform:none}
@@ -1608,6 +1641,7 @@ body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#
       </div>
     </div>
     <button type="button" class="gudang-subtab" id="analisaSalesCustBtn" data-analisa-main="salescust" onclick="switchAnalisaSub('salescust',this)">🏪 Sales/Customer</button>
+    <button type="button" class="gudang-subtab" id="analisaMatchingBtn" data-analisa-main="matching" onclick="switchAnalisaSub('matching',this)">🔗 MATCHING NAMES</button>
   </div>
 
 <div id="page-salescust" style="display:none">
@@ -1649,6 +1683,23 @@ body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#
   </div>
 </div>
 
+
+<div id="page-matching" style="display:none">
+  <div class="card">
+    <div class="mn-title">MATCHING NAMES</div>
+    <div class="mn-bar">
+      <label for="mnGroup">Kelompok</label>
+      <select id="mnGroup"><option value="fitri">🧴 Fitri</option><option value="rupa">📦 Rupa Rupa</option></select>
+      <label for="mnFilter">Tampilkan</label>
+      <select id="mnFilter"><option value="all">Semua nama penjualan</option><option value="none">Belum cocok saja</option><option value="ok">Sudah cocok saja</option></select>
+      <input type="search" id="mnSearch" placeholder="Cari nama produk...">
+      <button type="button" id="mnReload" title="Muat ulang data penjualan & gudang">↻ Segarkan</button>
+      <span class="mn-sum" id="mnSummary"></span>
+    </div>
+    <div style="font-size:11px;color:#64748b;margin-bottom:8px">Isi kolom <b>NO</b> di tabel kanan dengan nomor produk yang artinya sama di tabel <b>NAMA DI GUDANG</b>, lalu klik <b>SAVE</b> (atau tekan Enter). <b>CANCEL</b> = batalkan/hapus pencocokan. Hasilnya langsung dipakai di Analisa Fitri &amp; Rupa Rupa.</div>
+    <div id="mnBody"><div class="mn-empty">Belum ada data.</div></div>
+  </div>
+</div>
 
   <div id="gudangAnalisaPanel">
     <!-- ============ Analisa Fitri ============ -->
@@ -7896,7 +7947,7 @@ self.onmessage = function(e){
   function updateAnalisaDDLabel(){
     const lb = document.getElementById('analisaDDLabel');
     if (lb) {
-      if (_analisaSub === 'salescust') lb.textContent = '';
+      if (_analisaSub === 'salescust' || _analisaSub === 'matching') lb.textContent = '';
       else lb.textContent = ' · ' + (_analisaSub === 'rupa' ? 'Rupa Rupa' : 'Fitri');
     }
     document.querySelectorAll('#analisaMenu button').forEach(b => b.classList.toggle('active', b.dataset.analisa === _analisaSub));
@@ -7904,6 +7955,8 @@ self.onmessage = function(e){
     const scBtn = document.getElementById('analisaSalesCustBtn');
     if (tabBtn) tabBtn.classList.toggle('active', _analisaSub === 'fitri' || _analisaSub === 'rupa');
     if (scBtn) scBtn.classList.toggle('active', _analisaSub === 'salescust');
+    const mnBtn = document.getElementById('analisaMatchingBtn');
+    if (mnBtn) mnBtn.classList.toggle('active', _analisaSub === 'matching');
   }
   function closeAnalisaMenu(){
     const m = document.getElementById('analisaMenu'); if (m) m.hidden = true;
@@ -7919,7 +7972,7 @@ self.onmessage = function(e){
   }
   function onAnalisaTabBtnClick(ev){
     if (ev) ev.stopPropagation();
-    if (_analisaSub === 'salescust') {
+    if (_analisaSub === 'salescust' || _analisaSub === 'matching') {
       switchAnalisaSub(_analisaLastFitriRupa || 'fitri');
       toggleAnalisaMenu(ev);
       return;
@@ -7935,6 +7988,7 @@ self.onmessage = function(e){
   let _analisaLastFitriRupa = 'fitri';
   function switchAnalisaSub(which, btn){
     if (which === 'salescust') _analisaSub = 'salescust';
+    else if (which === 'matching') _analisaSub = 'matching';
     else if (which === 'rupa') { _analisaSub = 'rupa'; _analisaLastFitriRupa = 'rupa'; }
     else { _analisaSub = 'fitri'; _analisaLastFitriRupa = 'fitri'; }
     const fp = document.getElementById('analisaFitriPanel');
@@ -7942,20 +7996,157 @@ self.onmessage = function(e){
     const sc = document.getElementById('page-salescust');
     const gap = document.getElementById('gudangAnalisaPanel');
     const isSc = (_analisaSub === 'salescust');
+    const isMn = (_analisaSub === 'matching');
+    const mnPg = document.getElementById('page-matching');
+    if (mnPg) mnPg.style.display = isMn ? 'block' : 'none';
     if (fp) fp.style.display = (_analisaSub === 'fitri') ? 'block' : 'none';
     if (rp) rp.style.display = (_analisaSub === 'rupa') ? 'block' : 'none';
-    if (gap) gap.style.display = isSc ? 'none' : 'block';
+    if (gap) gap.style.display = (isSc || isMn) ? 'none' : 'block';
     if (sc) sc.style.display = isSc ? 'block' : 'none';
     updateAnalisaDDLabel();
     closeAnalisaMenu();
     if (isSc) { renderScsCust(); return; }
+    if (isMn) { renderMatchingNames(true); return; }
     if (_analisaSub === 'fitri') renderGudangAnalisa();
     else renderGudangAnalisaRupa();
   }
+
+  // ===================== MATCHING NAMES =====================
+  // Menulis ke peta nama yang sama dengan "Perbaiki Nama Produk" (cekRupaNamaProdukMap_v1),
+  // sehingga Analisa Fitri & Rupa Rupa otomatis menyatukan nama penjualan ke nama gudang.
+  let _mnGroup = 'fitri', _mnFilter = 'all', _mnSearch = '';
+  let _mnPending = {};            // key penjualan -> teks nomor yang sedang diketik
+  let _mnCache = { fitri: null, rupa: null };   // daftar nama penjualan per kelompok
+  let _mnGudang = [];             // daftar nama gudang yang sedang tampil (urut = nomor)
+  let _mnBound = false;
+  function mnInGroup(n){ return _mnGroup === 'fitri' ? isFitriProduct(n) : !isFitriProduct(n); }
+  async function mnLoadSales(){
+    const rows = await fetchCekRawRows('', { mode: _mnGroup });
+    const m = new Map();
+    for (let i = 0; i < rows.length; i++) {
+      const x = rows[i]; const p = x.produk ?? x.Produk; if (!p) continue;
+      const nm = String(p).trim(); if (!nm || !mnInGroup(nm)) continue;
+      const k = productMatchKey(nm); if (!k) continue;
+      if (!m.has(k)) m.set(k, { key: k, name: nm });
+    }
+    return Array.from(m.values()).sort((a, b) => a.name.localeCompare(b.name, 'id'));
+  }
+  function mnGudangNames(){
+    const gd = (_mnGroup === 'fitri') ? (getStokFitriData() || gudangData) : (getStokRupaData() || gudangData);
+    const out = [], seen = new Set();
+    ((gd && gd.products) || []).forEach(p => {
+      if (!mnInGroup(p)) return;
+      const k = productMatchKey(p); if (!k || seen.has(k)) return;
+      seen.add(k); out.push(String(p).trim());
+    });
+    return out.sort((a, b) => a.localeCompare(b, 'id'));
+  }
+  function mnBind(){
+    if (_mnBound) return; _mnBound = true;
+    const pg = document.getElementById('page-matching'); if (!pg) return;
+    document.getElementById('mnGroup').addEventListener('change', e => { _mnGroup = e.target.value; _mnPending = {}; renderMatchingNames(true); });
+    document.getElementById('mnFilter').addEventListener('change', e => { _mnFilter = e.target.value; renderMatchingNames(false); });
+    document.getElementById('mnSearch').addEventListener('input', e => { _mnSearch = e.target.value; renderMatchingNames(false); });
+    document.getElementById('mnReload').addEventListener('click', () => renderMatchingNames(true));
+    pg.addEventListener('click', e => {
+      const b = e.target.closest('button[data-act]'); if (!b) return;
+      const k = b.closest('tr') && b.closest('tr').dataset.k; if (!k) return;
+      if (b.dataset.act === 'save') mnSave(k); else mnCancel(k);
+    });
+    pg.addEventListener('input', e => {
+      const inp = e.target.closest('input.mn-in'); if (!inp) return;
+      const tr = inp.closest('tr'); const k = tr.dataset.k;
+      _mnPending[k] = inp.value;
+      const pv = tr.querySelector('.mn-prev'); if (!pv) return;
+      const v = inp.value.trim();
+      if (!v) { pv.className = 'mn-prev'; pv.textContent = ''; return; }
+      const n = parseInt(v, 10);
+      if (!(n >= 1 && n <= _mnGudang.length) || String(n) !== v) { pv.className = 'mn-prev bad'; pv.textContent = '⚠ nomor tidak ada (1–' + _mnGudang.length + ')'; }
+      else { pv.className = 'mn-prev pend'; pv.textContent = '→ ' + _mnGudang[n - 1] + ' (klik SAVE)'; }
+    });
+    pg.addEventListener('keydown', e => {
+      if (e.key !== 'Enter') return;
+      const inp = e.target.closest('input.mn-in'); if (!inp) return;
+      mnSave(inp.closest('tr').dataset.k);
+    });
+  }
+  function mnSave(key){
+    const item = (_mnCache[_mnGroup] || []).find(s => s.key === key); if (!item) return;
+    const tr = document.querySelector('#page-matching tr[data-k="' + key + '"]');
+    const inp = tr && tr.querySelector('input.mn-in');
+    const v = inp ? inp.value.trim() : '';
+    const n = parseInt(v, 10);
+    if (!(n >= 1 && n <= _mnGudang.length) || String(n) !== v) { alert('Isi NO dengan angka 1 – ' + _mnGudang.length + ' (nomor di tabel NAMA DI GUDANG).'); if (inp) inp.focus(); return; }
+    const targetName = cekRupaFinalKeyAndName(_mnGudang[n - 1]).name;
+    const map = getCekRupaNamaMap();
+    if (productMatchKey(targetName) === key) delete map[key];   // nama sudah identik, tidak perlu peta
+    else map[key] = targetName;
+    saveCekRupaNamaMap(map);
+    delete _mnPending[key];
+    renderMatchingNames(false);
+  }
+  function mnCancel(key){
+    const map = getCekRupaNamaMap();
+    const hasSaved = Object.prototype.hasOwnProperty.call(map, key);
+    if (hasSaved && !confirm('Batalkan pencocokan yang sudah tersimpan untuk nama ini?')) return;
+    if (hasSaved) { delete map[key]; saveCekRupaNamaMap(map); }
+    delete _mnPending[key];
+    renderMatchingNames(false);
+  }
+  async function renderMatchingNames(reload){
+    mnBind();
+    const box = document.getElementById('mnBody'); if (!box) return;
+    const grp = _mnGroup;
+    const gSel = document.getElementById('mnGroup'); if (gSel && gSel.value !== grp) gSel.value = grp;
+    if (reload || !_mnCache[grp]) {
+      box.innerHTML = '<div class="mn-empty">⏳ Memuat data penjualan & gudang…</div>';
+      try {
+        if (grp === 'fitri') { if (!getStokFitriData()) await ensureStokFitriSummary(true); else ensureStokFitriSummary(); }
+        else ensureStokSummaries();
+      } catch (e) { console.warn('mn gudang', e); }
+      try { _mnCache[grp] = await mnLoadSales(); } catch (e) { console.warn('mn sales', e); _mnCache[grp] = []; }
+      if (grp !== _mnGroup) return;
+    }
+    const sales = _mnCache[grp] || [];
+    _mnGudang = mnGudangNames();
+    const map = getCekRupaNamaMap();
+    const gNoByKey = new Map();
+    _mnGudang.forEach((n, i) => { const k = cekRupaFinalKeyAndName(n).key; if (!gNoByKey.has(k)) gNoByKey.set(k, i + 1); });
+    const hit = new Set(); let nOk = 0;
+    const srows = sales.map(s => {
+      const no = gNoByKey.get(cekRupaFinalKeyAndName(s.name).key) || 0;
+      const manual = Object.prototype.hasOwnProperty.call(map, s.key);
+      if (no) { hit.add(no); nOk++; }
+      return { key: s.key, name: s.name, no, manual };
+    });
+    const q = _mnSearch.trim().toUpperCase();
+    const fS = srows.filter(r => (_mnFilter === 'all' || (_mnFilter === 'ok' ? r.no : !r.no)) && (!q || r.name.toUpperCase().includes(q)));
+    const fG = _mnGudang.map((n, i) => ({ no: i + 1, name: n })).filter(g => !q || g.name.toUpperCase().includes(q));
+    const sm = document.getElementById('mnSummary');
+    if (sm) sm.innerHTML = '<b>' + nOk + '</b> dari <b>' + srows.length + '</b> nama penjualan sudah cocok · <b>' + (srows.length - nOk) + '</b> belum';
+    const gHtml = fG.length ? fG.map(g => '<tr class="' + (hit.has(g.no) ? 'mn-hit' : '') + '"><td class="mn-no">' + g.no + '</td><td>' + escHtml(g.name) + '</td></tr>').join('')
+      : '<tr><td colspan="2" class="mn-empty">' + (_mnGudang.length ? 'Tidak ada yang cocok dengan pencarian.' : 'Data gudang belum termuat / kosong.') + '</td></tr>';
+    const sHtml = fS.length ? fS.map(r => {
+      const pend = Object.prototype.hasOwnProperty.call(_mnPending, r.key) ? _mnPending[r.key] : null;
+      const val = pend != null ? pend : (r.no ? String(r.no) : '');
+      let cls = r.no ? 'mn-ok' : (r.manual ? 'mn-stale' : '');
+      let prev = '', pcls = 'mn-prev';
+      if (pend != null && pend !== '') { const n = parseInt(pend, 10); if (n >= 1 && n <= _mnGudang.length && String(n) === pend.trim()) { prev = '→ ' + _mnGudang[n - 1] + ' (klik SAVE)'; pcls += ' pend'; } else { prev = '⚠ nomor tidak ada (1–' + _mnGudang.length + ')'; pcls += ' bad'; } }
+      else if (r.no) prev = (r.manual ? '✅ manual' : '✅ otomatis sama') + ' = ' + _mnGudang[r.no - 1];
+      else if (r.manual) { prev = '⚠ nama baku tersimpan tidak ada di gudang: ' + (map[r.key] || ''); pcls += ' bad'; }
+      return '<tr class="' + cls + '" data-k="' + r.key + '"><td class="mn-no"><input class="mn-in" type="text" inputmode="numeric" value="' + escHtml(val) + '"></td><td>' + escHtml(r.name) + '<div class="' + pcls + '">' + escHtml(prev) + '</div></td><td class="mn-btn"><button type="button" data-act="save">SAVE</button></td><td class="mn-btn"><button type="button" data-act="cancel">CANCEL</button></td></tr>';
+    }).join('') : '<tr><td colspan="4" class="mn-empty">' + (srows.length ? 'Tidak ada baris untuk filter ini.' : 'Belum ada data penjualan' + (grp === 'fitri' ? ' Fitri' : ' Rupa Rupa') + '.') + '</td></tr>';
+    box.innerHTML = '<div class="mn-grid">' +
+      '<div><div class="mn-cap">NAMA DI GUDANG</div><div class="tablebox"><table class="mn-tbl"><thead><tr><th style="width:46px">NO</th><th>NAMA PRODUK GUDANG</th></tr></thead><tbody>' + gHtml + '</tbody></table></div></div>' +
+      '<div><div class="mn-cap">NAMA DI PENJUALAN</div><div class="tablebox"><table class="mn-tbl"><thead><tr><th style="width:62px">NO</th><th>NAMA PRODUK FAKTUR PENJUALAN</th><th>SAVE</th><th>CANCEL</th></tr></thead><tbody>' + sHtml + '</tbody></table></div></div>' +
+      '</div>';
+  }
+
   function refreshAnalisaIfVisible(){
     const an = document.getElementById('page-analisa');
     if (!an || an.style.display === 'none') return;
     if (_analisaSub === 'salescust') return;
+    if (_analisaSub === 'matching') { renderMatchingNames(false); return; }
     if (_analisaSub === 'rupa') renderGudangAnalisaRupa();
     else renderGudangAnalisa();
   }
@@ -8196,7 +8387,7 @@ self.onmessage = function(e){
     if (!d || d.type !== 'stok-summary' || !d.summary || STOK_RUPA_KATS.indexOf(d.kat) === -1) return;
     stokSummaries[d.kat] = d.summary;
     clearTimeout(_stokSumRefreshTimer);
-    _stokSumRefreshTimer = setTimeout(function(){ if (_analisaSub === 'rupa') refreshAnalisaIfVisible(); }, 400);
+    _stokSumRefreshTimer = setTimeout(function(){ if (_analisaSub === 'rupa' || _analisaSub === 'matching') refreshAnalisaIfVisible(); }, 400);
   });
   let stokFitriSummary = null;
   let _stokFitriLoading = false, _stokFitriLast = 0, _stokFitriTimer = null;
@@ -8207,7 +8398,7 @@ self.onmessage = function(e){
     if (!d || d.type !== 'stok-summary' || d.kat !== 'minyak' || !d.summary) return;
     stokFitriSummary = d.summary;
     clearTimeout(_stokFitriTimer);
-    _stokFitriTimer = setTimeout(function(){ if (_analisaSub === 'fitri') refreshAnalisaIfVisible(); }, 400);
+    _stokFitriTimer = setTimeout(function(){ if (_analisaSub === 'fitri' || _analisaSub === 'matching') refreshAnalisaIfVisible(); }, 400);
   });
   function getStokFitriData(){
     const sm = stokFitriSummary;
