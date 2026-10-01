@@ -936,10 +936,10 @@ body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#
     <button type="button" id="installBtn" style="display:none;padding:3px 8px;border:1px solid rgba(255,255,255,.5);border-radius:5px;background:rgba(255,255,255,.12);color:#fff;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;line-height:1.1">⬇ Instal Aplikasi</button>
     <div style="display:flex;align-items:center;gap:10px">
     <nav class="main-tabs" role="tablist" id="mainTabs">
-      <button type="button" class="main-tab" data-tab="penjualan">Penjualan</button>
+      <button type="button" class="main-tab active" data-tab="penjualan">Penjualan</button>
       <button type="button" class="main-tab" data-tab="umfix">💰 Uang Masuk</button>
       <button type="button" class="main-tab" data-tab="cekum">💵 Cek Uang Masuk</button>
-      <button type="button" class="main-tab active" data-tab="gudang">Data Gudang</button>
+      <button type="button" class="main-tab" data-tab="gudang">Data Gudang</button>
       <button type="button" class="main-tab" data-tab="analisa">📊 Analisa stok&amp;Customer</button>
     </nav>
     <button type="button" class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Mode gelap / terang">🌙</button>
@@ -1082,7 +1082,7 @@ body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#
   </div>
 </div>
 
-<div id="page-penjualan" style="display:none">
+<div id="page-penjualan" style="display:block">
   <div id="summary" style="display:none">
     <div class="kpis">
       <div class="kpi"><small>TOTAL FAKTUR</small><b id="f">0</b><span class="kpi-src">dari data Penjualan</span></div>
@@ -1222,7 +1222,7 @@ body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#
 </div>
 
 <!-- ===== PAGE SALES/CUSTOMER (TAB BARU) ===== -->
-<div id="page-gudang" style="display:block">
+<div id="page-gudang" style="display:none">
   <!-- Toolbar Rupa Rupa - dihilangkan; UI Rupa Rupa baru ada di dalam panelnya sendiri -->
 
   <div class="gudang-subtabs" role="tablist">
@@ -8731,38 +8731,32 @@ self.onmessage = function(e){
 
   (async function init(){
     initTheme(); initMainTabs();
+    try {   // langsung buka tab Penjualan > Faktur (mode kartu), tanpa menunggu DB / cloud
+      fakturViewMode = 'card';
+      const pjBtn0 = document.querySelector('#mainTabs .main-tab[data-tab="penjualan"]');
+      if (pjBtn0) pjBtn0.click();
+    } catch(e){ console.warn('default tab Penjualan (awal)', e); }
     const _gvm = document.getElementById('gudangViewMode');
     if (_gvm) _gvm.value = _gudangViewMode;
     const vtg = document.getElementById('gudangViewToggleWrap');
     if (vtg) vtg.style.display = (_gudangSub === 'fitri') ? 'flex' : 'none';
-    await initDB(); initSupabase();
-    if (sbClient){ await pullFromCloud({ silent: true }); subscribeRealtime(); }
-    else { await restoreFromDB(); await loadGudangFromDB(); await rrLoadAll(); }
+    try {
+      await initDB(); initSupabase();
+      if (sbClient){ await pullFromCloud({ silent: true }); subscribeRealtime(); }
+      else { await restoreFromDB(); await loadGudangFromDB(); await rrLoadAll(); }
+    } catch(e){ console.warn('init data', e); }
     try { await refreshAutoBatalBadgeOnly(); } catch(e){}
     setTimeout(() => { try { ensureStokFitriSummary(); ensureStokSummaries(); } catch(e){} }, 2000);   // panaskan data Analisa di background
     try {
-      const nav = document.getElementById('mainTabs');
-      if (nav) {
-        nav.querySelectorAll('.main-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === 'gudang'));
-      }
-      const pj = document.getElementById('page-penjualan');
-      const gd = document.getElementById('page-gudang');
-      const an = document.getElementById('page-analisa');
-      const cum = document.getElementById('page-cekum');
-      if (pj) pj.style.display = 'none';
-      if (gd) gd.style.display = 'block';
-      if (an) an.style.display = 'none';
-      if (cum) cum.style.display = 'none';
-      switchGudangSub('stok', document.getElementById('stokTabBtn'));
-    } catch(e){ console.warn('default tab Stok Gudang', e); }
-    try {
       // tampilan awal: tab Penjualan > sub tab Faktur > MODE KARTU
-      fakturViewMode = 'card';
-      const pjBtn = document.querySelector('#mainTabs .main-tab[data-tab="penjualan"]');
-      if (pjBtn) pjBtn.click();
-      const fBtn = document.querySelector('.tabs button[onclick*="s6"]');
-      if (typeof setFakturViewMode === 'function') setFakturViewMode('card');
-      else show('s6', fBtn);
+      // data sudah dimuat: render ulang Faktur (hanya jika pengguna masih di tab Penjualan)
+      const pjPage = document.getElementById('page-penjualan');
+      if (pjPage && pjPage.style.display !== 'none') {
+        fakturViewMode = 'card';
+        const fBtn = document.querySelector('.tabs button[onclick*="s6"]');
+        if (typeof setFakturViewMode === 'function') setFakturViewMode('card');
+        else show('s6', fBtn);
+      }
     } catch(e){ console.warn('default tab Penjualan/Faktur', e); }
   })();
 
