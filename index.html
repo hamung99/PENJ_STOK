@@ -5813,12 +5813,19 @@ self.onmessage = function(e){
     active.forEach(g => {
       const kind = payKind(g.pay);
       const fakIdx = kind === 'CASH' ? cashFak : (kind === 'TEMPO' ? tempoFak : null);
+      const othIdx = kind === 'CASH' ? tempoFak : (kind === 'TEMPO' ? cashFak : null);
       const fk = String(g.faktur).trim();
       let matches = [], matchType = 'none';
-      if (fakIdx && fakIdx.has(fk)) {
-        matches = fakIdx.get(fk).slice();
+      const own = (fakIdx && fakIdx.get(fk)) || [];
+      /* nomor faktur unik: uang masuk faktur ini boleh tercatat di sisi Cash Dropping ATAU Piutang Tempo,
+         tidak harus sama dengan jenis pembayaran di Penjualan */
+      let oth = [];
+      if (othIdx) oth = othIdx.get(fk) || [];
+      else if (fk.length >= 9) oth = (cashFak.get(fk) || []).concat(tempoFak.get(fk) || []);
+      if (own.length || oth.length) {
+        matches = own.concat(oth);
         matches.forEach(r => claimed.add(r));
-        matchType = kind === 'CASH' ? 'cash-dropping-faktur' : 'exact';
+        matchType = own.length ? (kind === 'CASH' ? 'cash-dropping-faktur' : 'exact') : 'faktur-lintas-jenis';
       }
       pre.set(g, { kind, matches, matchType });
     });
@@ -5913,7 +5920,9 @@ self.onmessage = function(e){
       list.push(Object.assign({}, g, { category: targetCategory, umTotal, selisih, status, ket, umMatches: matches.length, umRows: matches, matchType, fuzzyInfo }));
     });
 
-    _cekUmRecon = { cash, tempo, claimed };
+    const owner = new Map();
+    list.forEach(g => (g.umRows || []).forEach(r => owner.set(r, g)));
+    _cekUmRecon = { cash, tempo, claimed, owner, list, groups };
     list.sort((a, b) => (b.ts || 0) - (a.ts || 0));
     return list;
   }
@@ -5939,40 +5948,68 @@ self.onmessage = function(e){
     salesSel.value = salesArr.includes(curS) ? curS : '';
   }
 
-  /* ===== RINCIAN SELISIH: Total UM (data Uang Masuk) = Terhubung ke faktur + Belum terhubung ===== */
-  function renderCekUmRecon(month, totalMasukKartu) {
+  /* ===== RINCIAN SELISIH: uang masuk (data Uang Masuk) vs kartu TOTAL UANG MASUK ===== */
+  function renderCekUmRecon(month) {
     const box = document.getElementById('cekUmRecon');
     if (!box || !_cekUmRecon) return;
-    const { cash, tempo, claimed } = _cekUmRecon;
+    const { cash, tempo, owner, list, groups } = _cekUmRecon;
     const all = [].concat(cash.map(r => ({ r, jenis: 'CASH' })), tempo.map(r => ({ r, jenis: 'TEMPO' })))
                   .filter(x => umRowTotal(x.r) !== 0);
-    const inScope = month ? all.filter(x => umRowMonth(x.r) === month) : all;
     const sum = (a) => a.reduce((t, x) => t + umRowTotal(x.r), 0);
-    const linked = inScope.filter(x => claimed.has(x.r));
-    const unl    = inScope.filter(x => !claimed.has(x.r)).sort((a, b) => umRowTotal(b.r) - umRowTotal(a.r));
-    const label  = month ? monthLabel(month) : 'semua bulan';
-    const card = (t, v, sub, color) => '<div style="flex:1;min-width:190px;border:1px solid #dbe6f5;border-left:4px solid ' + color + ';border-radius:8px;padding:8px 12px;background:#f8fbff">'
+    const inScope = month ? all.filter(x => umRowMonth(x.r) === month) : all;           /* = Grand Total tab Uang Masuk */
+    const ownerMonth = (x) => { const g = owner.get(x.r); return g ? g.month : null; };
+    const A = inScope.filter(x => owner.has(x.r) && (!month || ownerMonth(x) === month));
+    const B = inScope.filter(x => owner.has(x.r) && month && ownerMonth(x) !== month);
+    const C = inScope.filter(x => !owner.has(x.r));
+    /* uang masuk milik faktur bulan ini, tapi tercatat di bulan lain */
+    const fakturBulan = list.filter(g => !month || g.month === month);
+    const kartuTotal = fakturBulan.reduce((t, g) => t + g.umTotal, 0);
+    const Aprime = kartuTotal - sum(A);
+
+    const reasonOf = (x) => {
+      const r = x.r, fk = String(r.faktur ?? r.no_faktur ?? '').trim();
+      if (!fk || fk.length < 9) return 'No. faktur kosong / tidak valid';
+      const g = groups.get(fk);
+      if (!g) return 'Faktur tidak ada di data Penjualan';
+      if (g.isBatal) return 'Faktur BATAL di Penjualan';
+      return 'Faktur ada, tapi tidak terpasang';
+    };
+    const byReason = new Map();
+    C.forEach(x => { const k = reasonOf(x); const o = byReason.get(k) || { n: 0, v: 0 }; o.n++; o.v += umRowTotal(x.r); byReason.set(k, o); });
+
+    const label = month ? monthLabel(month) : 'semua bulan';
+    const card = (t, v, sub, color) => '<div style="flex:1;min-width:200px;border:1px solid #dbe6f5;border-left:4px solid ' + color + ';border-radius:8px;padding:8px 12px;background:#f8fbff">'
       + '<div style="font-size:11px;font-weight:700;color:#475569">' + t + '</div>'
       + '<div style="font-size:16px;font-weight:800;color:#0f172a">' + rp(v) + '</div>'
       + '<div style="font-size:11px;color:#64748b">' + sub + '</div></div>';
+    const n = (a) => a.length.toLocaleString('id-ID') + ' baris';
+    const sorted = C.slice().sort((a, b) => umRowTotal(b.r) - umRowTotal(a.r));
     const LIM = 300;
-    const rowsHtml = unl.slice(0, LIM).map(x => {
+    const rowsHtml = sorted.slice(0, LIM).map(x => {
       const r = x.r;
       return '<tr><td>' + escHtml(String(r.tanggal ?? r.Tanggal ?? '')) + '</td><td>' + x.jenis + '</td><td>' + escHtml(umRowSales(r)) + '</td>'
         + '<td>' + escHtml(String(r.faktur ?? r.no_faktur ?? '')) + '</td><td>' + escHtml(umRowCustomer(r)) + '</td><td>' + escHtml(umRowAlamat(r))
-        + '</td><td class="num">' + rp(umRowTotal(r)) + '</td></tr>';
+        + '</td><td class="num">' + rp(umRowTotal(r)) + '</td><td>' + escHtml(reasonOf(x)) + '</td></tr>';
     }).join('');
-    const beda = Math.abs(sum(linked) - totalMasukKartu) > 1;
+    const reasonHtml = [...byReason.entries()].sort((a, b) => b[1].v - a[1].v)
+      .map(([k, o]) => '<li><b>' + escHtml(k) + '</b>: ' + o.n.toLocaleString('id-ID') + ' baris · ' + rp(o.v) + '</li>').join('');
+
     box.innerHTML =
-      '<div style="display:flex;gap:10px;flex-wrap:wrap">'
-      + card('TOTAL UM ' + label.toUpperCase(), sum(inScope), inScope.length.toLocaleString('id-ID') + ' baris di data Uang Masuk', '#1f4e78')
-      + card('UM TERHUBUNG KE FAKTUR', sum(linked), linked.length.toLocaleString('id-ID') + ' baris', '#16a34a')
-      + card('UM BELUM TERHUBUNG', sum(unl), unl.length.toLocaleString('id-ID') + ' baris — tidak masuk TOTAL UANG MASUK', unl.length ? '#dc2626' : '#16a34a')
+      '<div style="font-size:12px;font-weight:800;color:#1f4e78;margin-bottom:6px">🔎 RINCIAN DATA UANG MASUK — ' + escHtml(label.toUpperCase()) + ' (dihitung per tanggal uang masuk)</div>'
+      + '<div style="display:flex;gap:10px;flex-wrap:wrap">'
+      + card('TOTAL UANG MASUK (= tab Uang Masuk)', sum(inScope), n(inScope), '#1f4e78')
+      + card('TERHUBUNG KE FAKTUR ' + (month ? 'BULAN INI' : ''), sum(A), n(A), '#16a34a')
+      + (month ? card('TERHUBUNG KE FAKTUR BULAN LAIN', sum(B), n(B) + ' · dihitung di bulan faktur tsb', '#2563eb') : '')
+      + card('BELUM TERHUBUNG KE FAKTUR', sum(C), n(C), C.length ? '#dc2626' : '#16a34a')
       + '</div>'
-      + (beda ? '<div style="font-size:11px;color:#64748b;margin-top:6px">Catatan: kartu TOTAL UANG MASUK di atas dihitung per bulan <b>faktur</b> (Rp ' + Math.round(totalMasukKartu).toLocaleString('id-ID') + '), sedangkan rincian ini per bulan <b>uang masuk</b>, sehingga uang faktur lintas bulan bisa membuat angkanya berbeda.</div>' : '')
-      + (unl.length ? '<details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;font-weight:700;color:#b42318">Lihat ' + unl.length.toLocaleString('id-ID') + ' baris UM yang belum terhubung</summary>'
-        + '<div class="tablebox" style="max-height:340px;margin-top:6px"><table class="cekum-fk-tbl"><thead><tr><th>TGL</th><th>JENIS</th><th>SALES</th><th>NO. FAKTUR (UM)</th><th>TOKO</th><th>ALAMAT</th><th>NOMINAL</th></tr></thead><tbody>' + rowsHtml + '</tbody></table></div>'
-        + (unl.length > LIM ? '<div style="font-size:11px;color:#64748b;margin-top:4px">Menampilkan ' + LIM + ' nominal terbesar dari ' + unl.length + ' baris.</div>' : '')
+      + '<div style="font-size:11.5px;color:#475569;margin-top:6px;line-height:1.6">'
+      + 'Kartu <b>TOTAL UANG MASUK</b> di atas (' + rp(kartuTotal) + ', tanpa filter lain) = terhubung ke faktur bulan ini ' + rp(sum(A))
+      + (Math.abs(Aprime) > 1 ? ' + uang masuk faktur bulan ini yang tercatat di bulan lain ' + rp(Aprime) : '') + '.'
+      + '</div>'
+      + (C.length ? '<ul style="font-size:11.5px;color:#b42318;margin:6px 0 0 18px;padding:0">' + reasonHtml + '</ul>'
+        + '<details style="margin-top:6px"><summary style="cursor:pointer;font-size:12px;font-weight:700;color:#b42318">Lihat baris yang belum terhubung</summary>'
+        + '<div class="tablebox" style="max-height:340px;margin-top:6px"><table class="cekum-fk-tbl"><thead><tr><th>TGL</th><th>JENIS</th><th>SALES</th><th>NO. FAKTUR (UM)</th><th>TOKO</th><th>ALAMAT</th><th>NOMINAL</th><th>ALASAN</th></tr></thead><tbody>' + rowsHtml + '</tbody></table></div>'
+        + (C.length > LIM ? '<div style="font-size:11px;color:#64748b;margin-top:4px">Menampilkan ' + LIM + ' nominal terbesar dari ' + C.length + ' baris.</div>' : '')
         + '</details>' : '');
   }
 
@@ -6008,7 +6045,7 @@ self.onmessage = function(e){
     if (elB) elB.textContent  = totalBelum.toLocaleString('id-ID');
     if (elT) elT.textContent  = rp(totalTagihan);
     if (elM) elM.textContent  = rp(totalMasuk);
-    try { renderCekUmRecon(month, totalMasuk); } catch(e){ console.warn('renderCekUmRecon', e); }
+    try { renderCekUmRecon(month); } catch(e){ console.warn('renderCekUmRecon', e); }
 
     const tbody = document.getElementById('cekUmTbody');
     const tfoot = document.getElementById('cekUmTfoot');
@@ -6054,6 +6091,8 @@ self.onmessage = function(e){
         statusCell += ' <span class="ket-badge warn" style="background:#fef3c7;color:#92400e;font-weight:800" title="Cocok via fuzzy matching, mohon diverifikasi">🔍 fuzzy</span>';
       } else if (g.matchType === 'exact-no-month') {
         statusCell += ' <span class="ket-badge warn" style="background:#dbeafe;color:#1d4ed8" title="Cocok tapi bulan berbeda">🗓️ lintas bulan</span>';
+      } else if (g.matchType === 'faktur-lintas-jenis') {
+        statusCell += ' <span class="ket-badge warn" style="background:#ede9fe;color:#5b21b6" title="Nomor faktur sama, tapi uang masuk tercatat di jenis berbeda (Cash Dropping vs Piutang Tempo)">🔀 beda jenis</span>';
       }
       body += '<td>' + statusCell + '</td>';
       body += '<td>' + escHtml(g.ket) + '</td>';
