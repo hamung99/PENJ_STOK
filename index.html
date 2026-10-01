@@ -559,7 +559,8 @@ body.dark .cekum-kcard .kc-v{color:#e2e8f0 !important}
 body.dark .cekum-kcard .kc-s{color:#7c8aa0 !important}
 body.dark .cekum-kcard:hover{background:#1c2a42 !important}
 /* mode gelap: halaman Stok Gudang (iframe terpisah, berlatar putih) digelapkan lembut */
-body.dark #stokFrame{filter:invert(.9) hue-rotate(180deg);border-color:#334155 !important;background:#fff}
+body.dark #stokFrame{border-color:#334155 !important;background:#0f172a !important}
+body.dark #stokFrame[data-legacy-dark]{filter:invert(.9) hue-rotate(180deg);background:#fff !important}
 body.dark #umfixFrame{background:#0f172a}
 body.dark header{background:#1e3a5f}
 body.dark .card{background:#1e293b;box-shadow:0 2px 10px #0006;color:#e2e8f0}
@@ -5300,14 +5301,14 @@ self.onmessage = function(e){
     });
   }
   const STOK_KAT = {
-    fitri:     { label: 'Fitri',     file: 'stok-fitri.html' },
+    fitri:     { label: 'Fitri',     file: 'stok-fitri.html', dark: true },
     ethoz:     { label: 'Ethoz',     file: 'stok-ethoz.html' },
     mie:       { label: 'Mie',       file: 'stok-mie.html' },
     nissin:    { label: 'Nissin',    file: 'stok-nissin.html' },
     sabun:     { label: 'Sabun',     file: 'stok-sabun.html' },
     sarisedap: { label: 'Sarisedap', file: 'stok-sarisedap.html' },
-    margarine: { label: 'Margarine', file: 'stok-margarine.html' },
-    whosi:     { label: 'Whosi',     file: 'stok-whosi.html' }
+    margarine: { label: 'Margarine', file: 'stok-margarine.html', dark: true },
+    whosi:     { label: 'Whosi',     file: 'stok-whosi.html', dark: true }
   };
   let _stokKat = 'fitri';
   try { const k = localStorage.getItem('gudang-stok-kat'); if (k && STOK_KAT[k]) _stokKat = k; } catch(e){}
@@ -5346,9 +5347,12 @@ self.onmessage = function(e){
       return;
     }
     fr.dataset.loaded = file;
+    // file yang sudah punya tema gelap sendiri tidak boleh di-invert lagi (kalau tidak, jadi pucat)
+    if (STOK_KAT[_stokKat].dark) fr.removeAttribute('data-legacy-dark'); else fr.setAttribute('data-legacy-dark', '');
     fr.onload = function(){
       try {
         const d = fr.contentDocument;
+        if (d.getElementById('darkThemeStok')) fr.removeAttribute('data-legacy-dark'); else fr.setAttribute('data-legacy-dark', '');
         const st = d.createElement('style');
         st.textContent = '#pageNav{display:none!important} body{padding:12px!important}';
         d.head.appendChild(st);
