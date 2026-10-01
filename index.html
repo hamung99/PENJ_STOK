@@ -78,6 +78,19 @@ body.dark .s7table .s7-fk-link:hover{color:#bfdbfe}
 #s7FakturOverlay td.num{text-align:right}
 #s7FakturOverlay .s7-fk-group{margin:10px 0 6px;font-size:12px;font-weight:800;color:#1f4e78}
 #s7FakturOverlay .s7-fk-group span{font-weight:600;color:#64748b;margin-left:6px}
+#s7FakturOverlay .s7-fk-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:12px 0 6px}
+#s7FakturOverlay .s7-fk-head .s7-fk-group{margin:0;flex:1;min-width:220px}
+#s7FakturOverlay .s7-fk-acts{display:flex;gap:6px;flex-wrap:wrap}
+#s7FakturOverlay .s7fk-act{padding:5px 10px;border:0;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;color:#fff}
+#s7FakturOverlay .s7fk-act.red{background:#dc2626}#s7FakturOverlay .s7fk-act.blue{background:#2563eb}#s7FakturOverlay .s7fk-act.gray{background:#64748b}
+#s7FakturOverlay .s7fk-act:hover{filter:brightness(1.08)}
+#s7FakturOverlay .s7-pay{display:inline-block;padding:1px 8px;border-radius:999px;font-size:10px;font-weight:800;margin-left:4px}
+#s7FakturOverlay .s7-pay.cash{background:#bae6fd;color:#0c4a6e}
+#s7FakturOverlay .s7-pay.tempo{background:#fed7aa;color:#9a3412}
+#s7FakturOverlay .s7-pay.split{background:#e9d5ff;color:#6b21a8}
+#s7FakturOverlay .s7-pay.batal{background:#fecaca;color:#991b1b}
+#s7FakturOverlay tr.s7-line-batal td{text-decoration:line-through;opacity:.5}
+#s7FakturOverlay .s7-fk-note{margin-top:12px;font-size:11px;color:#64748b;line-height:1.5}
 body.dark #s7FakturOverlay .gmodal-box{background:#1e293b;color:#e2e8f0}
 body.dark #s7FakturOverlay .gmodal-box h3{color:#93c5fd}
 body.dark #s7FakturOverlay .gmodal-sub{color:#94a3b8}
@@ -3487,19 +3500,25 @@ self.onmessage = function(e){
     const ov = document.getElementById('s7FakturOverlay');
     if (ov) ov.classList.remove('show');
   }
-  function openS7FakturModal(dateKey, produk, sales){
+  let _s7FkCur = null;
+  let _s7FkInfo = {};
+  function s7PayKind(p){ const u = String(p || '').toUpperCase(); if (/CASH|TUNAI/.test(u)) return 'CASH'; if (/TEMPO|KREDIT/.test(u)) return 'TEMPO'; return ''; }
+  async function openS7FakturModal(dateKey, produk, sales){
     const ov = document.getElementById('s7FakturOverlay');
     const body = document.getElementById('s7FkBody');
     const title = document.getElementById('s7FkTitle');
     const sub = document.getElementById('s7FkSub');
     if (!ov || !body) { console.warn('s7FakturOverlay missing'); return; }
+    _s7FkCur = { dateKey, produk, sales };
+    // muat override Cash/Tempo yang tersimpan (supaya tidak menimpa data lama saat disimpan)
+    try { await cekUmLoadState(); } catch(e){ console.warn('cekUmLoadState', e); }
     const wantSales = normSales(sales);
     const wantProd = String(produk || '').trim();
     const wantDate = String(dateKey || '');
     const byFk = new Map();
-    const n = filteredRows.length;
-    for (let i = 0; i < n; i++){
-      const x = getUiRow(i); if (!x) continue;
+    const src = getFakturSourceRows();   // termasuk faktur batal, supaya bisa diaktifkan kembali
+    for (let i = 0; i < src.length; i++){
+      const x = src[i]; if (!x) continue;
       const d = toDate(x.Tanggal ?? x.tanggal); if (!d) continue;
       const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
       if (wantDate && key !== wantDate) continue;
@@ -3513,6 +3532,7 @@ self.onmessage = function(e){
           faktur: fk,
           customer: String(x.Customer ?? x.customer ?? '').trim(),
           bayar: String(x.Pembayaran ?? x.pembayaran ?? '').trim(),
+          isBatal: isBatalFaktur(fk),
           items: [],
           qty: 0,
           total: 0
@@ -3521,14 +3541,15 @@ self.onmessage = function(e){
       }
       const qty = N(x.Jumlah ?? x.jumlah);
       const tot = N(x.Total ?? x.total);
-      g.qty += qty;
-      g.total += tot;
+      const lineBatal = g.isBatal || batalLineSet.has(lineKeyOf(x));
+      if (!lineBatal) { g.qty += qty; g.total += tot; }
       g.items.push({
         qty,
         satuan: String(x.Satuan ?? x.satuan ?? '').trim(),
         hjual: N(x['Harga Jual'] ?? x.hargaJual),
         total: tot,
-        disc: N(x.Discount ?? x.discount)
+        disc: N(x.Discount ?? x.discount),
+        batal: lineBatal
       });
     }
     const list = [...byFk.values()].sort((a,b) => a.faktur.localeCompare(b.faktur, 'id'));
@@ -3540,24 +3561,46 @@ self.onmessage = function(e){
         dateLabel = new Date(yy, mm-1, dd).toLocaleDateString('id-ID');
       }
     } catch(e){}
+    const aktif = list.filter(g => !g.isBatal);
     if (sub) {
       sub.innerHTML = 'Produk: <b>' + escHtml(wantProd) + '</b> · Tanggal: <b>' + escHtml(dateLabel) + '</b> · '
-        + list.length + ' faktur · Qty total <b>' + list.reduce((a,g)=>a+g.qty,0).toLocaleString('id-ID') + '</b>';
+        + aktif.length + ' faktur' + (list.length !== aktif.length ? ' (+' + (list.length - aktif.length) + ' batal)' : '')
+        + ' · Qty total <b>' + aktif.reduce((a,g)=>a+g.qty,0).toLocaleString('id-ID') + '</b>';
     }
+    _s7FkInfo = {};
     if (!list.length) {
       body.innerHTML = '<div style="padding:20px;text-align:center;color:#64748b">Tidak ada detail faktur.</div>';
     } else {
       let html = '';
       list.forEach(g => {
-        html += '<div class="s7-fk-group">' + escHtml(g.faktur)
+        const payOrig = s7PayKind(g.bayar);
+        const ovv = _cekUmPayOv[g.faktur];
+        const isSplit = !!(ovv && typeof ovv === 'object' && ovv.split);
+        const eff = isSplit ? 'SPLIT' : ((ovv === 'CASH' || ovv === 'TEMPO') ? ovv : payOrig);
+        const moved = !!ovv;
+        _s7FkInfo[g.faktur] = { payOrig, eff, moved, isSplit };
+        const payLbl = isSplit ? 'CASH+TEMPO' : (eff || g.bayar || '—');
+        const payCls = isSplit ? 'split' : (eff === 'CASH' ? 'cash' : (eff === 'TEMPO' ? 'tempo' : ''));
+        const target = eff === 'CASH' ? 'TEMPO' : 'CASH';
+        let acts = '';
+        if (g.isBatal) {
+          acts = '<button type="button" class="s7fk-act gray" data-act="restore" data-fk="' + escHtml(g.faktur) + '">↩ Aktifkan Kembali</button>';
+        } else {
+          acts = '<button type="button" class="s7fk-act red" data-act="batal" data-fk="' + escHtml(g.faktur) + '">🚫 Batal</button>';
+          if (!isSplit) acts += '<button type="button" class="s7fk-act blue" data-act="move" data-fk="' + escHtml(g.faktur) + '" title="Pindahkan pembayaran faktur ini">🔁 Pindah ke ' + (eff ? target : 'CASH') + '</button>';
+          if (moved) acts += '<button type="button" class="s7fk-act gray" data-act="reset" data-fk="' + escHtml(g.faktur) + '" title="Kembalikan ke pembayaran asli (' + escHtml(g.bayar || '—') + ')">↩ Asli</button>';
+        }
+        html += '<div class="s7-fk-head"><div class="s7-fk-group">' + escHtml(g.faktur)
           + '<span>' + (g.customer ? escHtml(g.customer) + ' · ' : '')
-          + (g.bayar ? escHtml(g.bayar) + ' · ' : '')
-          + 'Qty ' + g.qty.toLocaleString('id-ID')
+          + '<span class="s7-pay ' + payCls + '" style="margin-left:0">' + escHtml(payLbl) + '</span>'
+          + (moved ? ' <span style="font-weight:600;color:#9a3412">(dipindah, asli: ' + escHtml(g.bayar || '—') + ')</span>' : '')
+          + (g.isBatal ? ' <span class="s7-pay batal">BATAL</span>' : '')
+          + ' · Qty ' + g.qty.toLocaleString('id-ID')
           + ' · ' + (typeof rp === 'function' ? rp(g.total) : g.total.toLocaleString('id-ID'))
-          + '</span></div>';
+          + '</span></div><div class="s7-fk-acts">' + acts + '</div></div>';
         html += '<table><thead><tr><th>Qty</th><th>Satuan</th><th>Harga Jual</th><th>Discount</th><th>Total</th></tr></thead><tbody>';
         g.items.forEach(it => {
-          html += '<tr>'
+          html += '<tr' + (it.batal ? ' class="s7-line-batal"' : '') + '>'
             + '<td class="num">' + it.qty.toLocaleString('id-ID') + '</td>'
             + '<td>' + escHtml(it.satuan) + '</td>'
             + '<td class="num">' + (typeof rp === 'function' ? rp(it.hjual) : it.hjual) + '</td>'
@@ -3567,9 +3610,60 @@ self.onmessage = function(e){
         });
         html += '</tbody></table>';
       });
+      html += '<div class="s7-fk-note">ℹ️ <b>Batal</b> mengeluarkan seluruh faktur dari semua perhitungan (data asli tetap tersimpan, bisa diaktifkan kembali). <b>Pindah Cash↔Tempo</b> mengubah jenis pembayaran faktur di <b>Cek Uang Masuk</b>; data Penjualan asli tidak diubah.</div>';
       body.innerHTML = html;
     }
     ov.classList.add('show');
+  }
+  async function s7FkRefreshAndReopen(){
+    const cur = _s7FkCur;
+    showBusy('Memperbarui…');
+    try { await refreshAfterDataChange(); } finally { hideBusy(); }
+    try { viewCache['s7'] = null; const btn = document.querySelector('.tabs button.active'); show('s7', btn); } catch(e){ console.warn(e); }
+    if (cur) await openS7FakturModal(cur.dateKey, cur.produk, cur.sales);
+  }
+  async function s7FkAction(act, fk){
+    const info = _s7FkInfo[fk] || {};
+    const prefix = fk + '|';
+    if (act === 'batal') {
+      if (!confirm('Tandai faktur "' + fk + '" sebagai TRANSAKSI BATAL (seluruh faktur)?\n\nSemua baris faktur ini tidak akan dihitung di semua tab & sub-tab.\nData tetap tersimpan dan bisa diaktifkan kembali.')) return;
+      batalFakturSet.add(fk);
+      [...batalLineSet].forEach(k => { if (k.startsWith(prefix)) batalLineSet.delete(k); });
+      await saveBatalFaktur();
+      await s7FkRefreshAndReopen();
+      setStatus('Faktur ' + fk + ' ditandai BATAL — dikecualikan dari perhitungan.');
+    } else if (act === 'restore') {
+      if (!confirm('Aktifkan kembali faktur "' + fk + '"?\n\nData faktur ini akan kembali dihitung di semua tab.')) return;
+      batalFakturSet.delete(fk);
+      [...batalLineSet].forEach(k => { if (k.startsWith(prefix)) batalLineSet.delete(k); });
+      await saveBatalFaktur();
+      await s7FkRefreshAndReopen();
+      setStatus('Faktur ' + fk + ' diaktifkan kembali.');
+    } else if (act === 'move') {
+      const target = info.eff === 'CASH' ? 'TEMPO' : 'CASH';
+      if (!confirm('Pindahkan faktur "' + fk + '" dari ' + (info.eff || '—') + ' ke ' + target + '?\n\nPencocokan uang masuk & kolom Pembayaran di Cek Uang Masuk akan mengikuti ' + target + '.\nData Penjualan asli tidak diubah.')) return;
+      await cekUmLoadState();
+      if (info.payOrig === target) delete _cekUmPayOv[fk]; else _cekUmPayOv[fk] = target;
+      await cekUmSaveState();
+      const cur = _s7FkCur; if (cur) await openS7FakturModal(cur.dateKey, cur.produk, cur.sales);
+      setStatus('Faktur ' + fk + ' dipindah ke ' + target + '.');
+    } else if (act === 'reset') {
+      if (!confirm('Kembalikan faktur "' + fk + '" ke pembayaran asli?')) return;
+      await cekUmLoadState();
+      delete _cekUmPayOv[fk];
+      await cekUmSaveState();
+      const cur = _s7FkCur; if (cur) await openS7FakturModal(cur.dateKey, cur.produk, cur.sales);
+      setStatus('Faktur ' + fk + ' dikembalikan ke pembayaran asli.');
+    }
+  }
+  if (!window._s7FkActBound) {
+    window._s7FkActBound = true;
+    document.addEventListener('click', function(ev){
+      const btn = ev.target && ev.target.closest ? ev.target.closest('.s7fk-act') : null;
+      if (!btn) return;
+      ev.preventDefault(); ev.stopPropagation();
+      s7FkAction(btn.getAttribute('data-act'), btn.getAttribute('data-fk') || '').catch(e => { console.error(e); alert('Gagal: ' + (e && e.message || e)); });
+    });
   }
   document.addEventListener('keydown', function(e){
     if (e.key === 'Escape') closeS7FakturModal();
