@@ -483,7 +483,7 @@ body.dark #page-analisa .gudang-subtab.active{background:#3b82f6;border-color:#3
 #page-matching .mn-bar input[type=search]{min-width:200px}
 #page-matching .mn-bar button{padding:4px 10px;border:1px solid #cbd5e1;border-radius:6px;background:#f1f5f9;color:#1f2937;font-size:12px;font-weight:700;cursor:pointer}
 #page-matching .mn-sum{margin-left:auto;color:#475569}
-#page-matching .mn-grid{display:grid;grid-template-columns:minmax(340px,1fr) minmax(560px,1.7fr);gap:18px;align-items:start}
+#page-matching .mn-grid{display:grid;grid-template-columns:minmax(440px,1fr) minmax(560px,1.5fr);gap:18px;align-items:start}
 #page-matching .mn-cap{font-size:12px;font-weight:700;margin-bottom:3px}
 #page-matching table.mn-tbl{min-width:0;width:100%;border-collapse:collapse;font-size:12px}
 #page-matching .mn-tbl th,#page-matching .mn-tbl td{border:1px solid #475569;padding:4px 8px;background:#fff;color:#172033;position:static}
@@ -512,6 +512,12 @@ body.dark #page-matching .mn-kd{background:#1e293b;color:#e2e8f0;border-color:#4
 body.dark #page-matching td.mn-kdcell{color:#5eead4}
 body.dark #page-matching .mn-tbl td.mn-btn button{background:#1e293b;color:#e2e8f0;border-color:#475569}
 body.dark #page-matching .mn-sum{color:#94a3b8}
+#page-matching .mn-kd::placeholder{text-transform:none;color:#94a3b8;font-weight:400}
+#page-matching .mn-kd{width:110px}
+#page-matching .mn-kd.mn-dirty{background:#fef3c7;border-color:#d97706}
+#page-matching tr.mn-saved td{background:#dcfce7 !important;transition:background .3s}
+body.dark #page-matching .mn-kd.mn-dirty{background:#78350f;border-color:#f59e0b}
+body.dark #page-matching tr.mn-saved td{background:#14532d !important}
 @media (max-width:900px){#page-matching .mn-grid{grid-template-columns:1fr}}
 #page-analisa .analisa-kpis{display:flex;gap:6px;flex-wrap:wrap;flex:0 1 41%;min-width:260px}
 #page-analisa .analisa-kpis .kpi{flex:1 1 120px!important;min-width:120px!important;padding:5px 9px;border-radius:9px}
@@ -1700,7 +1706,7 @@ body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#
       <button type="button" id="mnReload" title="Muat ulang data penjualan & gudang">↻ Segarkan</button>
       <span class="mn-sum" id="mnSummary"></span>
     </div>
-    <div style="font-size:11px;color:#64748b;margin-bottom:8px">Isi kolom <b>NO</b> di tabel kanan dengan nomor produk yang artinya sama di tabel <b>NAMA DI GUDANG</b>, lalu klik <b>SAVE</b> (atau tekan Enter). <b>CANCEL</b> = batalkan/hapus pencocokan. Hasilnya langsung dipakai di Analisa Fitri &amp; Rupa Rupa. <b>KODE PRODUK</b>: isi manual di tabel NAMA DI GUDANG (kosong dulu) — kolom kode di tabel NAMA DI PENJUALAN terisi otomatis dari daftar kode produk (nama yang belum ada di daftar memakai kode gudang yang sudah match, bila ada).</div>
+    <div style="font-size:11px;color:#64748b;margin-bottom:8px">Isi kolom <b>NO</b> di tabel kanan dengan nomor produk yang artinya sama di tabel <b>NAMA DI GUDANG</b>, lalu klik <b>SAVE</b> (atau tekan Enter). <b>CANCEL</b> = batalkan/hapus pencocokan. Hasilnya langsung dipakai di Analisa Fitri &amp; Rupa Rupa. <b>KODE PRODUK</b>: isi manual di tabel NAMA DI GUDANG — ketik kode lalu klik <b>SAVE</b> (atau Enter) di baris yang sama; <b>CANCEL</b> = hapus kode. Kolom kode di tabel NAMA DI PENJUALAN terisi otomatis dari daftar kode produk (nama yang belum ada di daftar memakai kode gudang yang sudah match, bila ada).</div>
     <div id="mnBody"><div class="mn-empty">Belum ada data.</div></div>
   </div>
 </div>
@@ -8073,10 +8079,13 @@ self.onmessage = function(e){
     document.getElementById('mnReload').addEventListener('click', () => renderMatchingNames(true));
     pg.addEventListener('click', e => {
       const b = e.target.closest('button[data-act]'); if (!b) return;
+      if (b.dataset.act === 'gsave' || b.dataset.act === 'gcancel') { mnKdAction(b.closest('tr'), b.dataset.act === 'gsave'); return; }
       const k = b.closest('tr') && b.closest('tr').dataset.k; if (!k) return;
       if (b.dataset.act === 'save') mnSave(k); else mnCancel(k);
     });
     pg.addEventListener('input', e => {
+      const kdi = e.target.closest('input.mn-kd');
+      if (kdi) { kdi.classList.add('mn-dirty'); return; }
       const inp = e.target.closest('input.mn-in'); if (!inp) return;
       const tr = inp.closest('tr'); const k = tr.dataset.k;
       _mnPending[k] = inp.value;
@@ -8090,21 +8099,26 @@ self.onmessage = function(e){
     pg.addEventListener('keydown', e => {
       if (e.key !== 'Enter') return;
       const kd = e.target.closest('input.mn-kd');
-      if (kd) { kd.blur(); return; }
+      if (kd) { mnKdAction(kd.closest('tr'), true); return; }
       const inp = e.target.closest('input.mn-in'); if (!inp) return;
       mnSave(inp.closest('tr').dataset.k);
     });
-    pg.addEventListener('change', e => {
-      const kd = e.target.closest('input.mn-kd'); if (!kd) return;
-      const gk = kd.dataset.gk; if (!gk) return;
-      const v = kd.value.trim().toUpperCase();
-      kd.value = v;
-      const map = getMnKodeMap();
-      if (v) map[gk] = v; else delete map[gk];
-      saveMnKodeMap(map);
-      // update kolom KODE PRODUK di tabel penjualan tanpa render ulang (fokus tidak hilang)
-      pg.querySelectorAll('td.mn-kdcell[data-gk="' + gk + '"]').forEach(td => { td.textContent = v; });
-    });
+  }
+  function mnKdAction(tr, doSave){
+    if (!tr) return;
+    const kd = tr.querySelector('input.mn-kd'); if (!kd) return;
+    const gk = kd.dataset.gk; if (!gk) return;
+    const map = getMnKodeMap();
+    const v = doSave ? kd.value.trim().toUpperCase() : '';
+    if (!doSave && map[gk] && !confirm('Hapus kode produk yang tersimpan untuk barang gudang ini?')) return;
+    kd.value = v;
+    if (v) map[gk] = v; else delete map[gk];
+    saveMnKodeMap(map);
+    kd.classList.remove('mn-dirty');
+    document.querySelectorAll('#page-matching td.mn-kdcell[data-gk="' + gk + '"]').forEach(td => { td.textContent = v; });
+    tr.classList.add('mn-saved'); setTimeout(() => tr.classList.remove('mn-saved'), 900);
+    const sm = document.getElementById('mnSummary');
+    if (sm) { const old = sm.innerHTML; sm.innerHTML = '<b style="color:#16a34a">✓ ' + (v ? 'Kode ' + escHtml(v) + ' tersimpan' : 'Kode dihapus') + '</b>'; setTimeout(() => renderMatchingNames(false), 900); }
   }
   function mnSave(key){
     const item = (_mnCache[_mnGroup] || []).find(s => s.key === key); if (!item) return;
@@ -8164,8 +8178,8 @@ self.onmessage = function(e){
     const fG = _mnGudang.map((n, i) => ({ no: i + 1, name: n })).filter(g => !q || g.name.toUpperCase().includes(q));
     const sm = document.getElementById('mnSummary');
     if (sm) sm.innerHTML = '<b>' + nOk + '</b> dari <b>' + srows.length + '</b> nama penjualan sudah cocok · <b>' + (srows.length - nOk) + '</b> belum · kode produk terisi <b>' + srows.filter(r => r.kode).length + '</b>/' + srows.length;
-    const gHtml = fG.length ? fG.map(g => '<tr class="' + (hit.has(g.no) ? 'mn-hit' : '') + '"><td class="mn-no">' + g.no + '</td><td>' + escHtml(g.name) + '</td><td class="mn-kdcell"><input class="mn-kd" type="text" data-gk="' + escHtml(_mnGKeys[g.no - 1]) + '" value="' + escHtml(kodeMap[_mnGKeys[g.no - 1]] || '') + '" placeholder="isi manual"></td></tr>').join('')
-      : '<tr><td colspan="3" class="mn-empty">' + (_mnGudang.length ? 'Tidak ada yang cocok dengan pencarian.' : 'Data gudang belum termuat / kosong.') + '</td></tr>';
+    const gHtml = fG.length ? fG.map(g => '<tr class="' + (hit.has(g.no) ? 'mn-hit' : '') + '"><td class="mn-no">' + g.no + '</td><td>' + escHtml(g.name) + '</td><td class="mn-kdcell"><input class="mn-kd" type="text" data-gk="' + escHtml(_mnGKeys[g.no - 1]) + '" value="' + escHtml(kodeMap[_mnGKeys[g.no - 1]] || '') + '" placeholder="isi kode"></td><td class="mn-btn"><button type="button" data-act="gsave">SAVE</button></td><td class="mn-btn"><button type="button" data-act="gcancel">CANCEL</button></td></tr>').join('')
+      : '<tr><td colspan="5" class="mn-empty">' + (_mnGudang.length ? 'Tidak ada yang cocok dengan pencarian.' : 'Data gudang belum termuat / kosong.') + '</td></tr>';
     const sHtml = fS.length ? fS.map(r => {
       const pend = Object.prototype.hasOwnProperty.call(_mnPending, r.key) ? _mnPending[r.key] : null;
       const val = pend != null ? pend : (r.no ? String(r.no) : '');
@@ -8177,7 +8191,7 @@ self.onmessage = function(e){
       return '<tr class="' + cls + '" data-k="' + r.key + '"><td class="mn-no"><input class="mn-in" type="text" inputmode="numeric" value="' + escHtml(val) + '"></td><td>' + escHtml(r.name) + '<div class="' + pcls + '">' + escHtml(prev) + '</div></td><td class="mn-kdcell" data-gk="' + escHtml(r.kodeList ? '' : (r.no ? _mnGKeys[r.no - 1] : '')) + '">' + escHtml(r.kode) + '</td><td class="mn-btn"><button type="button" data-act="save">SAVE</button></td><td class="mn-btn"><button type="button" data-act="cancel">CANCEL</button></td></tr>';
     }).join('') : '<tr><td colspan="5" class="mn-empty">' + (srows.length ? 'Tidak ada baris untuk filter ini.' : 'Belum ada data penjualan' + (grp === 'fitri' ? ' Fitri' : ' Rupa Rupa') + '.') + '</td></tr>';
     box.innerHTML = '<div class="mn-grid">' +
-      '<div><div class="mn-cap">NAMA DI GUDANG</div><div class="tablebox"><table class="mn-tbl"><thead><tr><th style="width:46px">NO</th><th>NAMA PRODUK GUDANG</th><th style="width:104px">KODE PRODUK</th></tr></thead><tbody>' + gHtml + '</tbody></table></div></div>' +
+      '<div><div class="mn-cap">NAMA DI GUDANG</div><div class="tablebox"><table class="mn-tbl"><thead><tr><th style="width:46px">NO</th><th>NAMA PRODUK GUDANG</th><th style="width:120px">KODE PRODUK</th><th>SAVE</th><th>CANCEL</th></tr></thead><tbody>' + gHtml + '</tbody></table></div></div>' +
       '<div><div class="mn-cap">NAMA DI PENJUALAN</div><div class="tablebox"><table class="mn-tbl"><thead><tr><th style="width:62px">NO</th><th>NAMA PRODUK FAKTUR PENJUALAN</th><th style="width:104px">KODE PRODUK</th><th>SAVE</th><th>CANCEL</th></tr></thead><tbody>' + sHtml + '</tbody></table></div></div>' +
       '</div>';
   }
@@ -8693,9 +8707,7 @@ self.onmessage = function(e){
   }
   function toggleTheme(){ applyTheme(document.body.classList.contains('dark') ? 'light' : 'dark'); }
   function initTheme(){
-    let mode = 'dark';
-    try { const saved = localStorage.getItem('rekap-theme'); if (saved === 'dark' || saved === 'light') mode = saved; } catch(e){}
-    applyTheme(mode);
+    applyTheme('dark');   // setiap aplikasi dibuka: mode gelap (tombol 🌙/☀️ tetap bisa dipakai selama sesi)
   }
 
   (async function init(){
@@ -8723,6 +8735,15 @@ self.onmessage = function(e){
       if (cum) cum.style.display = 'none';
       switchGudangSub('stok', document.getElementById('stokTabBtn'));
     } catch(e){ console.warn('default tab Stok Gudang', e); }
+    try {
+      // tampilan awal: tab Penjualan > sub tab Faktur > MODE KARTU
+      fakturViewMode = 'card';
+      const pjBtn = document.querySelector('#mainTabs .main-tab[data-tab="penjualan"]');
+      if (pjBtn) pjBtn.click();
+      const fBtn = document.querySelector('.tabs button[onclick*="s6"]');
+      if (typeof setFakturViewMode === 'function') setFakturViewMode('card');
+      else show('s6', fBtn);
+    } catch(e){ console.warn('default tab Penjualan/Faktur', e); }
   })();
 
   window.addEventListener('beforeunload', function(e){ if (pushTimer || pushInFlight || isSyncingFromCloud) { e.preventDefault(); e.returnValue = ''; return ''; } });
