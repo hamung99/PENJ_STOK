@@ -929,6 +929,52 @@ body.dark .rr-app .dd-upload .field label{color:#94a3b8}
 body.dark .rr-app .dd-upload .field input[type=file]{background:#0f172a;border-color:#475569;color:#e2e8f0}
 body.dark .rr-app .dd-upload .field input[type=text],
 body.dark .rr-app .dd-upload .field input[type=month]{background:#0f172a;color:#e2e8f0;border-color:#475569}
+
+/* ===== Mode Kartu Faktur: lebih kecil & redup ===== */
+.faktur-cards{grid-template-columns:repeat(auto-fill,minmax(225px,1fr));gap:8px}
+.faktur-card{padding:8px 10px;gap:5px;border-radius:9px}
+.faktur-card .fc-faktur{font-size:11px}
+.faktur-card .fc-kat{font-size:10px}
+.faktur-card .fc-tgl{font-size:10px}
+.faktur-card .fc-meta{font-size:10px;gap:4px 8px}
+.faktur-card .fc-badge{font-size:9px;padding:1px 6px}
+.faktur-card .fc-nums{padding-top:4px;gap:6px}
+.faktur-card .fc-num-label{font-size:9px}
+.faktur-card .fc-num-val{font-size:12px}
+.faktur-card .fc-items{gap:3px}
+.faktur-card .fc-items li{font-size:10px;padding:3px 5px;gap:6px}
+body.dark .faktur-card{background:linear-gradient(145deg,#19232f 0%,#172033 100%);border-color:#2b3647;box-shadow:0 1px 6px #0004}
+body.dark .faktur-card .fc-faktur{color:#7f9cc8}
+body.dark .faktur-card .fc-kat{color:#8593a8}
+body.dark .faktur-card .fc-tgl{color:#667589}
+body.dark .faktur-card .fc-meta{color:#76849a}
+body.dark .faktur-card .fc-meta b{color:#a3afc0}
+body.dark .faktur-card .fc-badge{background:#2b3647;color:#94a3b8}
+body.dark .faktur-card .fc-badge.cash{background:#173f4c;color:#8fc3cf}
+body.dark .faktur-card .fc-badge.tempo{background:#4d2613;color:#cf9b72}
+body.dark .faktur-card .fc-nums{border-top-color:#2b3647}
+body.dark .faktur-card .fc-num-label{color:#76849a}
+body.dark .faktur-card .fc-num-val{color:#b8c2d0}
+body.dark .faktur-card .fc-num-val.profit{color:#46a56a}
+body.dark .faktur-card .fc-items li{background:#0e1626;color:#8593a8}
+body.dark .faktur-card .fc-items .fc-qty{color:#7f9cc8}
+body.dark .faktur-card .fc-items .fc-line{color:#a3afc0}
+/* ===== Filter / toolbar tab Penjualan (mode gelap): font lebih redup ===== */
+body.dark #page-penjualan .toolbar-row,
+body.dark #page-penjualan .month-quick label,
+body.dark #page-penjualan .s7-date-quick label{color:#6b7a90}
+body.dark #page-penjualan .month-quick select,
+body.dark #page-penjualan .s7-date-quick select,
+body.dark #page-penjualan .quick-search-wrap input,
+body.dark #page-penjualan .toolbar-row select,
+body.dark #page-penjualan .toolbar-row input{color:#8e9bb0}
+body.dark #page-penjualan .filter-btn,
+body.dark #page-penjualan .col-picker-btn,
+body.dark #page-penjualan .cek-all-btn{color:#8e9bb0}
+body.dark #page-penjualan .fm-btn,
+body.dark #page-penjualan #toolbarSaveExcel,
+body.dark #page-penjualan #autoBatalToolbarBtn{color:#8e9bb0!important}
+body.dark #page-penjualan .fm-btn.active{color:#dbe4f0!important}
 </style>
 </head>
 <body>
