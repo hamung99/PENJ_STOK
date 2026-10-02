@@ -1762,9 +1762,11 @@ body.dark #page-penjualan .fm-btn.active{color:#dbe4f0!important}
       <div class="cek-card-title">⚖️ CEK SELISIH — PENJUALAN vs OUTPUT GUDANG PER TANGGAL</div>
       <div class="cek-card-actions">
         <label for="csGroup">Kelompok</label>
-        <select id="csGroup" onchange="renderCekSelisih(true)"><option value="fitri">🧴 Fitri</option><option value="rupa">📦 Rupa Rupa</option></select>
+        <select id="csGroup" onchange="document.getElementById('csProduct').value='';renderCekSelisih(true)"><option value="fitri">🧴 Fitri</option><option value="rupa">📦 Rupa Rupa</option></select>
         <label for="csMonth">Bulan</label>
         <select id="csMonth" onchange="renderCekSelisih()"><option value="">Semua bulan</option></select>
+        <label for="csProduct">Produk</label>
+        <select id="csProduct" onchange="renderCekSelisih()"><option value="">Semua produk</option></select>
         <label for="csShow">Tampilkan</label>
         <select id="csShow" onchange="renderCekSelisih()"><option value="all">Semua tanggal</option><option value="diff">Hanya yang selisih</option></select>
         <input type="search" id="csSearch" class="cek-search" placeholder="Cari produk..." oninput="renderCekSelisih()">
@@ -5157,7 +5159,10 @@ self.onmessage = function(e){
       if (dk) { if (!penjualanPD[pk]) penjualanPD[pk] = {}; penjualanPD[pk][dk] = (penjualanPD[pk][dk] || 0) + j; }
     }
     const gudangSources = [];
-    if (mode === 'fitri') {
+    const _ovG = (opts.gudang && Array.isArray(opts.gudang.products) && opts.gudang.products.length) ? opts.gudang : null;
+    if (_ovG) {
+      gudangSources.push({ products: _ovG.products, rows: (_ovG.rows || []) });
+    } else if (mode === 'fitri') {
       if (gudangData && gudangData.products) {
         gudangSources.push({ products: gudangData.products, rows: (gudangData.rows || []) });
       }
@@ -5202,7 +5207,7 @@ self.onmessage = function(e){
     products.forEach(p => { if (!penjualanPS[p.key]) penjualanPS[p.key] = {}; if (!penjualanPD[p.key]) penjualanPD[p.key] = {}; if (!gudangPD[p.key]) gudangPD[p.key] = {}; });
     const salesList = [...salesTotals.entries()].sort((a,b) => b[1]-a[1]).map(([name]) => name);
     const hasRrGudang = (mode === 'rupa' && Array.isArray(rrCategories) && rrCategories.some(c => c && Array.isArray(c.products) && c.products.length));
-    const hasGudang = mode === 'rupa' ? hasRrGudang : !!(gudangData && gudangData.products && gudangData.products.length);
+    const hasGudang = !!_ovG || (mode === 'rupa' ? hasRrGudang : !!(gudangData && gudangData.products && gudangData.products.length));
     return {products, salesList, penjualanPS, penjualanPD, gudangPD, hasGudang, mode, dateFrom, dateTo};
   }
   function collectCekFitriData(month, sourceRows, opts){ return collectCekData(month, 'fitri', sourceRows, opts); }
@@ -8139,6 +8144,7 @@ self.onmessage = function(e){
   // Membandingkan Penjualan vs Output Gudang per tanggal (semua tanggal), memakai
   // perhitungan yang sama dengan menu Cek (collectCekData), dan bisa di-download ke Excel.
   let _csLastRows = [];
+  let _csLoadingMsgShown = false;
   let _csLastMeta = { group: 'fitri', month: '', hasGudang: false };
   async function csPopulateMonths(group, keepCurrent){
     const sel = document.getElementById('csMonth'); if (!sel) return;
@@ -8156,6 +8162,16 @@ self.onmessage = function(e){
     const sumEl = document.getElementById('csSummary');
     if (!gSel || !tbody) return;
     const group = gSel.value === 'rupa' ? 'rupa' : 'fitri';
+    // Sumber gudang sama seperti Analisa Fitri / Rupa Rupa: ringkasan dari stok-fitri.html / stok-*.html
+    if (!_csLoadingMsgShown) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:#64748b">⏳ Memuat data penjualan & gudang…</td></tr>'; }
+    try {
+      if (group === 'fitri') {
+        if (!getStokFitriData()) await ensureStokFitriSummary(true); else ensureStokFitriSummary();
+      } else {
+        if (!getStokRupaData()) await ensureStokSummaries(true); else ensureStokSummaries();
+      }
+    } catch(e){ console.warn('cek selisih: muat gudang', e); }
+    const gdSrc = (group === 'fitri' ? getStokFitriData() : getStokRupaData()) || null;
     if (reloadMonths || !document.getElementById('csMonth').options.length || _csLastMeta.group !== group) {
       await csPopulateMonths(group, _csLastMeta.group === group && !reloadMonths);
     }
@@ -8163,7 +8179,7 @@ self.onmessage = function(e){
     const show = document.getElementById('csShow').value;
     const q = (document.getElementById('csSearch').value || '').trim().toLowerCase();
     const sourceRows = await getCekSourceRows(month, { mode: group });
-    const data = collectCekData(month, group, sourceRows, {});
+    const data = collectCekData(month, group, sourceRows, { gudang: gdSrc });
     const { products, penjualanPD, gudangPD, hasGudang } = data;
     const allKeys = new Set();
     products.forEach(p => {
@@ -8171,9 +8187,16 @@ self.onmessage = function(e){
       Object.keys(gudangPD[p.key] || {}).forEach(k => allKeys.add(k));
     });
     const keys = [...allKeys].sort();
+    // dropdown Produk (per produk, bukan hanya kelompok)
+    const pSel = document.getElementById('csProduct');
+    const prevP = pSel.value;
+    pSel.innerHTML = '<option value="">Semua produk</option>' + products.map(pr => '<option value="' + escHtml(pr.key) + '">' + escHtml(pr.name) + '</option>').join('');
+    pSel.value = products.some(pr => pr.key === prevP) ? prevP : '';
+    const pickP = pSel.value;
     const out = [];
     keys.forEach(key => {
       products.forEach(prod => {
+        if (pickP && prod.key !== pickP) return;
         if (q && prod.name.toLowerCase().indexOf(q) < 0) return;
         const p = N((penjualanPD[prod.key] || {})[key]);
         const g = N((gudangPD[prod.key] || {})[key]);
@@ -8184,7 +8207,8 @@ self.onmessage = function(e){
       });
     });
     _csLastRows = out;
-    _csLastMeta = { group: group, month: month, hasGudang: hasGudang };
+    const _pk = products.find(pr => pr.key === pickP);
+    _csLastMeta = { group: group, month: month, hasGudang: hasGudang, produk: _pk ? _pk.name : '' };
 
     if (!products.length || !keys.length) {
       tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:28px;color:#64748b">' + (hasGudang ? 'Belum ada data untuk dibandingkan.' : 'Belum ada Data Gudang yang diupload.') + '</td></tr>';
@@ -8240,7 +8264,8 @@ self.onmessage = function(e){
     XLSX.utils.book_append_sheet(wb, ws, 'Cek Selisih');
     const grp = _csLastMeta.group === 'rupa' ? 'RupaRupa' : 'Fitri';
     const bln = _csLastMeta.month || 'SemuaBulan';
-    XLSX.writeFile(wb, 'Cek_Selisih_' + grp + '_' + bln + '.xlsx');
+    const prd = _csLastMeta.produk ? '_' + _csLastMeta.produk.replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '') : '';
+    XLSX.writeFile(wb, 'Cek_Selisih_' + grp + '_' + bln + prd + '.xlsx');
   }
 
   // ===================== MATCHING NAMES =====================
