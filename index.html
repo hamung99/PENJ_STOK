@@ -1713,6 +1713,7 @@ body.dark #page-penjualan .fm-btn.active{color:#dbe4f0!important}
     </div>
     <button type="button" class="gudang-subtab" id="analisaSalesCustBtn" data-analisa-main="salescust" onclick="switchAnalisaSub('salescust',this)">🏪 Sales/Customer</button>
     <button type="button" class="gudang-subtab" id="analisaMatchingBtn" data-analisa-main="matching" onclick="switchAnalisaSub('matching',this)">🔗 MATCHING NAMES</button>
+    <button type="button" class="gudang-subtab" id="analisaCekSelBtn" data-analisa-main="cekselisih" onclick="switchAnalisaSub('cekselisih',this)">⚖️ CEK SELISIH</button>
   </div>
 
 <div id="page-salescust" style="display:none">
@@ -1754,6 +1755,33 @@ body.dark #page-penjualan .fm-btn.active{color:#dbe4f0!important}
   </div>
 </div>
 
+
+<div id="page-cekselisih" style="display:none">
+  <div class="card">
+    <div class="cek-card-head">
+      <div class="cek-card-title">⚖️ CEK SELISIH — PENJUALAN vs OUTPUT GUDANG PER TANGGAL</div>
+      <div class="cek-card-actions">
+        <label for="csGroup">Kelompok</label>
+        <select id="csGroup" onchange="renderCekSelisih(true)"><option value="fitri">🧴 Fitri</option><option value="rupa">📦 Rupa Rupa</option></select>
+        <label for="csMonth">Bulan</label>
+        <select id="csMonth" onchange="renderCekSelisih()"><option value="">Semua bulan</option></select>
+        <label for="csShow">Tampilkan</label>
+        <select id="csShow" onchange="renderCekSelisih()"><option value="all">Semua tanggal</option><option value="diff">Hanya yang selisih</option></select>
+        <input type="search" id="csSearch" class="cek-search" placeholder="Cari produk..." oninput="renderCekSelisih()">
+        <button type="button" class="cek-refresh-btn" onclick="renderCekSelisih()" title="Segarkan">↻</button>
+        <button type="button" onclick="downloadCekSelisih()">⬇ Download</button>
+      </div>
+    </div>
+    <div id="csSummary" style="font-size:12px;font-weight:700;margin:2px 0 8px;color:#475569"></div>
+    <div class="tablebox" id="csBox">
+      <table id="csTable" style="min-width:640px">
+        <thead><tr><th>TANGGAL</th><th>PRODUK</th><th>PENJUALAN</th><th>OUTPUT GUDANG</th><th>SELISIH</th><th>KET</th></tr></thead>
+        <tbody id="csTbody"><tr><td colspan="6" style="text-align:center;padding:24px;color:#64748b">Belum ada data.</td></tr></tbody>
+        <tfoot id="csTfoot"></tfoot>
+      </table>
+    </div>
+  </div>
+</div>
 
 <div id="page-matching" style="display:none">
   <div class="card">
@@ -8035,7 +8063,7 @@ self.onmessage = function(e){
   function updateAnalisaDDLabel(){
     const lb = document.getElementById('analisaDDLabel');
     if (lb) {
-      if (_analisaSub === 'salescust' || _analisaSub === 'matching') lb.textContent = '';
+      if (_analisaSub === 'salescust' || _analisaSub === 'matching' || _analisaSub === 'cekselisih') lb.textContent = '';
       else lb.textContent = ' · ' + (_analisaSub === 'rupa' ? 'Rupa Rupa' : 'Fitri');
     }
     document.querySelectorAll('#analisaMenu button').forEach(b => b.classList.toggle('active', b.dataset.analisa === _analisaSub));
@@ -8045,6 +8073,8 @@ self.onmessage = function(e){
     if (scBtn) scBtn.classList.toggle('active', _analisaSub === 'salescust');
     const mnBtn = document.getElementById('analisaMatchingBtn');
     if (mnBtn) mnBtn.classList.toggle('active', _analisaSub === 'matching');
+    const csBtn = document.getElementById('analisaCekSelBtn');
+    if (csBtn) csBtn.classList.toggle('active', _analisaSub === 'cekselisih');
   }
   function closeAnalisaMenu(){
     const m = document.getElementById('analisaMenu'); if (m) m.hidden = true;
@@ -8060,7 +8090,7 @@ self.onmessage = function(e){
   }
   function onAnalisaTabBtnClick(ev){
     if (ev) ev.stopPropagation();
-    if (_analisaSub === 'salescust' || _analisaSub === 'matching') {
+    if (_analisaSub === 'salescust' || _analisaSub === 'matching' || _analisaSub === 'cekselisih') {
       switchAnalisaSub(_analisaLastFitriRupa || 'fitri');
       toggleAnalisaMenu(ev);
       return;
@@ -8077,6 +8107,7 @@ self.onmessage = function(e){
   function switchAnalisaSub(which, btn){
     if (which === 'salescust') _analisaSub = 'salescust';
     else if (which === 'matching') _analisaSub = 'matching';
+    else if (which === 'cekselisih') _analisaSub = 'cekselisih';
     else if (which === 'rupa') { _analisaSub = 'rupa'; _analisaLastFitriRupa = 'rupa'; }
     else { _analisaSub = 'fitri'; _analisaLastFitriRupa = 'fitri'; }
     const fp = document.getElementById('analisaFitriPanel');
@@ -8085,18 +8116,131 @@ self.onmessage = function(e){
     const gap = document.getElementById('gudangAnalisaPanel');
     const isSc = (_analisaSub === 'salescust');
     const isMn = (_analisaSub === 'matching');
+    const isCs = (_analisaSub === 'cekselisih');
     const mnPg = document.getElementById('page-matching');
     if (mnPg) mnPg.style.display = isMn ? 'block' : 'none';
+    const csPg = document.getElementById('page-cekselisih');
+    if (csPg) csPg.style.display = isCs ? 'block' : 'none';
     if (fp) fp.style.display = (_analisaSub === 'fitri') ? 'block' : 'none';
     if (rp) rp.style.display = (_analisaSub === 'rupa') ? 'block' : 'none';
-    if (gap) gap.style.display = (isSc || isMn) ? 'none' : 'block';
+    if (gap) gap.style.display = (isSc || isMn || isCs) ? 'none' : 'block';
     if (sc) sc.style.display = isSc ? 'block' : 'none';
     updateAnalisaDDLabel();
     closeAnalisaMenu();
     if (isSc) { renderScsCust(); return; }
     if (isMn) { renderMatchingNames(true); return; }
+    if (isCs) { renderCekSelisih(true); return; }
     if (_analisaSub === 'fitri') renderGudangAnalisa();
     else renderGudangAnalisaRupa();
+  }
+
+
+  // ===================== CEK SELISIH (sub-tab Analisa) =====================
+  // Membandingkan Penjualan vs Output Gudang per tanggal (semua tanggal), memakai
+  // perhitungan yang sama dengan menu Cek (collectCekData), dan bisa di-download ke Excel.
+  let _csLastRows = [];
+  let _csLastMeta = { group: 'fitri', month: '', hasGudang: false };
+  async function csPopulateMonths(group, keepCurrent){
+    const sel = document.getElementById('csMonth'); if (!sel) return;
+    const arr = await collectCekMonths(group === 'rupa' ? 'rupa' : 'fitri');
+    const current = keepCurrent ? sel.value : '';
+    sel.innerHTML = '<option value="">Semua bulan</option>' + arr.map(m => '<option value="' + m + '">' + monthLabel(m) + '</option>').join('');
+    if (current && arr.includes(current)) sel.value = current;
+    else if (arr.length) sel.value = pickLatestMonth(arr);
+    else sel.value = '';
+  }
+  async function renderCekSelisih(reloadMonths){
+    const gSel = document.getElementById('csGroup');
+    const tbody = document.getElementById('csTbody');
+    const tfoot = document.getElementById('csTfoot');
+    const sumEl = document.getElementById('csSummary');
+    if (!gSel || !tbody) return;
+    const group = gSel.value === 'rupa' ? 'rupa' : 'fitri';
+    if (reloadMonths || !document.getElementById('csMonth').options.length || _csLastMeta.group !== group) {
+      await csPopulateMonths(group, _csLastMeta.group === group && !reloadMonths);
+    }
+    const month = document.getElementById('csMonth').value || '';
+    const show = document.getElementById('csShow').value;
+    const q = (document.getElementById('csSearch').value || '').trim().toLowerCase();
+    const sourceRows = await getCekSourceRows(month, { mode: group });
+    const data = collectCekData(month, group, sourceRows, {});
+    const { products, penjualanPD, gudangPD, hasGudang } = data;
+    const allKeys = new Set();
+    products.forEach(p => {
+      Object.keys(penjualanPD[p.key] || {}).forEach(k => allKeys.add(k));
+      Object.keys(gudangPD[p.key] || {}).forEach(k => allKeys.add(k));
+    });
+    const keys = [...allKeys].sort();
+    const out = [];
+    keys.forEach(key => {
+      products.forEach(prod => {
+        if (q && prod.name.toLowerCase().indexOf(q) < 0) return;
+        const p = N((penjualanPD[prod.key] || {})[key]);
+        const g = N((gudangPD[prod.key] || {})[key]);
+        if (!p && !g) return;
+        const sel = p - g;
+        if (show === 'diff' && sel === 0) return;
+        out.push({ key: key, tgl: cekDateLabelLong(key), produk: prod.name, p: p, g: g, s: sel });
+      });
+    });
+    _csLastRows = out;
+    _csLastMeta = { group: group, month: month, hasGudang: hasGudang };
+
+    if (!products.length || !keys.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:28px;color:#64748b">' + (hasGudang ? 'Belum ada data untuk dibandingkan.' : 'Belum ada Data Gudang yang diupload.') + '</td></tr>';
+      tfoot.innerHTML = ''; sumEl.textContent = '';
+      return;
+    }
+    if (!out.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:28px;color:#166534;font-weight:700">✅ Tidak ada selisih pada pilihan ini.</td></tr>';
+      tfoot.innerHTML = ''; sumEl.textContent = '';
+      return;
+    }
+    let tp = 0, tg = 0, nDiff = 0;
+    const diffDates = new Set();
+    let html = '';
+    out.forEach(r => {
+      tp += r.p; tg += r.g;
+      const bad = hasGudang && r.s !== 0;
+      if (bad) { nDiff++; diffDates.add(r.key); }
+      const col = !bad ? '#166534' : (r.s > 0 ? '#1d4ed8' : '#dc2626');
+      const ket = !hasGudang ? '-' : (r.s === 0 ? '✅ Cocok' : (r.s > 0 ? '🔷 Penjualan Lebih Banyak' : '🚨 GUDANG LEBIH BANYAK!!'));
+      html += '<tr' + (bad ? ' style="background:rgba(248,113,113,.14)"' : '') + '>'
+        + '<td>' + r.tgl + '</td><td>' + escHtml(r.produk) + '</td>'
+        + '<td class="num">' + nfQty(r.p) + '</td><td class="num">' + (hasGudang ? nfQty(r.g) : '-') + '</td>'
+        + '<td class="num" style="color:' + col + ';font-weight:700">' + (r.s > 0 ? '+' : '') + nfQty(r.s) + '</td>'
+        + '<td>' + ket + '</td></tr>';
+    });
+    tbody.innerHTML = html;
+    const net = tp - tg;
+    tfoot.innerHTML = '<tr><td colspan="2">TOTAL</td><td class="num">' + nfQty(tp) + '</td><td class="num">' + (hasGudang ? nfQty(tg) : '-') + '</td>'
+      + '<td class="num" style="color:' + (net === 0 ? '#166534' : '#b42318') + '">' + (net > 0 ? '+' : '') + nfQty(net) + '</td><td></td></tr>';
+    sumEl.innerHTML = hasGudang
+      ? (nDiff === 0 ? '<span style="color:#166534">✅ Semua tanggal cocok.</span>'
+        : '<span style="color:#b42318">⚠ ' + nDiff + ' baris selisih pada ' + diffDates.size + ' tanggal: '
+          + [...diffDates].sort().map(cekDateLabelLong).join(', ') + '</span>')
+      : '';
+  }
+  async function downloadCekSelisih(){
+    if (!_csLastRows.length) return alert('Belum ada data untuk diunduh.');
+    try { await loadXLSX(); } catch(e){ alert(e.message); return; }
+    const hasG = _csLastMeta.hasGudang;
+    const aoa = [['TANGGAL', 'PRODUK', 'PENJUALAN', 'OUTPUT GUDANG', 'SELISIH', 'KET']];
+    let tp = 0, tg = 0;
+    _csLastRows.forEach(r => {
+      tp += r.p; tg += r.g;
+      const [y, m, d] = r.key.split('-').map(Number);
+      aoa.push([new Date(Date.UTC(y, m - 1, d)), r.produk, r.p, hasG ? r.g : '-', r.s, hasG ? ketText(r.s) : '-']);
+    });
+    aoa.push(['TOTAL', '', tp, hasG ? tg : '-', tp - tg, '']);
+    const ws = XLSX.utils.aoa_to_sheet(aoa, { cellDates: true });
+    for (let r = 1; r < aoa.length - 1; r++) { const c = ws[XLSX.utils.encode_cell({ r: r, c: 0 })]; if (c) c.z = 'dd/mm/yyyy'; }
+    ws['!cols'] = [{ wch: 12 }, { wch: 28 }, { wch: 12 }, { wch: 15 }, { wch: 10 }, { wch: 28 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Cek Selisih');
+    const grp = _csLastMeta.group === 'rupa' ? 'RupaRupa' : 'Fitri';
+    const bln = _csLastMeta.month || 'SemuaBulan';
+    XLSX.writeFile(wb, 'Cek_Selisih_' + grp + '_' + bln + '.xlsx');
   }
 
   // ===================== MATCHING NAMES =====================
@@ -8276,6 +8420,7 @@ self.onmessage = function(e){
     if (!an || an.style.display === 'none') return;
     if (_analisaSub === 'salescust') return;
     if (_analisaSub === 'matching') { renderMatchingNames(false); return; }
+    if (_analisaSub === 'cekselisih') { renderCekSelisih(); return; }
     if (_analisaSub === 'rupa') renderGudangAnalisaRupa();
     else renderGudangAnalisa();
   }
@@ -8516,7 +8661,7 @@ self.onmessage = function(e){
     if (!d || d.type !== 'stok-summary' || !d.summary || STOK_RUPA_KATS.indexOf(d.kat) === -1) return;
     stokSummaries[d.kat] = d.summary;
     clearTimeout(_stokSumRefreshTimer);
-    _stokSumRefreshTimer = setTimeout(function(){ if (_analisaSub === 'rupa' || _analisaSub === 'matching') refreshAnalisaIfVisible(); }, 400);
+    _stokSumRefreshTimer = setTimeout(function(){ if (_analisaSub === 'rupa' || _analisaSub === 'matching' || _analisaSub === 'cekselisih') refreshAnalisaIfVisible(); }, 400);
   });
   let stokFitriSummary = null;
   let _stokFitriLoading = false, _stokFitriLast = 0, _stokFitriTimer = null;
@@ -8527,7 +8672,7 @@ self.onmessage = function(e){
     if (!d || d.type !== 'stok-summary' || d.kat !== 'minyak' || !d.summary) return;
     stokFitriSummary = d.summary;
     clearTimeout(_stokFitriTimer);
-    _stokFitriTimer = setTimeout(function(){ if (_analisaSub === 'fitri' || _analisaSub === 'matching') refreshAnalisaIfVisible(); }, 400);
+    _stokFitriTimer = setTimeout(function(){ if (_analisaSub === 'fitri' || _analisaSub === 'matching' || _analisaSub === 'cekselisih') refreshAnalisaIfVisible(); }, 400);
   });
   function getStokFitriData(){
     const sm = stokFitriSummary;
