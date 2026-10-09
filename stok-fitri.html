@@ -404,6 +404,11 @@
                                     Sinkron Cloud Sekarang
                                 </a>
                                 <div class="border-t border-gray-100 my-1"></div>
+                                <!-- TOMBOL SIMPAN EXCEL BARU -->
+                                <a href="#" id="saveExcelBtn" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition">
+                                    <i class="fas fa-file-export text-emerald-500 w-5 mr-3 text-center"></i>
+                                    Simpan Excel (Tampilan Ini)
+                                </a>
                                 <a href="#" id="saveJsonBtn" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition">
                                     <i class="fas fa-save text-blue-500 w-5 mr-3 text-center"></i>
                                     Simpan Semua (JSON)
@@ -539,6 +544,7 @@
         const dropdownMenu = document.getElementById('dropdownMenu');
         const deleteBtn = document.getElementById('deleteBtn');
         const saveJsonBtn = document.getElementById('saveJsonBtn');
+        const saveExcelBtn = document.getElementById('saveExcelBtn'); // DOM Element Baru
         const demoBtn = document.getElementById('demoBtn');
         const jsonFile = document.getElementById('jsonFile');
         const deleteModal = document.getElementById('deleteModal');
@@ -1318,9 +1324,6 @@
         function renderFileTabs() {
             fileTabs.innerHTML = '';
             fileTabs.classList.add('hidden'); // Selalu sembunyikan sesuai permintaan
-            
-            // Fungsi renderFileTabs tetap dipanggil untuk memperbarui state internal,
-            // tetapi tidak menampilkan tombol (chip) ke antarmuka pengguna.
             renderSheetTabs();
         }
 
@@ -1857,6 +1860,60 @@
             for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
             return bytes.buffer;
         }
+
+        // ===== EKSPOR EXCEL BARU =====
+        function exportExcel() {
+            const f = files[activeFile];
+            if (!f) {
+                alert('Belum ada data yang bisa disimpan.');
+                return;
+            }
+
+            let tableToExport = null;
+            let sheetName = 'Rekap Stok';
+
+            if (activeTab === 'lengkap') {
+                tableToExport = f.table; // Mengambil tabel yang saat ini tampil (sudah difilter)
+                sheetName = 'Lengkap';
+            } else if (activeTab === 'ringkas') {
+                const ringkasWrap = ringkasBox.querySelector('.table-scroll');
+                if (ringkasWrap) tableToExport = ringkasWrap.querySelector('table');
+                sheetName = 'Ringkas';
+            }
+
+            if (!tableToExport) {
+                alert('Tidak ada tabel yang bisa diekspor saat ini.');
+                return;
+            }
+
+            try {
+                // Konversi HTML Table ke Worksheet
+                const ws = XLSX.utils.table_to_sheet(tableToExport, { raw: true });
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, sheetName);
+                
+                // Buat nama file
+                const d = new Date();
+                const pad = n => String(n).padStart(2, '0');
+                const stamp = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + '_' + pad(d.getHours()) + pad(d.getMinutes());
+                const filename = `Rekap_Stok_${KATEGORI}_${sheetName}_${stamp}.xlsx`;
+
+                // Unduh file
+                XLSX.writeFile(wb, filename);
+                
+                saveText.textContent = 'File Excel berhasil diunduh: ' + filename;
+                setTimeout(() => saveText.textContent = '', 3000);
+            } catch (err) {
+                console.error('Gagal mengekspor Excel:', err);
+                alert('Gagal mengekspor Excel: ' + err.message);
+            }
+        }
+
+        saveExcelBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            dropdownMenu.classList.add('hidden');
+            exportExcel();
+        });
 
         function exportJSON() {
             const unique = new Map();
