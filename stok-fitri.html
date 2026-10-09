@@ -83,7 +83,7 @@
 
         .table-scroll {
             width: 100% !important;
-            overflow: auto;                       /* scroll X dan Y di dalam wrapper agar header sticky bekerja */
+            overflow: auto;
             max-height: calc(100vh - 170px);
             max-height: calc(100dvh - 170px);
             min-height: 250px;
@@ -373,6 +373,7 @@
             
             <div class="flex flex-col items-end gap-2">
                 <div class="flex items-center gap-3 flex-wrap justify-end">
+                    <!-- File Tabs disembunyikan sesuai permintaan -->
                     <div id="fileTabs" class="hidden flex flex-wrap gap-2 justify-end"></div>
 
                     <div class="relative z-50">
@@ -484,9 +485,7 @@
 
     <script>
     // ============================================================
-    // NAVIGASI ANTAR HALAMAN (tiap HTML tetap berdiri sendiri)
-    // Salin blok <nav id="pageNav"> + CSS .page-nav + script ini ke file lain.
-    // Ubah daftar di bawah bila ada halaman baru / nama file berubah.
+    // NAVIGASI ANTAR HALAMAN
     // ============================================================
     (function () {
         const HALAMAN = [
@@ -497,7 +496,7 @@
             { label: 'SABUN',     file: 'stok-sabun.html' },
             { label: 'SARISEDAP', file: 'stok-sarisedap.html' }
         ];
-        const TAMPILKAN_HALAMAN_AKTIF = false; // true = halaman ini ikut tampil sebagai tab aktif
+        const TAMPILKAN_HALAMAN_AKTIF = false;
 
         const nav = document.getElementById('pageNav');
         if (!nav) return;
@@ -1118,18 +1117,18 @@
 
         function populateFilterUI(f) {
             filterBulan.innerHTML = '<option value="">Semua bulan</option>';
-            if (!f || !f.dates || !f.dates.length) {
-                filterTanggal.value = '';
-                filterTanggal.removeAttribute('min');
-                filterTanggal.removeAttribute('max');
-                filterInfo.textContent = '';
-                filterInfo.classList.remove('active');
-                return;
-            }
-
-            const months = new Set();
-            f.dates.forEach(d => months.add(d.y + '-' + String(d.mo).padStart(2, '0')));
-            Array.from(months).sort().forEach(ym => {
+            
+            // Kumpulkan semua bulan dari semua file yang ada
+            const allMonths = new Set();
+            files.forEach(file => {
+                if (file.dates) {
+                    file.dates.forEach(d => {
+                        allMonths.add(d.y + '-' + String(d.mo).padStart(2, '0'));
+                    });
+                }
+            });
+            
+            Array.from(allMonths).sort().forEach(ym => {
                 const parts = ym.split('-');
                 const opt = document.createElement('option');
                 opt.value = ym;
@@ -1139,11 +1138,21 @@
 
             filterBulan.value = f.filter.bulan || '';
             filterTanggal.value = f.filter.tanggal || '';
-
-            const minIso = f.dates[0].iso;
-            const maxIso = f.dates[f.dates.length - 1].iso;
-            filterTanggal.min = minIso;
-            filterTanggal.max = maxIso;
+            
+            // Kumpulkan semua tanggal untuk min/max
+            let allDates = [];
+            files.forEach(file => {
+                if (file.dates) allDates.push(...file.dates);
+            });
+            allDates.sort((a, b) => a.iso.localeCompare(b.iso));
+            
+            if (allDates.length > 0) {
+                filterTanggal.min = allDates[0].iso;
+                filterTanggal.max = allDates[allDates.length - 1].iso;
+            } else {
+                filterTanggal.removeAttribute('min');
+                filterTanggal.removeAttribute('max');
+            }
 
             updateFilterInfo(f);
         }
@@ -1163,12 +1172,28 @@
         }
 
         function applyFilter() {
+            const selectedMonth = filterBulan.value;
+            const selectedDate = filterTanggal.value;
+            
+            // 1. Cari file yang memiliki bulan terpilih
+            if (selectedMonth) {
+                const targetFileIdx = files.findIndex(f => f.dates.some(d => {
+                    const ym = d.y + '-' + String(d.mo).padStart(2, '0');
+                    return ym === selectedMonth;
+                }));
+                if (targetFileIdx !== -1 && targetFileIdx !== activeFile) {
+                    activeFile = targetFileIdx;
+                    renderSheetTabs(); // Perbarui tab sheet
+                    renderFileTabs();  // Perbarui state file (meskipun visualnya hidden)
+                }
+            }
+
             const f = files[activeFile];
             if (!f) return;
 
             f.filter = {
-                bulan: filterBulan.value || '',
-                tanggal: filterTanggal.value || ''
+                bulan: selectedMonth || '',
+                tanggal: selectedDate || ''
             };
 
             const built = buildFilteredView(f, f.filter);
@@ -1292,48 +1317,10 @@
 
         function renderFileTabs() {
             fileTabs.innerHTML = '';
-            const active = files[activeFile];
-            const seen = new Set();
-
-            files.forEach((f, i) => {
-                if (seen.has(f.fileKey)) return;
-                seen.add(f.fileKey);
-                const isActive = !!active && active.fileKey === f.fileKey;
-
-                const chip = document.createElement('div');
-                chip.className = 'file-chip' + (isActive ? ' active' : '');
-                chip.title = f.fileKey;
-                chip.setAttribute('role', 'button');
-                chip.tabIndex = 0;
-
-                const label = document.createElement('span');
-                label.className = 'file-name';
-                label.textContent = f.name;
-
-                const x = document.createElement('span');
-                x.className = 'file-x';
-                x.title = 'Hapus file ini';
-                x.innerHTML = '<i class="fas fa-times"></i>';
-                x.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const count = files.filter(o => o.fileKey === f.fileKey).length;
-                    const extra = count > 1 ? ' (termasuk ' + count + ' sub tab sheet-nya)' : '';
-                    if (confirm('Hapus file "' + f.name + '"' + extra + ' dari daftar?\n\nData file ini akan hilang dari tampilan (file asli di komputer Anda tidak terhapus).')) {
-                        removeFile(f.fileKey);
-                    }
-                });
-
-                chip.appendChild(label);
-                chip.appendChild(x);
-                const go = () => { if (!isActive) selectFile(i); };
-                chip.addEventListener('click', go);
-                chip.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); }
-                });
-                fileTabs.appendChild(chip);
-            });
-
-            fileTabs.classList.toggle('hidden', files.length === 0);
+            fileTabs.classList.add('hidden'); // Selalu sembunyikan sesuai permintaan
+            
+            // Fungsi renderFileTabs tetap dipanggil untuk memperbarui state internal,
+            // tetapi tidak menampilkan tombol (chip) ke antarmuka pengguna.
             renderSheetTabs();
         }
 
@@ -1480,9 +1467,6 @@
         function dbClear() { return dbTx('readwrite', s => s.clear()); }
         function dbLoadAll() { return dbTx('readonly', s => s.getAll()); }
 
-        // ============================================================
-        // RINGKASAN untuk tab Analisa (dibaca index.html): produk x tanggal -> masuk/keluar/stok
-        // ============================================================
         function buildSummary() {
             const prodSet = [];
             const byTs = new Map();
@@ -1523,10 +1507,6 @@
             } catch (e) { console.warn('publishSummary gagal', e); }
         }
 
-        // ============================================================
-        // SINKRON CLOUD (Supabase) - satu baris per file Excel di tabel app_sync
-        // id baris = 'stok-<kategori>::<nama file>'  (baris 'main' penjualan tidak tersentuh)
-        // ============================================================
         const SB_URL = 'https://twrfpovxjuubisskljjv.supabase.co';
         const SB_KEY = 'sb_publishable_AeR-sG7aYIFrP5nIsloGfw_uJVYO3GN';
         const CLOUD_PREFIX = 'stok-' + KATEGORI_ID + '::';
@@ -1596,7 +1576,6 @@
             }
         }
 
-        // Kembalikan true bila data lokal berubah karena tarikan dari cloud
         async function cloudSync() {
             const c = cloudClient();
             if (!c) { cloudStatus('Mode lokal (cloud tidak tersedia)'); return false; }
@@ -1641,14 +1620,14 @@
                 for (const l of local) {
                     const t = cloudMap.get(l.fileKey);
                     if (t === undefined) {
-                        if (synced.has(l.fileKey)) {          // pernah tersinkron, kini hilang di cloud = dihapus di device lain
+                        if (synced.has(l.fileKey)) {
                             await dbDeleteLocal(l.fileKey);
                             synced.delete(l.fileKey);
                             changed = true;
-                        } else {                              // belum pernah naik ke cloud
+                        } else {
                             await pushRecord(l);
                         }
-                    } else if ((l.savedAt || 0) > t) {        // lokal lebih baru
+                    } else if ((l.savedAt || 0) > t) {
                         await pushRecord(l);
                     }
                 }
